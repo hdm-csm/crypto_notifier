@@ -1,0 +1,74 @@
+name: Test CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: 🧪 Run Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4 # https://github.com/marketplace?type=actions
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: | # Literal Block scalar allows to write multi-line shell commands
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: python -m pytest
+
+  build:
+    name: 🐳 Build Docker Image
+    needs: test # depending on the "test" job
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Login to GHCR -> https://github.com/users/juliabb1/packages/container/package/test-ci-cd
+      - name: Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN  }} # Automatically generated within a workflow session
+
+      - name: Build & push multi-arch Docker image
+        run: |
+          # Stelle sicher, dass buildx aktiviert ist docker buildx create --use
+          docker buildx create --use 
+
+          # Multi-Arch Image bauen und direkt zu GHCR pushen (amd64 -> normal pc, arm64 -> raspi)
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t ghcr.io/${{ github.repository }}:latest \
+            --push \
+            .
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy to Raspberry Pi
+        run: |
+          ssh -o StrictHostKeyChecking=no [ADRESS] "
+            docker pull ghcr.io/${{ github.repository }}:latest &&
+            docker stop test-ci-cd || true &&
+            docker rm test-ci-cd || true &&
+            docker run -d \
+                --name test-ci-cd \
+                -p 8080:5000 \
+                --restart unless-stopped \
+                --network shared_net \
+                ghcr.io
+          "
