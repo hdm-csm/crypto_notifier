@@ -10,65 +10,54 @@ jobs:
     name: 🧪 Run Unit Tests
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4 # https://github.com/marketplace?type=actions
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
-        run: | # Literal Block scalar allows to write multi-line shell commands
-          pip install -r requirements.txt
+      - run: pip install -r requirements.txt
 
-      - name: Run tests
-        run: python -m pytest
+      - run: python -m pytest
 
   build:
     name: 🐳 Build Docker Image
-    needs: test # depending on the "test" job
+    needs: test
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # Login to GHCR -> https://github.com/users/juliabb1/packages/container/package/test-ci-cd
-      - name: Login to GHCR
-        uses: docker/login-action@v2
+      - uses: docker/login-action@v2
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN  }} # Automatically generated within a workflow session
+          password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Build & push multi-arch Docker image
-        run: |
-          # Stelle sicher, dass buildx aktiviert ist docker buildx create --use
-          docker buildx create --use 
-
-          # Multi-Arch Image bauen und direkt zu GHCR pushen (amd64 -> normal pc, arm64 -> raspi)
+      - run: |
+          docker buildx create --use
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
             -t ghcr.io/${{ github.repository }}:latest \
             --push \
             .
 
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.9.0
+      - uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Deploy to Raspberry Pi
+      - name: Deploy via Docker Compose
         run: |
-          ssh -o StrictHostKeyChecking=no [ADRESS] "
-            docker pull ghcr.io/${{ github.repository }}:latest &&
-            docker stop ${{ github.repository }} || true &&
-            docker rm ${{ github.repository }} || true &&
-            docker run -d \
-                --name ${{ github.repository }} \
-                -p 8080:5000 \
-                --restart unless-stopped \
-                --network shared_net \
-                ghcr.io
-          "
+          IMAGE_NAME="ghcr.io/${{ github.repository }}:${{ github.sha }}"
+
+          # Copy docker-compose.yml to Raspberry Pi
+          scp -o StrictHostKeyChecking=no docker-compose.yml ${{ secrets.SSH_TARGET }}:/home/cryptonotifier/deploy/docker-compose.yml
+
+          # Deploy via SSH, passing IMAGE_NAME explicitly
+          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_TARGET }} bash -c "'
+            cd /home/cryptonotifier/deploy
+            export IMAGE_NAME=$IMAGE_NAME
+            echo \"Pulling latest image: \$IMAGE_NAME\"
+            docker-compose pull
+            echo \"Starting container...\"
+            docker-compose up -d
+          '"
