@@ -69,17 +69,17 @@ jobs:
           TARGET_DIR="/home/cryptonotifier/deploy"
 
           # Ensure target folder exists on Raspberry Pi
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_TARGET }} "mkdir -p $TARGET_DIR"
+          ssh -p 2222 -o StrictHostKeyChecking=no ${{ secrets.SSH_TARGET }} "mkdir -p $TARGET_DIR"
 
           # Copy docker-compose.yml to Raspberry Pi
-          scp -o StrictHostKeyChecking=no docker-compose.yml ${{ secrets.SSH_TARGET }}:$TARGET_DIR/docker-compose.yml
+          scp -P 2222 -o StrictHostKeyChecking=no docker-compose.yml ${{ secrets.SSH_TARGET }}:$TARGET_DIR/docker-compose.yml
 
           # Deploy via SSH, passing IMAGE_NAME explicitly
-          ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_TARGET }} bash -c "'
+          ssh -p 2222 -o StrictHostKeyChecking=no ${{ secrets.SSH_TARGET }} bash -c "
             cd $TARGET_DIR
             export IMAGE_NAME=$IMAGE_NAME
             echo \"Pulling latest image: \$IMAGE_NAME\"
             docker compose pull
             echo \"Starting container...\"
             docker compose up -d
-          '"
+          "
