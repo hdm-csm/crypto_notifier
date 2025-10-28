@@ -4,33 +4,50 @@ on:
   workflow_dispatch:
 
 jobs:
-  testing06:
-    name: testing ipv6
+  deploy:
+    name: 🚀 Deploy to Raspberry Pi via IPv6
+    # needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
-        uses: actions/checkout@v1
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Set up WARP
+      - name: Set up WARP (dual-stack)
         uses: fscarmen/warp-on-actions@v1.1
         with:
           stack: dual
 
-      - name: testing ipv6 for command
+      - name: Test IPv6 connectivity
         run: |
           curl -m 9 --ipv6 --verbose https://google.com
 
-      - name: testing ipv6
+      - name: Deploy Docker container via SSH over IPv6
         uses: appleboy/ssh-action@master
         with:
-          host: ssh.bairetzlaff.dynv6.net
-          username: deployer
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          host: ${{ secrets.SSH_TARGET }} # Dynv6 hostname or IPv6 address
+          username: ${{ secrets.SSH_USERNAME }} # e.g., deployer
+          key: ${{ secrets.SSH_PRIVATE_KEY }} # private key
           protocol: tcp6
-          port: 2222
+          port: ${{ secrets.SSH_PORT }} # e.g., 2222
           command_timeout: 30s
           script: |
-            whoami
+            IMAGE_NAME="${{ needs.build.outputs.image-name }}"
+            CONTAINER_NAME="crypto_notifier"
+
+            echo "Pulling latest image: $IMAGE_NAME"
+            docker pull $IMAGE_NAME
+
+            echo "Stopping existing container (if any)..."
+            docker stop $CONTAINER_NAME || true
+            docker rm $CONTAINER_NAME || true
+
+            echo "Starting new container..."
+            docker run -d --name $CONTAINER_NAME \
+              --restart unless-stopped \
+              -p 8080:8080 \
+              $IMAGE_NAME
+
+            echo "Deployment complete!"
 
 # name: Test CI/CD
 
