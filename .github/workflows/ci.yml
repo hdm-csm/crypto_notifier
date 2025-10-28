@@ -31,7 +31,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }} # e.g., 2222
           command_timeout: 30s
           script: |
-            IMAGE_NAME="${{ needs.build.outputs.image-name }}"
+            IMAGE_NAME="ghcr.io/${{ github.repository }}:${{ github.sha }}"
             CONTAINER_NAME="crypto_notifier"
 
             echo "Pulling latest image: $IMAGE_NAME"
