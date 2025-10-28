@@ -1,12 +1,61 @@
-name: Test SSH Connection
+name: Test CI/CD
 
 on:
-  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
 
 jobs:
+  test:
+    name: 🧪 Run Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: python -m pytest
+
+  build:
+    name: 🐳 Build Docker Image
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      image-name: ${{ steps.set_image_name.outputs.IMAGE_NAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build and push Docker image
+        id: set_image_name
+        run: |
+          IMAGE_NAME="ghcr.io/${{ github.repository }}:latest"
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_OUTPUT
+
+          docker buildx create --use
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t $IMAGE_NAME \
+            --push \
+            .
+
   deploy:
     name: 🚀 Deploy to Raspberry Pi via IPv6
-    # needs: build
+    needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -17,9 +66,6 @@ jobs:
         with:
           stack: dual
 
-      - name: Test IPv6 connectivity
-        run: |
-          curl -m 9 --ipv6 --verbose https://google.com
       - name: Deploy Docker container via SSH over IPv6
         uses: appleboy/ssh-action@master
         with:
@@ -30,7 +76,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }} # e.g., 2222
           command_timeout: 600s
           script: |
-            IMAGE_NAME="ghcr.io/${{ github.repository }}:latest"
+            IMAGE_NAME="${{ needs.build.outputs.image-name }}"
             CONTAINER_NAME="crypto_notifier"
             echo "Pulling latest image: $IMAGE_NAME"
             docker pull $IMAGE_NAME
@@ -44,95 +90,41 @@ jobs:
               $IMAGE_NAME
             echo "Deployment complete!"
 
-# name: Test CI/CD
+  # deploy:
+  #   name: 🚀 Deploy to Raspberry Pi
+  #   needs: build
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-# on:
-#   push:
-#     branches: [main]
-#   pull_request:
+  #     - name: Setup SSH
+  #       uses: webfactory/ssh-agent@v0.9.0
+  #       with:
+  #         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-# jobs:
-#   test:
-#     name: 🧪 Run Unit Tests
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Checkout repository
-#         uses: actions/checkout@v4
+  #     - name: 🔍 Test SSH connectivity
+  #       run: |
+  #         echo "Testing SSH connection..."
+  #         ssh -6 -v -p 2222 -o StrictHostKeyChecking=no  "echo Connected successfully"
 
-#       - name: Set up Python
-#         uses: actions/setup-python@v5
-#         with:
-#           python-version: "3.12"
+  #     - name: 🐳 Deploy Docker container
+  #       run: |
+  #         IMAGE_NAME="${{ needs.build.outputs.image-name }}"
+  #         CONTAINER_NAME="crypto_notifier"
 
-#       - name: Install dependencies
-#         run: |
-#           pip install -r requirements.txt
+  #         ssh -6 -p 2222 -o StrictHostKeyChecking=no ${{ secrets.SSH_TARGET }} bash -c "
+  #           echo 'Pulling latest image: $IMAGE_NAME'
+  #           docker pull $IMAGE_NAME
 
-#       - name: Run tests
-#         run: python -m pytest
+  #           echo 'Stopping existing container (if any)...'
+  #           docker stop $CONTAINER_NAME || true
+  #           docker rm $CONTAINER_NAME || true
 
-#   build:
-#     name: 🐳 Build Docker Image
-#     needs: test
-#     runs-on: ubuntu-latest
-#     outputs:
-#       image-name: ${{ steps.set_image_name.outputs.IMAGE_NAME }}
-#     steps:
-#       - uses: actions/checkout@v4
+  #           echo 'Starting new container...'
+  #           docker run -d --name $CONTAINER_NAME \
+  #             --restart unless-stopped \
+  #             -p 8080:8080 \
+  #             $IMAGE_NAME
 
-#       - uses: docker/login-action@v2
-#         with:
-#           registry: ghcr.io
-#           username: ${{ github.actor }}
-#           password: ${{ secrets.GHCR_TOKEN }}
-
-#       - name: Build and push Docker image
-#         id: set_image_name
-#         run: |
-#           IMAGE_NAME="ghcr.io/${{ github.repository }}:latest"
-#           echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_OUTPUT
-#           docker buildx create --use
-#           docker buildx build \
-#             --platform linux/amd64,linux/arm64 \
-#             -t $IMAGE_NAME \
-#             --push \
-#             .
-
-#   deploy:
-#     name: 🚀 Deploy to Raspberry Pi
-#     needs: build
-#     runs-on: ubuntu-latest
-#     steps:
-#       - uses: actions/checkout@v4
-
-#       - name: Setup SSH
-#         uses: webfactory/ssh-agent@v0.9.0
-#         with:
-#           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-#       - name: 🔍 Test SSH connectivity
-#         run: |
-#           echo "Testing SSH connection..."
-#           ssh -6 -v -p 2222 -o StrictHostKeyChecking=no  "echo Connected successfully"
-
-#       - name: 🐳 Deploy Docker container
-#         run: |
-#           IMAGE_NAME="${{ needs.build.outputs.image-name }}"
-#           CONTAINER_NAME="crypto_notifier"
-
-#           ssh -6 -p 2222 -o StrictHostKeyChecking=no ${{ secrets.SSH_TARGET }} bash -c "
-#             echo 'Pulling latest image: $IMAGE_NAME'
-#             docker pull $IMAGE_NAME
-
-#             echo 'Stopping existing container (if any)...'
-#             docker stop $CONTAINER_NAME || true
-#             docker rm $CONTAINER_NAME || true
-
-#             echo 'Starting new container...'
-#             docker run -d --name $CONTAINER_NAME \
-#               --restart unless-stopped \
-#               -p 8080:8080 \
-#               $IMAGE_NAME
-
-#             echo 'Deployment complete!'
-#           "
+  #           echo 'Deployment complete!'
+  #         "
