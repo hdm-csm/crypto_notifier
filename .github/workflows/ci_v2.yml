@@ -1,0 +1,92 @@
+name: Test CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    name: 🧪 Run Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run tests
+        run: python -m pytest
+
+  build:
+    name: 🐳 Build Docker Image
+    needs: test
+    runs-on: ubuntu-latest
+    outputs:
+      image-name: ${{ steps.set_image_name.outputs.IMAGE_NAME }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build and push Docker image
+        id: set_image_name
+        run: |
+          IMAGE_NAME="ghcr.io/${{ github.repository }}:${{ github.sha }}"
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          docker buildx create --use
+          docker buildx build \
+            --platform linux/amd64,linux/arm64 \
+            -t $IMAGE_NAME \
+            --push \
+            .
+
+  deploy:
+    name: 🚀 Deploy to Raspberry Pi
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: 🔍 Test SSH connectivity
+        run: |
+          echo "Testing SSH connection..."
+          ssh -v -p 2222 -o StrictHostKeyChecking=no ${{ secrets.SSH_TARGET }} "echo Connected successfully"
+
+      - name: 🐳 Deploy Docker container
+        run: |
+          IMAGE_NAME="${{ needs.build.outputs.image-name }}"
+          CONTAINER_NAME="crypto_notifier"
+
+          ssh -p 2222 -o StrictHostKeyChecking=no ${{ secrets.SSH_TARGET }} bash -c "
+            echo 'Pulling latest image: $IMAGE_NAME'
+            docker pull $IMAGE_NAME
+
+            echo 'Stopping existing container (if any)...'
+            docker stop $CONTAINER_NAME || true
+            docker rm $CONTAINER_NAME || true
+
+            echo 'Starting new container...'
+            docker run -d --name $CONTAINER_NAME \
+              --restart unless-stopped \
+              -p 8080:8080 \ 
+              $IMAGE_NAME
+
+            echo 'Deployment complete!'
+          "
