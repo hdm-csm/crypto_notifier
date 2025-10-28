@@ -4,19 +4,33 @@ on:
   workflow_dispatch:
 
 jobs:
-  ssh-test:
-    name: 🔍 Test SSH connectivity
+  testing06:
+    name: testing ipv6
     runs-on: ubuntu-latest
     steps:
-      - name: Setup SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+      - name: checkout
+        uses: actions/checkout@v1
 
-      - name: Test SSH connection
+      - name: Set up WARP
+        uses: fscarmen/warp-on-actions@v1.1
+        with:
+          stack: dual
+
+      - name: testing ipv6 for command
         run: |
-          echo "Testing SSH connection..."
-          ssh -6 -v -p 2222 -o StrictHostKeyChecking=no ${{ secrets.SSH_TARGET }} "echo Connected successfully"
+          curl -m 9 --ipv6 --verbose https://google.com
+
+      - name: testing ipv6
+        uses: appleboy/ssh-action@master
+        with:
+          host: ssh.bairetzlaff.dynv6.net
+          username: deployer
+          password: ${{ secrets.SSH_PRIVATE_KEY }}
+          protocol: tcp6
+          port: 2222
+          command_timeout: 30s
+          script: |
+            whoami
 
 # name: Test CI/CD
 
