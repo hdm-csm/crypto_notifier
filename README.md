@@ -1,5 +1,7 @@
 # CryptoNotifier
 
+A Crypto Tracking Tool.
+
 # Develop and run on your local machine (host Python)
 
 You run Python on your host machine (VS Code / terminal / PyCharm).
