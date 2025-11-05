@@ -7,7 +7,7 @@ services:
     volumes:
       - .:/app
     env_file:
-      - .env.prd
+      - .env.prod
     depends_on:
       db:
         condition: service_healthy
@@ -17,7 +17,7 @@ services:
     image: mysql:8.1
     container_name: crypto_notifier_db_prod
     env_file:
-      - .env.prd
+      - .env.prod
     ports:
       - "3306:3306"
     volumes:
