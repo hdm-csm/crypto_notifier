@@ -1,4 +1,7 @@
-version: "3.9"
+#  Only used for local tests of prod image
+# docker pull ghcr.io/juliabb1/crypto_notifier:latest
+# docker compose -f docker-compose.prod.yml down -v
+# docker compose -f docker-compose.prod.yml up -d
 
 services:
   app:
