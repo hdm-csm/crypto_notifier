@@ -74,11 +74,11 @@ jobs:
           done
 
       - name: Run integration tests
-        run: docker exec crypto_notifier_app_prod python -m pytest tests/integration -v
+        run: docker exec crypto_notifier_app_test python -m pytest tests/integration -v
 
       - name: Tear down environment
         if: always()
-        run: docker compose -f docker-compose.prod.yml --env-file .env.test down -v
+        run: docker compose -f docker-compose.test.yml --env-file .env.test down -v
 
   # ---------------------------------------------------
   # 3️⃣ BUILD & PUSH DOCKER IMAGE
