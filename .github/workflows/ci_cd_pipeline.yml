@@ -8,11 +8,12 @@ on:
 
 jobs:
   # ---------------------------------------------------
-  # 1️⃣ Run UNIT TESTS
+  # 1️⃣ UNIT TESTS
   # ---------------------------------------------------
   unit-tests:
     name: 🧪 Unit Tests
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,38 +24,47 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: |
-          pip install -r requirements.txt
+        run: pip install -r requirements.txt
 
       - name: Run unit tests
-        run: |
-          python -m pytest tests/unit -v
+        run: python -m pytest tests/unit -v
 
   # ---------------------------------------------------
-  # 2️⃣ Run INTEGRATION TESTS (in Docker Compose)
+  # 2️⃣ INTEGRATION TESTS (Docker Compose)
   # ---------------------------------------------------
   integration-tests:
     name: 🔗 Integration Tests (Docker Compose)
     runs-on: ubuntu-latest
     needs: unit-tests
+    environment: staging # Use secrets from staging environment
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Docker Compose
-        run: |
-          docker compose version
+      - name: Verify Docker Compose
+        run: docker compose version
 
-      - name: Build and start services
+      - name: Create temporary .env.test file
         run: |
-          docker compose -f docker-compose.prod.yml --env-file .env.test up -d --build
+          echo "ENV=TEST" > .env.test
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env.test
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env.test
+          echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> .env.test
+          echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env.test
+          echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env.test
+          echo "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}" >> .env.test
+          echo "DATABASE_URL=mysql+mysqlconnector://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.MYSQL_DATABASE }}" >> .env.test
+          cat .env.test
 
-      - name: Wait for DB to be ready
+      - name: Build and start containers
+        run: docker compose -f docker-compose.prod.yml --env-file .env.test up -d --build
+
+      - name: Wait for MySQL to be healthy
         run: |
-          echo "⏳ Waiting for DB to become healthy..."
+          echo "⏳ Waiting for database to become healthy..."
           for i in {1..30}; do
-            STATUS=$(docker inspect --format='{{json .State.Health.Status}}' crypto_notifier_db_prod || echo "null")
+            STATUS=$(docker inspect --format='{{json .State.Health.Status}}' ${{ secrets.DB_HOST }} || echo "null")
             if [ "$STATUS" = "\"healthy\"" ]; then
               echo "✅ Database is healthy"
               break
@@ -63,17 +73,15 @@ jobs:
             sleep 2
           done
 
-      - name: Run integration tests inside app container
-        run: |
-          docker exec crypto_notifier_app_prod python -m pytest tests/integration -v
+      - name: Run integration tests
+        run: docker exec crypto_notifier_app_prod python -m pytest tests/integration -v
 
       - name: Tear down environment
         if: always()
-        run: |
-          docker compose -f docker-compose.prod.yml --env-file .env.test down -v
+        run: docker compose -f docker-compose.prod.yml --env-file .env.test down -v
 
   # ---------------------------------------------------
-  # 3️⃣ Build & Push Docker Image
+  # 3️⃣ BUILD & PUSH DOCKER IMAGE
   # ---------------------------------------------------
   build:
     name: 🐳 Build Docker Image
@@ -81,17 +89,18 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image-name: ${{ steps.meta.outputs.image-name }}
+
     steps:
       - uses: actions/checkout@v4
 
-      - name: Log in to GHCR
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Set image name
+      - name: Define image name
         id: meta
         run: |
           IMAGE_NAME="ghcr.io/${{ github.repository }}:latest"
@@ -105,17 +114,19 @@ jobs:
             --push .
 
   # ---------------------------------------------------
-  # 4️⃣ Deploy to Raspberry Pi via Docker Compose
+  # 4️⃣ DEPLOY TO RASPBERRY PI
   # ---------------------------------------------------
   deploy:
     name: 🚀 Deploy to Raspberry Pi
     needs: build
     runs-on: ubuntu-latest
+    environment: prod # Uses your "prod" environment secrets
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up WARP (dual-stack)
+      - name: Enable IPv6 (for Raspberry Pi)
         uses: fscarmen/warp-on-actions@v1.1
         with:
           stack: dual
@@ -131,12 +142,25 @@ jobs:
           command_timeout: 600s
           script: |
             echo "🚀 Deploying latest version..."
+
             cd ~/crypto_notifier || exit 1
             git pull origin main
 
-            echo "🛠️ Updating containers..."
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml down
-            docker compose -f docker-compose.prod.yml up -d --build
+            echo "🧩 Writing .env.prod from secrets..."
+            cat <<EOF > .env.prod
+            ENV=PROD
+            DB_HOST=${{ secrets.DB_HOST }}
+            DB_PORT=${{ secrets.DB_PORT }}
+            MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}
+            MYSQL_USER=${{ secrets.MYSQL_USER }}
+            MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
+            MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
+            DATABASE_URL=mysql+mysqlconnector://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.MYSQL_DATABASE }}
+            EOF
+
+            echo "🐋 Restarting containers..."
+            docker compose -f docker-compose.prod.yml --env-file .env.prod pull
+            docker compose -f docker-compose.prod.yml --env-file .env.prod down
+            docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
 
             echo "✅ Deployment complete!"
