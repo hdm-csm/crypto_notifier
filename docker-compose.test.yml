@@ -3,7 +3,7 @@ version: "3.9"
 services:
   app:
     build: .
-    container_name: crypto_notifier_db_test
+    container_name: crypto_notifier_app_test
     volumes:
       - .:/app
     env_file:
