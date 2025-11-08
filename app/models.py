@@ -1,7 +1,8 @@
 # app/models.py
 from app.db import Base
-from sqlalchemy import Column, Integer, String, Float, enum, ForeignKey, Table, DateTime, func, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Float, Enum, ForeignKey, Table, DateTime, func, UniqueConstraint
 from sqlalchemy.orm import relationship
+import enum
 
 class PlatformType(enum.Enum):
     Discord = "Discord"
@@ -22,7 +23,7 @@ class Account(Base):
     __tablename__ = 'accounts'
     
     userId = Column(Integer, primary_key=True, autoincrement=True)
-    platform = Column(enum(PlatformType), nullable=False)
+    platform = Column(Enum(PlatformType), nullable=False)
     platformId = Column(String(255), nullable=False, unique=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
@@ -56,7 +57,7 @@ class Notification(Base):
     userId = Column(Integer, ForeignKey('accounts.userId'))
     cryptoID = Column(Integer, ForeignKey('cryptocurrencies.cryptoId'))
     targetPrice = Column(Float)
-    direction = Column(enum(NotificationDirection))
+    direction = Column(Enum(NotificationDirection))
     
     account = relationship("Account", back_populates="notifications")
     cryptocurrency = relationship("Cryptocurrency", back_populates="notifications")
