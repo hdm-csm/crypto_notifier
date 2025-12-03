@@ -1,83 +1,68 @@
 import asyncio
 import os
-import threading
 import logging
+import discord
+from discord.ext import commands
 from dotenv import load_dotenv
-from app.services.DataService import DataService
-from app.telegram_bot import TelegramBot
-from app.discord_bot import DiscordBot
+from telegram import Update
+from telegram.ext import ContextTypes, MessageHandler, filters, CommandHandler, ApplicationBuilder
 
 load_dotenv(dotenv_path='.env.dev')
 DISCORD_TOKEN = os.environ.get('DISCORD_BOT_TOKEN')
 TELEGRAM_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
-DISCORD_GUILD_ID = os.environ.get('DISCORD_GUILD_ID')
+DISCORD_GUILD_ID = int(os.environ.get('DISCORD_GUILD_ID'))
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s')
 
-def main():
-    """The main entry point of your multi-bot application."""
-    logging.info("--- Starting Multi-Bot Application ---")
+async def list_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Send a message when the command /help is issued."""
+    await update.message.reply_text("List!")
 
-    # Both bots will use same instance to fetch data
-    shared_data_service = DataService()
-    logging.info("Shared DataService instantiated.")
+class Tracker(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self._last_member = None
 
-    # --- Discord Bot Setup ---
-    if DISCORD_TOKEN and DISCORD_GUILD_ID:
-        discord_bot_instance = DiscordBot(
-            token=DISCORD_TOKEN,
-            guild_id=DISCORD_GUILD_ID,
-            data_service=shared_data_service
-        )
-        # Start Discord Bot in a separate, daemonized thread
-        discord_thread = threading.Thread(
-            target=discord_bot_instance.run,
-            name="DiscordBotThread",
-            daemon=True
-        )
-        discord_thread.start()
-        logging.info("Discord Bot started in a background thread.")
-    else:
-        logging.warning("Discord Bot skipped: Token or Guild ID is missing.")
+    @commands.command(name='echo')
+    async def _echo(self, ctx: commands.Context, *, arg: str):
+        await ctx.channel.send(f"You said: {arg}")
 
-    # --- Telegram Bot Setup ---
-    if TELEGRAM_TOKEN:
-        telegram_bot_instance = TelegramBot(
-            token=TELEGRAM_TOKEN,
-            data_service=shared_data_service
-        )
-        # Start Telegram Bot in a separate, daemonized thread
-        telegram_thread = threading.Thread(
-            target=telegram_bot_instance.run,
-            name="TelegramBotThread",
-            daemon=True
-        )
-        telegram_thread.start()
-        logging.info("Telegram Bot started in a background thread.")
-    else:
-        logging.warning("Telegram Bot skipped: Token is missing.")
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.author == self.bot.user:
+            return
+        if message.content.startswith(self.bot.command_prefix):
+            return
+        await message.channel.send(f"I heard you say: {message.content}")
 
+async def run_discord():
+    intents = discord.Intents.default()
+    intents.message_content = True
+    bot = commands.Bot(command_prefix='/', intents=intents)
+    await bot.add_cog(Tracker(bot))
+    await bot.start(DISCORD_TOKEN)
     try:
-        logging.info("Main application (mathdo) is running. Press Ctrl+C to exit.")
-        while True:
-            # Keep main thread alive so the daemon threads (bots) can run
-            threading.Event().wait(3)
-    except KeyboardInterrupt:
-        logging.info("Main application interrupted. Shutting down all services.")
+        await asyncio.Future() # wait indefinitely until future is resolved/canceled (in pending state)
+    except asyncio.CancelledError: # when future is explicitly canceled, await raises this exception
+        pass # do nothing, continue program flow
+    await bot.close()
 
-def main_synchronous():
-    shared_data_service = DataService()
-    discord_bot = DiscordBot(DISCORD_TOKEN, DISCORD_GUILD_ID, shared_data_service)
-    telegram_bot = TelegramBot(TELEGRAM_TOKEN, shared_data_service)
-
-    loop = asyncio.get_event_loop()
-    loop.create_task(discord_bot.run())
-    threading.Thread(target=loop.run_forever).start()
-    # discordBot.run()
-    logging.info("!!!Discord Bot started.!!!")
-    telegram_bot.run()
-    logging.info("Telegram Bot started.")
+async def run_telegram():
+    application = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
+    application.add_handler(CommandHandler("list", list_command, block=False))
+    # application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND,echo, block=False))
+    await application.initialize()
+    await application.start()
+    await application.updater.start_polling(
+        poll_interval=0.0,
+        timeout=60,
+        allowed_updates=["message", "callback_query"],
+        drop_pending_updates=True
+    )
+    await run_discord()
+    await application.updater.stop()
+    await application.stop()
+    await application.shutdown()
 
 if __name__ == '__main__':
-    # main()
-    main_synchronous()
+    asyncio.run(run_telegram())

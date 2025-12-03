@@ -1,6 +1,5 @@
 import httpx
 import json
-import pprint
 from app.models.Coin import Coin
 
 
