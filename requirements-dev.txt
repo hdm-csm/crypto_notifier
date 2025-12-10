@@ -1,0 +1,8 @@
+# Code Formatting
+black
+
+# Linting and Style Checking
+flake8
+
+# Pre-Commit Framework
+pre-commit
