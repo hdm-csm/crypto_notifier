@@ -8,34 +8,9 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(threadName)s - %
 
 class FavoriteRepository(BaseRepository):
     
-    def add_favorite(self, platform: PlatformType, platform_id: str, symbol: str) -> bool:
+    def add_favorite(self, account: Account, crypto: Cryptocurrency) -> bool:
         with self.get_session() as db:
-            
-            account = db.query(Account).filter(
-                Account.platform == platform,
-                Account.platformId == str(platform_id)
-            ).first()
-            
-            if not account:
-                logging.error(f"Account not found for {platform_id}")
-                return False
-            
-            # Get cryptocurrency by uppercase symbol
-            crypto = db.query(Cryptocurrency).filter(
-                Cryptocurrency.symbol == symbol.upper()
-            ).first()
-            
-            if not crypto:
-                logging.error(f"Cryptocurrency {symbol} not found in database")
-                return False
-            
-            # Check if already in favorites
-            if crypto in account.favorite_cryptos:
-                logging.info(f"{symbol} already in favorites for {platform_id}")
-                return False
-            
             account.favorite_cryptos.append(crypto)
-            logging.info(f"Added {symbol} to favorites for {platform_id}")
             return True
     
     def remove_favorite(self, platform: PlatformType, platform_id: str, symbol: str) -> bool:

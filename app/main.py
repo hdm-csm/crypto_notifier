@@ -32,7 +32,7 @@ async def initialize_crypto_data(crypto_repository: CryptocurrencyRepository, cr
     else:
         logging.info("Cryptocurrency data already initialized.")
 
-async def run_bots_asynchronously():
+async def async_main():
 
     account_repository = AccountRepository()
     favorite_repository = FavoriteRepository()
@@ -77,4 +77,4 @@ async def run_bots_asynchronously():
 
 
 if __name__ == '__main__':
-    asyncio.run(run_bots_asynchronously())
+    asyncio.run(async_main())
