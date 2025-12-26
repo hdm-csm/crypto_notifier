@@ -1,17 +1,17 @@
 import logging
-from pytest import Session
+from sqlalchemy.orm import Session
 from app.models import PlatformType
 from app.repository.account_repository import AccountRepository
 from app.repository.cryptocurrency_repository import CryptocurrencyRepository
 from app.repository.favorite_repository import FavoriteRepository
-from sqlalchemy.orm import sessionmaker
 
 
 class BotService():
 
     def __init__(
             self,
-            session_factory: sessionmaker[Session],
+            # session_factory: Callable[[], Session],
+            session_factory: Session,
             account_repository: AccountRepository,
             favorite_repository: FavoriteRepository,
             cryptocurrency_repository: CryptocurrencyRepository,

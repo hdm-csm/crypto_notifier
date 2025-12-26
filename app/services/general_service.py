@@ -1,15 +1,12 @@
-import logging
 from pytest import Session
-from app.repository.account_repository import AccountRepository
 from app.repository.cryptocurrency_repository import CryptocurrencyRepository
-from app.repository.favorite_repository import FavoriteRepository
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import Session
 from app.services.crypto_api_service import CryptoApiService
 
 class GeneralService:
     def __init__(
         self,
-        session_factory: sessionmaker[Session],
+        session_factory: Session,
         cryptocurrency_repository: CryptocurrencyRepository,
         crypto_api_service: CryptoApiService
     ):

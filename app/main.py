@@ -65,7 +65,8 @@ async def async_main():
         DISCORD_CLIENT_ID, 
         DISCORD_GUILD_ID, 
         DISCORD_CHANNEL_ID,
-        bot_service
+        bot_service,
+        crypto_api_service
     )
     telegram_bot = TelegramBot(
         TELEGRAM_TOKEN,
