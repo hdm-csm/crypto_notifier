@@ -1,9 +1,9 @@
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler, ApplicationBuilder
+from app.repository.account_repository import AccountRepository
 from app.repository.favorite_repository import FavoriteRepository
 from app.services.crypto_api_service import CryptoApiService
-from app.services.data_service import DataService
 from app.models import PlatformType
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s')
@@ -16,11 +16,11 @@ class TelegramBot:
             self, 
             token: str, 
             crypto_api_service: CryptoApiService,
-            data_service: DataService,
+            account_repository: AccountRepository,
             favorite_repository: FavoriteRepository):
         self.token = token
         self.crypto_api_service = crypto_api_service
-        self.data_service = data_service
+        self.account_repository = account_repository
         self.favorite_repository = favorite_repository
         
         self.app = ApplicationBuilder().token(token).build()
@@ -70,20 +70,30 @@ class TelegramBot:
         user_id = update.effective_user.id
         input_crypto = context.args[0].lower()
 
-        correct_input = self.data_service.check_account_and_crypto(
+        account = self.account_repository.find_by_platform_and_id(
             platform=self.PLATFORM_TYPE,
-            platform_id=str(user_id),
-            input_crypto=input_crypto
+            platform_id=str(user_id)
         )
+        if account is None:
+            account = self.account_repository.create(
+                platform=self.PLATFORM_TYPE,
+                platformId=str(user_id)
+            )
+        cryptocurrency = self.cryptocurrency_repository.find_by_name_or_symbol(input_crypto)
+        if cryptocurrency is None:
+            return False
 
-        if not correct_input:
+        if not account:
+            await update.message.reply_text(f"⚠️ Could not find or create account for user ID {user_id}.")
+            return
+
+        if not cryptocurrency:
             await update.message.reply_text(f"⚠️ Cryptocurrency '{input_crypto}' not found. Please check the name/symbol and try again.")
             return
 
         success = self.favorite_repository.add_favorite(
-            platform=self.PLATFORM_TYPE,
-            platform_id=user_id,
-            symbol=input_crypto
+            account=account,
+            crypto=cryptocurrency
         )
         
         if success:

@@ -9,7 +9,6 @@ from app.repository.account_repository import AccountRepository
 from app.repository.favorite_repository import FavoriteRepository
 from app.repository.cryptocurrency_repository import CryptocurrencyRepository
 from app.services.crypto_api_service import CryptoApiService
-from app.services.data_service import DataService
 
 load_dotenv(dotenv_path='.env.dev')
 DISCORD_TOKEN = os.environ.get('DISCORD_BOT_TOKEN')
@@ -35,13 +34,7 @@ async def async_main():
     cryptocurrency_repository = CryptocurrencyRepository()
     http_client = httpx.AsyncClient()
     crypto_api_service = CryptoApiService(http_client)  
-    data_service = DataService(
-        account_repository,
-        favorite_repository,
-        cryptocurrency_repository
-    )
 
-   
     await initialize_crypto_data(cryptocurrency_repository, crypto_api_service)
 
     discord_bot = DiscordBot(
@@ -50,13 +43,14 @@ async def async_main():
         DISCORD_GUILD_ID, 
         DISCORD_CHANNEL_ID,
         crypto_api_service,
-        data_service,
-        cryptocurrency_repository=cryptocurrency_repository
+        account_repository,
+        cryptocurrency_repository,
+        favorite_repository
     )
     telegram_bot = TelegramBot(
         TELEGRAM_TOKEN,
         crypto_api_service,
-        data_service,
+        account_repository,
         favorite_repository
     )
     try:

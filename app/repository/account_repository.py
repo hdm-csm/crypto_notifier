@@ -2,12 +2,12 @@ import logging
 from datetime import datetime
 from sqlalchemy.orm import Session
 from app.models import Account, PlatformType
-from app.repository.base_repository import BaseRepository
+from app.services.session_manager import SessionManager
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s')
 
 
-class AccountRepository(BaseRepository):
+class AccountRepository(SessionManager):
 
     def exists(self, platform: PlatformType, platform_id: str) -> bool:
         with self.get_session() as db:

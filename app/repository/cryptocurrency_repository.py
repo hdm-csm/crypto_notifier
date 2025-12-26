@@ -2,12 +2,16 @@ import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models import Cryptocurrency, Coin
-from app.repository.base_repository import BaseRepository
+from app.services.session_manager import SessionManager
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s')
 
 
-class CryptocurrencyRepository(BaseRepository):
+class CryptocurrencyRepository(SessionManager):
+
+    def is_empty_wo_session(db: Session) -> bool:
+        count = db.query(Cryptocurrency).count()
+        return count == 0
     
     def is_empty(self) -> bool:
         with self.get_session() as db:
