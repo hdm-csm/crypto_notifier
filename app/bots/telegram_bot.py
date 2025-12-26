@@ -3,6 +3,7 @@ from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler, ApplicationBuilder
 from app.repository.account_repository import AccountRepository
 from app.repository.favorite_repository import FavoriteRepository
+from app.services.bot_service import BotService
 from app.services.crypto_api_service import CryptoApiService
 from app.models import PlatformType
 
@@ -17,11 +18,13 @@ class TelegramBot:
             token: str, 
             crypto_api_service: CryptoApiService,
             account_repository: AccountRepository,
-            favorite_repository: FavoriteRepository):
+            favorite_repository: FavoriteRepository,
+            bot_service: BotService):
         self.token = token
         self.crypto_api_service = crypto_api_service
         self.account_repository = account_repository
         self.favorite_repository = favorite_repository
+        self._bot_service = bot_service
         
         self.app = ApplicationBuilder().token(token).build()
         self.app.add_handler(CommandHandler("index", self.index_command, block=False))
@@ -69,34 +72,42 @@ class TelegramBot:
     async def save_fav_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         user_id = update.effective_user.id
         input_crypto = context.args[0].lower()
-
-        account = self.account_repository.find_by_platform_and_id(
-            platform=self.PLATFORM_TYPE,
-            platform_id=str(user_id)
+        answer = self._bot_service.add_favorite(
+            platformType=self.PLATFORM_TYPE,
+            user_id=str(user_id),
+            input_crypto=input_crypto
         )
-        if account is None:
-            account = self.account_repository.create(
-                platform=self.PLATFORM_TYPE,
-                platformId=str(user_id)
-            )
-        cryptocurrency = self.cryptocurrency_repository.find_by_name_or_symbol(input_crypto)
-        if cryptocurrency is None:
-            return False
+        await update.message.reply_text(answer)
+        return
+    
+        #     return
+        # account = self.account_repository.find_by_platform_and_id(
+        #     platform=self.PLATFORM_TYPE,
+        #     platform_id=str(user_id)
+        # )
+        # if account is None:
+        #     account = self.account_repository.create(
+        #         platform=self.PLATFORM_TYPE,
+        #         platformId=str(user_id)
+        #     )
+        # cryptocurrency = self.cryptocurrency_repository.find_by_name_or_symbol(input_crypto)
+        # if cryptocurrency is None:
+        #     return False
 
-        if not account:
-            await update.message.reply_text(f"⚠️ Could not find or create account for user ID {user_id}.")
-            return
+        # if not account:
+        #     await update.message.reply_text(f"⚠️ Could not find or create account for user ID {user_id}.")
+        #     return
 
-        if not cryptocurrency:
-            await update.message.reply_text(f"⚠️ Cryptocurrency '{input_crypto}' not found. Please check the name/symbol and try again.")
-            return
+        # if not cryptocurrency:
+        #     await update.message.reply_text(f"⚠️ Cryptocurrency '{input_crypto}' not found. Please check the name/symbol and try again.")
+        #     return
 
-        success = self.favorite_repository.add_favorite(
-            account=account,
-            crypto=cryptocurrency
-        )
+        # success = self.favorite_repository.add_favorite(
+        #     account=account,
+        #     crypto=cryptocurrency
+        # )
         
-        if success:
-            await update.message.reply_text(f"✅ Saved {input_crypto} as your favorite cryptocurrency!")
-        else:
-            await update.message.reply_text(f"⚠️ {input_crypto} is already in your favorites.")
+        # if success:
+        #     await update.message.reply_text(f"✅ Saved {input_crypto} as your favorite cryptocurrency!")
+        # else:
+        #     await update.message.reply_text(f"⚠️ {input_crypto} is already in your favorites.")

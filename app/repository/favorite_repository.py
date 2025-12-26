@@ -7,9 +7,8 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(threadName)s - %
 
 class FavoriteRepository():
     
-    def add_favorite(self, session: Session, account: Account, crypto: Cryptocurrency) -> bool:
+    def add_favorite(self, session: Session, account: Account, crypto: Cryptocurrency):
         account.favorite_cryptos.append(crypto)
-        return True
     
     def remove_favorite(self, session: Session, account: Account, crypto: Cryptocurrency) -> bool:
         account.favorite_cryptos.remove(crypto)

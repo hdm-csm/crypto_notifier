@@ -32,9 +32,11 @@ class CryptocurrencyRepository():
         return session.query(Cryptocurrency).all()
     
     def store_cryptocurrencies(self, session: Session, cryptocurrencies: list[Coin]):
-        for crypto in cryptocurrencies:
-            new_crypto = Cryptocurrency(
+        new_crypto_currencies = [
+            Cryptocurrency(
                 symbol=crypto.symbol.upper(),
                 fullName=crypto.name
             )
-            session.add(new_crypto)
+            for crypto in cryptocurrencies
+        ]
+        session.add_all(new_crypto_currencies)

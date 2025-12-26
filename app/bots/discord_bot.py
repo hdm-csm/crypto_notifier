@@ -9,7 +9,7 @@ from app.repository import account_repository
 from app.repository.account_repository import AccountRepository
 from app.repository.cryptocurrency_repository import CryptocurrencyRepository
 from app.repository.favorite_repository import FavoriteRepository
-from app.services.crypto_api_service import CryptoApiService
+from app.services.bot_service import BotService
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s')
 DISCORD_GUILD_ID = int(os.environ.get('DISCORD_GUILD_ID'))
@@ -19,18 +19,11 @@ class Crypto_Notifier_Cog(commands.Cog):
     def __init__(
             self, 
             platform_type: PlatformType,
-            bot, 
-            crypto_service: CryptoApiService,
-            account_repository: AccountRepository,
-            cryptocurrency_repository: CryptocurrencyRepository,
-            favorite_repository: FavoriteRepository):
+            bot,
+            bot_service: BotService):
         self.platform_type = platform_type
         self.bot = bot
-        self.crypto_service = crypto_service
-        self.account_repository = account_repository
-        self.cryptocurrency_repository = cryptocurrency_repository
-        self.favorite_repository = favorite_repository
-        self._last_member = None
+        self._bot_service = bot_service
 
     async def cog_load(self):
         """Called when the cog is loaded."""
@@ -62,37 +55,43 @@ class Crypto_Notifier_Cog(commands.Cog):
         """Save cryptocurrency as favorite."""
         user_id = ctx.author.id
         input_crypto = currency.lower()
-
-        account = self.account_repository.find_by_platform_and_id(
-            platform=self.platform_type,
-            platform_id=str(user_id)
+        answer = self._bot_service.add_favorite(
+            platformType=self.platform_type,
+            user_id=str(user_id),
+            input_crypto=input_crypto
         )
-        if account is None:
-            account = self.account_repository.create(
-                platform=self.platform_type,
-                platformId=str(user_id)
-            )
-        cryptocurrency = self.cryptocurrency_repository.find_by_name_or_symbol(input_crypto)
-        if cryptocurrency is None:
-            return False
+        await ctx.send(answer)
+        return
+        # account = self.account_repository.find_by_platform_and_id(
+        #     platform=self.platform_type,
+        #     platform_id=str(user_id)
+        # )
+        # if account is None:
+        #     account = self.account_repository.create(
+        #         platform=self.platform_type,
+        #         platformId=str(user_id)
+        #     )
+        # cryptocurrency = self.cryptocurrency_repository.find_by_name_or_symbol(input_crypto)
+        # if cryptocurrency is None:
+        #     return False
 
-        if not account:
-            await ctx.send(f"⚠️ Could not find or create account for user ID {user_id}.")
-            return
+        # if not account:
+        #     await ctx.send(f"⚠️ Could not find or create account for user ID {user_id}.")
+        #     return
 
-        if not cryptocurrency:
-            await ctx.send(f"⚠️ Cryptocurrency '{input_crypto}' not found. Please check the name/symbol and try again.")
-            return
+        # if not cryptocurrency:
+        #     await ctx.send(f"⚠️ Cryptocurrency '{input_crypto}' not found. Please check the name/symbol and try again.")
+        #     return
 
-        success = self.favorite_repository.add_favorite(
-            account=account,
-            crypto=cryptocurrency
-        )
+        # success = self.favorite_repository.add_favorite(
+        #     account=account,
+        #     crypto=cryptocurrency
+        # )
         
-        if success:
-            await ctx.send(f"✅ Saved {input_crypto} as your favorite cryptocurrency!")
-        else:
-            await ctx.send(f"⚠️ {input_crypto} is already in your favorites.")
+        # if success:
+        #     await ctx.send(f"✅ Saved {input_crypto} as your favorite cryptocurrency!")
+        # else:
+        #     await ctx.send(f"⚠️ {input_crypto} is already in your favorites.")
 
 
 
@@ -106,19 +105,15 @@ class DiscordBot:
             client_id: int, 
             guild_id: int, 
             channel_id: int,
-            crypto_api_service: CryptoApiService,
-            account_repository: AccountRepository,
-            cryptocurrency_repository: CryptocurrencyRepository,
-            favorite_repository: FavoriteRepository):
+            bot_service: BotService):
         
         self.token = token
         self.client_id = client_id
         self.guild_id = guild_id # guild = server
         self.channel_id = channel_id
-        self.crypto_api_service = crypto_api_service
-        self.account_repository = account_repository
-        self.cryptocurrency_repository = cryptocurrency_repository
-        self.favorite_repository = favorite_repository
+        # cryptoService
+        self._bot_service = bot_service
+
 
         intents = discord.Intents.default()
         intents.message_content = True
@@ -148,20 +143,18 @@ class DiscordBot:
     async def start(self):        
         cog = Crypto_Notifier_Cog(
             self.PLATFORM_TYPE,
-            self.bot, 
-            self.crypto_api_service, 
-            self.account_repository,
-            self.cryptocurrency_repository,
-            self.favorite_repository)
+            self.bot,
+            self._bot_service
+        )
         await self.bot.add_cog(cog)
         
         # Build choices from cryptocurrency repository
-        crypto_names = self.cryptocurrency_repository.get_all_cryptocurrency_names()
-        choices = [
-            app_commands.Choice(name=name, value=name.lower())
-            for name in crypto_names[:25]  # Discord limit is 25 choices
-        ]
-        cog._index.choices = choices
+        # crypto_names = self.cryptocurrency_repository.get_all_cryptocurrency_names()
+        # choices = [
+        #     app_commands.Choice(name=name, value=name.lower())
+        #     for name in crypto_names[:25]  # Discord limit is 25 choices
+        # ]
+        # cog._index.choices = choices
         
         await self.bot.start(self.token)
         logging.info("DiscordBot has started!")

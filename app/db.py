@@ -1,9 +1,10 @@
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
 from config.config import DATABASE_URL
 
 engine = create_engine(DATABASE_URL, echo=True)
 Session_Factory = sessionmaker(bind=engine)
+Base = declarative_base()
 
 def test_connection():
     try:
