@@ -2,11 +2,12 @@ from app.repository.cryptocurrency_repository import CryptocurrencyRepository
 from app.services.crypto_api_service import CryptoApiService
 from app.db import session_scope
 
+
 class GeneralService:
     def __init__(
         self,
         cryptocurrency_repository: CryptocurrencyRepository,
-        crypto_api_service: CryptoApiService
+        crypto_api_service: CryptoApiService,
     ):
         self._cryptocurrency_repository = cryptocurrency_repository
         self._crypto_api_service = crypto_api_service
@@ -15,7 +16,7 @@ class GeneralService:
         with session_scope() as session:
             if self._cryptocurrency_repository.is_empty(session):
                 coins = await self._crypto_api_service.list_top_crypto_currencies(amount=100)
-                
+
                 # Filter out duplicates by symbol
                 seen_symbols = set()
                 unique_coins = []

@@ -12,14 +12,17 @@ from app.services.bot_service import BotService
 from app.services.crypto_api_service import CryptoApiService
 from app.services.general_service import GeneralService
 
-load_dotenv(dotenv_path='.env.dev')
-DISCORD_TOKEN = os.environ.get('DISCORD_BOT_TOKEN')
-TELEGRAM_TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
-DISCORD_GUILD_ID = int(os.environ.get('DISCORD_GUILD_ID'))
-DISCORD_CLIENT_ID = int(os.environ.get('DISCORD_CLIENT_ID'))
-DISCORD_CHANNEL_ID = int(os.environ.get('DISCORD_CHANNEL_ID'))
+load_dotenv(dotenv_path=".env.dev")
+DISCORD_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
+DISCORD_GUILD_ID = int(os.environ.get("DISCORD_GUILD_ID", "0"))
+DISCORD_CLIENT_ID = int(os.environ.get("DISCORD_CLIENT_ID", "0"))
+DISCORD_CHANNEL_ID = int(os.environ.get("DISCORD_CHANNEL_ID", "0"))
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(threadName)s - %(levelname)s - %(message)s"
+)
+
 
 async def async_main():
     account_repository = AccountRepository()
@@ -27,40 +30,26 @@ async def async_main():
     cryptocurrency_repository = CryptocurrencyRepository()
 
     http_client = httpx.AsyncClient()
-    crypto_api_service = CryptoApiService(http_client)  
+    crypto_api_service = CryptoApiService(http_client)
 
-    general_service = GeneralService(
-        cryptocurrency_repository,
-        crypto_api_service
-    )
-    bot_service = BotService(
-        account_repository,
-        favorite_repository,
-        cryptocurrency_repository
-    )
+    general_service = GeneralService(cryptocurrency_repository, crypto_api_service)
+    bot_service = BotService(account_repository, favorite_repository, cryptocurrency_repository)
 
     await general_service.initialize_crypto_currencies()
 
     discord_bot = DiscordBot(
-        DISCORD_TOKEN, 
-        DISCORD_CLIENT_ID, 
-        DISCORD_GUILD_ID, 
+        DISCORD_TOKEN,
+        DISCORD_CLIENT_ID,
+        DISCORD_GUILD_ID,
         DISCORD_CHANNEL_ID,
         bot_service,
-        crypto_api_service
+        crypto_api_service,
     )
     telegram_bot = TelegramBot(
-        TELEGRAM_TOKEN,
-        crypto_api_service,
-        account_repository,
-        favorite_repository,
-        bot_service
+        TELEGRAM_TOKEN, crypto_api_service, account_repository, favorite_repository, bot_service
     )
     try:
-        await asyncio.gather(
-            discord_bot.start(),
-            telegram_bot.start()
-        )
+        await asyncio.gather(discord_bot.start(), telegram_bot.start())
     except KeyboardInterrupt:
         logging.info("Shutting down bots...")
     finally:
@@ -69,5 +58,5 @@ async def async_main():
         await http_client.aclose()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     asyncio.run(async_main())

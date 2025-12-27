@@ -20,7 +20,9 @@ def session_scope():
     finally:
         session.close()
 
+
 Base = declarative_base()
+
 
 def test_connection():
     try:
@@ -31,5 +33,6 @@ def test_connection():
         print("✗ Database connection failed:", e)
         raise
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     test_connection()
