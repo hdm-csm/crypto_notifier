@@ -1,11 +1,11 @@
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, declarative_base, Session
+from sqlalchemy.orm import sessionmaker, declarative_base
 from config.config import DATABASE_URL
+from contextlib import contextmanager
 
 engine = create_engine(DATABASE_URL, echo=True)
 Session_Factory = sessionmaker(bind=engine)
 
-from contextlib import contextmanager
 
 @contextmanager
 def session_scope():

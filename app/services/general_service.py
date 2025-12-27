@@ -15,5 +15,14 @@ class GeneralService:
     async def initialize_crypto_currencies(self):
         with session_scope() as session:
             if self._cryptocurrency_repository.is_empty(session):
-                crypto_currencies = await self._crypto_api_service.list_top_crypto_currencies(amount=100)
-                self._cryptocurrency_repository.store_cryptocurrencies(session, crypto_currencies)
+                coins = await self._crypto_api_service.list_top_crypto_currencies(amount=100)
+                
+                # Filter out duplicates by symbol
+                seen_symbols = set()
+                unique_coins = []
+                for coin in coins:
+                    if coin.symbol not in seen_symbols:
+                        seen_symbols.add(coin.symbol)
+                        unique_coins.append(coin)
+
+                self._cryptocurrency_repository.store_cryptocurrencies(session, unique_coins)

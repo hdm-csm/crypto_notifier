@@ -12,9 +12,8 @@ class CryptoApiService:
     async def list_top_crypto_currencies(self, amount: int) -> list[Coin]:
         params = {
             'vs_currency': 'eur',
-            'order': 'market_cap',
+            'order': 'market_cap_desc',
             'per_page': amount,
-            'page': 1
         }
         url = f"{self.BASE_URL}/markets"
         response = await self.client.get(url, params=params)

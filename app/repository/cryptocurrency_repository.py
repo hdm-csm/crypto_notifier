@@ -27,21 +27,12 @@ class CryptocurrencyRepository():
     def get_all_cryptocurrencies(self, session: Session) -> list[Cryptocurrency]:
         return session.query(Cryptocurrency).all()
     
-    def store_cryptocurrencies(self, session: Session, cryptocurrencies: list[Coin]):
-        stored_count = 0
-        for crypto in cryptocurrencies:
-            try:
-                new_crypto = Cryptocurrency(
-                    symbol=crypto.symbol.upper(),
-                    fullName=crypto.name
-                )
-                session.add(new_crypto)
-                session.flush()  # Force insert to catch duplicates early
-                stored_count += 1
-            except Exception as e:
-                logging.warning(f"Skipping cryptocurrency {crypto.symbol}: {e}")
-                session.rollback()  # Only rollback this one failed insert
-                continue
-        
-        session.commit()
-        logging.info(f"Stored {stored_count}/{len(cryptocurrencies)} cryptocurrencies")
+    def store_cryptocurrencies(self, session: Session, coins: list[Coin]):
+        new_cryptos = [
+            Cryptocurrency(
+                symbol=coin.symbol.upper(),
+                fullName=coin.name
+            )
+            for coin in coins
+        ]
+        session.add_all(new_cryptos)
