@@ -36,6 +36,8 @@ class TelegramBot:
         self.app.add_handler(CommandHandler("list", self.list_command, block=False))
         self.app.add_handler(CommandHandler("add_fav", self.add_fav_command, block=False))
         self.app.add_handler(CommandHandler("remove_fav", self.remove_fav_command, block=False))
+        self.app.add_handler(CommandHandler("list_favs", self.list_favs_command, block=False))
+        self.app.add_handler(CommandHandler("drop_favs", self.drop_favs_command, block=False))
 
     async def start(self):
         """Start the Telegram bot."""
@@ -82,7 +84,8 @@ class TelegramBot:
         for coin in result:
             message += f"{coin.market_cap_rank}. {coin.name} ({coin.symbol.upper()})\n"
             message += f"   Price: {coin.current_price:.2f} €\n"
-            message += f"   Market Cap: {coin.market_cap:,} €\n\n"
+            message += f"   Market Cap: {coin.market_cap:,} €\n"
+            message += f"   Index ID: {coin.id}\n\n"
         await update.message.reply_text(message)
 
     async def add_fav_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -112,5 +115,25 @@ class TelegramBot:
             platformType=self.PLATFORM_TYPE,
             user_id=str(user_id),
             input_crypto=input_crypto,
+        )
+        await update.message.reply_text(answer)
+
+    async def list_favs_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if update.effective_user is None or update.message is None:
+            return
+        user_id = update.effective_user.id
+        answer = await self._bot_service.list_favorites(
+            platformType=self.PLATFORM_TYPE,
+            user_id=str(user_id),
+        )
+        await update.message.reply_text(answer)
+
+    async def drop_favs_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if update.effective_user is None or update.message is None:
+            return
+        user_id = update.effective_user.id
+        answer = self._bot_service.drop_favorites(
+            platformType=self.PLATFORM_TYPE,
+            user_id=str(user_id),
         )
         await update.message.reply_text(answer)

@@ -34,7 +34,9 @@ async def async_main():
     crypto_api_service = CryptoApiService(http_client)
 
     general_service = GeneralService(cryptocurrency_repository, crypto_api_service)
-    bot_service = BotService(account_repository, favorite_repository, cryptocurrency_repository)
+    bot_service = BotService(
+        account_repository, favorite_repository, cryptocurrency_repository, crypto_api_service
+    )
 
     await general_service.initialize_crypto_currencies()
 

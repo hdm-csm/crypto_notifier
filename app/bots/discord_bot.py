@@ -79,6 +79,26 @@ class Crypto_Notifier_Cog(commands.Cog):
         )
         await ctx.send(answer)
 
+    @commands.command(name="list_favs")
+    async def _list_favs(self, ctx: commands.Context):
+        """List favorite cryptocurrencies."""
+        user_id = ctx.author.id
+        answer = await self._bot_service.list_favorites(
+            platformType=self.platform_type,
+            user_id=str(user_id),
+        )
+        await ctx.send(answer)
+
+    @commands.command(name="drop_favs")
+    async def _drop_favs(self, ctx: commands.Context):
+        """Remove all favorite cryptocurrencies."""
+        user_id = ctx.author.id
+        answer = self._bot_service.drop_favorites(
+            platformType=self.platform_type,
+            user_id=str(user_id),
+        )
+        await ctx.send(answer)
+
 
 class DiscordBot:
 
