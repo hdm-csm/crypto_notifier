@@ -54,3 +54,36 @@ class BotService:
         except Exception as e:
             logging.error(f"Error adding favorite: {e}")
             return "❌ An error occurred while saving your favorite. " "Please try again later."
+
+    def remove_favorite(self, platformType: PlatformType, user_id: str, input_crypto: str) -> str:
+        try:
+            with session_scope() as session:
+                account = self._account_repository.find_by_platform_and_id(
+                    session=session, platform=platformType, platform_id=user_id
+                )
+
+                if account is None:
+                    return f"⚠️ Account not found for user ID {user_id}."
+
+                cryptocurrency = self._cryptocurrency_repository.find_by_name_or_symbol(
+                    session, input_crypto
+                )
+
+                if not cryptocurrency:
+                    return (
+                        f"⚠️ Cryptocurrency '{input_crypto}' not found. "
+                        "Please check the name/symbol and try again."
+                    )
+
+                if cryptocurrency not in account.favorite_cryptos:
+                    return f"⚠️ {input_crypto} is not in your favorites."
+
+                self._favorite_repository.remove_favorite(
+                    session=session, account=account, crypto=cryptocurrency
+                )
+
+                return f"✅ Removed {input_crypto} from your favorites!"
+
+        except Exception as e:
+            logging.error(f"Error removing favorite: {e}")
+            return "❌ An error occurred while removing your favorite. " "Please try again later."

@@ -35,6 +35,7 @@ class TelegramBot:
         self.app.add_handler(CommandHandler("index", self.index_command, block=False))
         self.app.add_handler(CommandHandler("list", self.list_command, block=False))
         self.app.add_handler(CommandHandler("add_fav", self.add_fav_command, block=False))
+        self.app.add_handler(CommandHandler("remove_fav", self.remove_fav_command, block=False))
 
     async def start(self):
         """Start the Telegram bot."""
@@ -93,6 +94,21 @@ class TelegramBot:
         user_id = update.effective_user.id
         input_crypto = context.args[0].lower()
         answer = self._bot_service.add_favorite(
+            platformType=self.PLATFORM_TYPE,
+            user_id=str(user_id),
+            input_crypto=input_crypto,
+        )
+        await update.message.reply_text(answer)
+
+    async def remove_fav_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if update.effective_user is None or update.message is None:
+            return
+        if context.args is None or not context.args:
+            await update.message.reply_text("Please provide a cryptocurrency name.")
+            return
+        user_id = update.effective_user.id
+        input_crypto = context.args[0].lower()
+        answer = self._bot_service.remove_favorite(
             platformType=self.PLATFORM_TYPE,
             user_id=str(user_id),
             input_crypto=input_crypto,

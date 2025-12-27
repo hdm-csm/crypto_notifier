@@ -67,6 +67,18 @@ class Crypto_Notifier_Cog(commands.Cog):
         )
         await ctx.send(answer)
 
+    @commands.command(name="remove_fav")
+    async def _remove_fav(self, ctx: commands.Context, currency: str):
+        """Remove cryptocurrency from favorites."""
+        user_id = ctx.author.id
+        input_crypto = currency.lower()
+        answer = self._bot_service.remove_favorite(
+            platformType=self.platform_type,
+            user_id=str(user_id),
+            input_crypto=input_crypto,
+        )
+        await ctx.send(answer)
+
 
 class DiscordBot:
 
