@@ -3,7 +3,7 @@ import os
 from dotenv import load_dotenv
 
 # Load .env file depending on environment
-ENV = os.getenv("ENV", "DEV") # defaults to DEV if not set, needs to be set like : "export ENV=PRD"
+ENV = os.getenv("ENV", "DEV")  # defaults to DEV if not set, needs to be set like : "export ENV=PRD"
 # print("ENV =", ENV)
 
 if ENV == "DEV":
@@ -20,5 +20,7 @@ MYSQL_USER = os.getenv("MYSQL_USER")
 MYSQL_PASSWORD = os.getenv("MYSQL_PASSWORD")
 
 # mysqlconnector
-DATABASE_URL = os.getenv("DATABASE_URL", f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{DB_HOST}:{DB_PORT}/{MYSQL_DATABASE}")
-
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    f"mysql+pymysql://{MYSQL_USER}:{MYSQL_PASSWORD}@{DB_HOST}:{DB_PORT}/{MYSQL_DATABASE}",
+)

@@ -10,7 +10,6 @@ from sqlalchemy import (
     Table,
     DateTime,
     func,
-    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 import enum
