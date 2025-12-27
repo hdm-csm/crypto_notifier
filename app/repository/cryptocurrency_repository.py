@@ -7,10 +7,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(threadName)s - %
 
 
 class CryptocurrencyRepository():
-
-    def is_empty_wo_session(self, session: Session) -> bool:
-        count = session.query(Cryptocurrency).count()
-        return count == 0
     
     def is_empty(self, session: Session) -> bool:
         count = session.query(Cryptocurrency).count()
@@ -32,11 +28,20 @@ class CryptocurrencyRepository():
         return session.query(Cryptocurrency).all()
     
     def store_cryptocurrencies(self, session: Session, cryptocurrencies: list[Coin]):
-        new_crypto_currencies = [
-            Cryptocurrency(
-                symbol=crypto.symbol.upper(),
-                fullName=crypto.name
-            )
-            for crypto in cryptocurrencies
-        ]
-        session.add_all(new_crypto_currencies)
+        stored_count = 0
+        for crypto in cryptocurrencies:
+            try:
+                new_crypto = Cryptocurrency(
+                    symbol=crypto.symbol.upper(),
+                    fullName=crypto.name
+                )
+                session.add(new_crypto)
+                session.flush()  # Force insert to catch duplicates early
+                stored_count += 1
+            except Exception as e:
+                logging.warning(f"Skipping cryptocurrency {crypto.symbol}: {e}")
+                session.rollback()  # Only rollback this one failed insert
+                continue
+        
+        session.commit()
+        logging.info(f"Stored {stored_count}/{len(cryptocurrencies)} cryptocurrencies")

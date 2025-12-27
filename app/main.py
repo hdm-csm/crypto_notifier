@@ -22,21 +22,9 @@ DISCORD_GUILD_ID = int(os.environ.get('DISCORD_GUILD_ID'))
 DISCORD_CLIENT_ID = int(os.environ.get('DISCORD_CLIENT_ID'))
 DISCORD_CHANNEL_ID = int(os.environ.get('DISCORD_CHANNEL_ID'))
 
-
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(threadName)s - %(levelname)s - %(message)s')
 
-# async def initialize_crypto_data(crypto_repository: CryptocurrencyRepository, crypto_api_service: CryptoApiService):
-#     if crypto_repository.is_empty():
-#         crypto_currencies = await crypto_api_service.list_top_crypto_currencies(amount=100)
-#         crypto_repository.store_cryptocurrencies(crypto_currencies)
-#     else:
-#         logging.info("Cryptocurrency data already initialized.")
-
 async def async_main():
-
-    # session = session.Session()
-    session = Session_Factory()
-
     account_repository = AccountRepository()
     favorite_repository = FavoriteRepository()
     cryptocurrency_repository = CryptocurrencyRepository()
@@ -45,18 +33,14 @@ async def async_main():
     crypto_api_service = CryptoApiService(http_client)  
 
     general_service = GeneralService(
-        session,
         cryptocurrency_repository,
         crypto_api_service
     )
     bot_service = BotService(
-        session,
         account_repository,
         favorite_repository,
         cryptocurrency_repository
     )
-
-    
 
     await general_service.initialize_crypto_currencies()
 

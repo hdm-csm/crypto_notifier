@@ -1,9 +1,25 @@
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from config.config import DATABASE_URL
 
 engine = create_engine(DATABASE_URL, echo=True)
 Session_Factory = sessionmaker(bind=engine)
+
+from contextlib import contextmanager
+
+@contextmanager
+def session_scope():
+    """Provide a transactional scope around a series of operations."""
+    session = Session_Factory()
+    try:
+        yield session
+        session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
 Base = declarative_base()
 
 def test_connection():
