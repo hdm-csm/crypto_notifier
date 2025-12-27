@@ -67,7 +67,9 @@ class TelegramBot:
         input = context.args[0]
         result = await self.crypto_api_service.get_index(input)
         if result is None:
-            await update.message.reply_text(f"Could not find price for {input}")
+            await update.message.reply_text(
+                f'Could not find price for "{input}".\nPlease enter correct id.'
+            )
         else:
             await update.message.reply_text(f"{input.capitalize()}: {result:.2f} €")
 

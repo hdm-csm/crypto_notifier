@@ -38,7 +38,9 @@ class Crypto_Notifier_Cog(commands.Cog):
     async def _index(self, interaction: discord.Interaction, currency: str):
         result = await self._crypto_api_service.get_index(currency)
         if result is None:
-            await interaction.response.send_message(f"Could not find price for {currency}")
+            await interaction.response.send_message(
+                f'Could not find price for "{currency}".\nPlease enter correct id.'
+            )
         else:
             await interaction.response.send_message(f"{currency.capitalize()}: {result:.2f} €")
 
@@ -49,7 +51,8 @@ class Crypto_Notifier_Cog(commands.Cog):
         for coin in result:
             message += f"{coin.market_cap_rank}. {coin.name} ({coin.symbol.upper()})\n"
             message += f"   Price: ${coin.current_price:.2f} €\n"
-            message += f"   Market Cap: ${coin.market_cap:,} €\n\n"
+            message += f"   Market Cap: ${coin.market_cap:,} €\n"
+            message += f"   Index ID: {coin.id}\n\n"
         await ctx.channel.send(message)
 
     @commands.command(name="add_fav")

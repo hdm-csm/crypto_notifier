@@ -21,7 +21,7 @@ class CryptoApiService:
         coins = [Coin(**coin_data) for coin_data in json_obj]
         return coins
 
-    async def get_index(self, input: str) -> float:
+    async def get_index(self, input: str) -> float | None:
         # TODO: Allow symbol as input aswell (must be done before)
         coin_id = input.lower().strip()
         params: dict[str, str] = {"vs_currency": "eur"}
@@ -29,4 +29,7 @@ class CryptoApiService:
         response = await self.client.get(url, params=params)
         json_obj = json.loads(response.text)
         result = json_obj.get("market_data", {}).get("current_price", {}).get("eur")
-        return float(result)
+        # error handle ! show id !
+        if result is not None:
+            return float(result)
+        return None
