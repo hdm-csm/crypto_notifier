@@ -1,0 +1,20 @@
+[tool.black]
+line-length = 100
+target-version = ['py312']
+
+# see flake8 config in .flake8 file
+
+[tool.mypy]
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+check_untyped_defs = true
+exclude = [
+    '^venv/',
+    '^\.venv/',
+    '^build/',
+    '^dist/',
+    '^env/',
+    '^\.git/',
+    '^\.mypy_cache/',
+]

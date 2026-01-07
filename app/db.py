@@ -1,17 +1,28 @@
-from config.config import DATABASE_URL
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import sessionmaker, declarative_base
+from config.config import DATABASE_URL
+from contextlib import contextmanager
 
 engine = create_engine(DATABASE_URL, echo=True)
-SessionLocal = sessionmaker(bind=engine)
+Session_Factory = sessionmaker(bind=engine)
+
+
+@contextmanager
+def session_scope():
+    """Provide a transactional scope around a series of operations."""
+    session = Session_Factory()
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+
 Base = declarative_base()
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 def test_connection():
     try:
@@ -22,5 +33,6 @@ def test_connection():
         print("✗ Database connection failed:", e)
         raise
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     test_connection()
