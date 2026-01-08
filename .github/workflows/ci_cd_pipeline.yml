@@ -171,4 +171,8 @@ jobs:
             docker compose -f docker-compose.prod.yml --env-file .env.prod down || true
             docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
 
+            # Cleanup old images
+            echo "🧹 Removing old unused Docker images..."
+            docker image prune -af
+
             echo "✅ Deployment complete!"
