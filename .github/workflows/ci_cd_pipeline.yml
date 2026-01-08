@@ -92,14 +92,18 @@ jobs:
         id: meta
         run: |
           IMAGE_NAME="ghcr.io/${{ github.repository }}:latest"
+          IMAGE_NAME_SHA="ghcr.io/${{ github.repository }}:${{ github.sha }}"
           echo "image-name=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "image-name-sha=$IMAGE_NAME_SHA" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
         run: |
           docker buildx create --use
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
+            --no-cache \
             -t ${{ steps.meta.outputs.image-name }} \
+            -t ${{ steps.meta.outputs.image-name-sha }} \
             --push .
 
   # ---------------------------------------------------

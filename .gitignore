@@ -18,7 +18,7 @@ venv/
 # Environment variables
 .env
 .env.*
-.docker-compose.prod-test.yml
+docker-compose.prod-test.yml
 
 # Other stuff
 .mypy_cache/
