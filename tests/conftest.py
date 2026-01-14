@@ -1,5 +1,8 @@
 import pytest
 import asyncio
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from app.db import Base
 from app.models import Coin
 
 
@@ -44,3 +47,22 @@ def sample_coin():
         roi=None,
         last_updated="",
     )
+
+
+# Datenbank Fixture für Integration Tests
+@pytest.fixture(scope="function")
+def db_session():
+    engine = create_engine("sqlite:///:memory:")
+
+    # Tabellen erstellen
+    Base.metadata.create_all(engine)
+
+    # Session erstellen
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    session = TestingSessionLocal()
+
+    yield session
+
+    # Aufräumen nach Tests
+    session.close()
+    Base.metadata.drop_all(engine)

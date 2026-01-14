@@ -95,8 +95,6 @@ async def test_get_index_success():
     # --- SETUP ---
     mock_client = AsyncMock()
 
-    # Die Struktur der CoinGecko Antwort für einen einzelnen Coin (/coins/{id})
-    # ist anders als bei der Liste.
     api_response_data = {
         "id": "bitcoin",
         "symbol": "btc",
@@ -111,7 +109,6 @@ async def test_get_index_success():
     service = CryptoApiService(mock_client)
 
     # --- EXECUTION ---
-    # Input mit Leerzeichen und Großbuchstaben testen, um .lower().strip() zu prüfen
     price = await service.get_index(" Bitcoin ")
 
     # --- ASSERTION ---
