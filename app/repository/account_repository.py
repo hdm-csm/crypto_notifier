@@ -1,5 +1,7 @@
 import logging
 from datetime import datetime
+
+# from unittest import result
 from sqlalchemy.orm import Session
 from app.models import Account, PlatformType
 
@@ -12,12 +14,12 @@ logging.basicConfig(
 class AccountRepository:
 
     def exists(self, session: Session, platform: PlatformType, platform_id: str) -> bool:
-        return bool(
+        result = (
             session.query(Account)
             .filter(Account.platform == platform, Account.platformId == str(platform_id))
-            .exists()
-            .scalar()
+            .first()
         )
+        return result is not None
 
     def find_by_platform_and_id(
         self, session: Session, platform: PlatformType, platform_id: str
