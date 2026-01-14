@@ -11,13 +11,14 @@ from app.repository.cryptocurrency_repository import CryptocurrencyRepository
 from app.services.bot_service import BotService
 from app.services.crypto_api_service import CryptoApiService
 from app.services.general_service import GeneralService
+from scripts.init_db import init_db
 
 load_dotenv(dotenv_path=".env.dev")
 DISCORD_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-DISCORD_GUILD_ID = int(os.environ.get("DISCORD_GUILD_ID", "0"))
-DISCORD_CLIENT_ID = int(os.environ.get("DISCORD_CLIENT_ID", "0"))
-DISCORD_CHANNEL_ID = int(os.environ.get("DISCORD_CHANNEL_ID", "0"))
+DISCORD_GUILD_IDS = [
+    int(gid.strip()) for gid in os.getenv("DISCORD_GUILD_IDS", "").split(",") if gid.strip()
+]
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,6 +27,10 @@ logging.basicConfig(
 
 
 async def async_main():
+
+    # TODO: Remove this in production; only for initial setup; Use Alembic for DB migrations
+    init_db()
+
     account_repository = AccountRepository()
     favorite_repository = FavoriteRepository()
     cryptocurrency_repository = CryptocurrencyRepository()
@@ -42,9 +47,7 @@ async def async_main():
 
     discord_bot = DiscordBot(
         DISCORD_TOKEN,
-        DISCORD_CLIENT_ID,
-        DISCORD_GUILD_ID,
-        DISCORD_CHANNEL_ID,
+        DISCORD_GUILD_IDS,
         bot_service,
         crypto_api_service,
     )

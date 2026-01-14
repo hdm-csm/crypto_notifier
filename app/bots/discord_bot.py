@@ -12,7 +12,9 @@ logging.basicConfig(
     format="%(asctime)s - %(threadName)s - %(levelname)s - %(message)s",
 )
 # TODO: Load dynamically
-DISCORD_GUILD_ID = int(os.environ.get("DISCORD_GUILD_ID", "0"))
+DISCORD_GUILD_IDS = [
+    int(gid.strip()) for gid in os.getenv("DISCORD_GUILD_IDS", "").split(",") if gid.strip()
+]
 
 
 class Crypto_Notifier_Cog(commands.Cog):
@@ -28,13 +30,16 @@ class Crypto_Notifier_Cog(commands.Cog):
         self._bot_service = bot_service
         self._crypto_api_service = crypto_api_service
 
-    async def cog_load(self):
-        """Called when the cog is loaded."""
-        return await super().cog_load()
+    @commands.Cog.listener()
+    async def on_ready(self):
+        logging.info("Crypto_Notifier_Cog: Syncing for guilds...")
+        for guild_id in DISCORD_GUILD_IDS:
+            guild_obj = discord.Object(id=guild_id)
+            self.bot.tree.copy_global_to(guild=guild_obj)
+            await self.bot.tree.sync(guild=guild_obj)
 
     @app_commands.command(name="index", description="Get price/index of a cryptocurrency")
     @app_commands.describe(currency="The type of cryptocurrency")
-    @app_commands.guilds(discord.Object(id=DISCORD_GUILD_ID))
     async def _index(self, interaction: discord.Interaction, currency: str):
         result = await self._crypto_api_service.get_index(currency)
         if result is None:
@@ -53,7 +58,7 @@ class Crypto_Notifier_Cog(commands.Cog):
             message += f"   Price: ${coin.current_price:.2f} €\n"
             message += f"   Market Cap: ${coin.market_cap:,} €\n"
             message += f"   Index ID: {coin.id}\n\n"
-        await ctx.channel.send(message)
+        await ctx.send(message)
 
     @commands.command(name="add_fav")
     async def _add_fav(self, ctx: commands.Context, currency: str):
@@ -107,18 +112,13 @@ class DiscordBot:
     def __init__(
         self,
         token: str,
-        client_id: int,
-        guild_id: int,
-        channel_id: int,
+        guild_ids: list[int],
         bot_service: BotService,
         crypto_api_service: CryptoApiService,
     ):
 
         self.token = token
-        self.client_id = client_id
-        self.guild_id = guild_id  # guild = server
-        self.channel_id = channel_id
-        # cryptoService
+        self.guild_ids = guild_ids  # guild = server
         self._bot_service = bot_service
         self._crypto_api_service = crypto_api_service
 
@@ -130,15 +130,14 @@ class DiscordBot:
         async def on_ready():
             logging.info(f"Bot logged in as {self.bot.user}")
 
-            # Sync app_commands to guild (no global commands)
-            try:
-                # First copy global commands to the guild
-                # self.bot.tree.copy_global_to(guild=discord.Object(id=self.guild_id))
-                # Then sync to the guild
-                synced = await self.bot.tree.sync(guild=discord.Object(id=self.guild_id))
-                logging.info(f"Synced {len(synced)} app_commands to guild")
-            except Exception as e:
-                logging.error(f"Failed to sync app_commands: {e}")
+            for guild_id in self.guild_ids:
+                try:
+                    guild_obj = discord.Object(id=guild_id)
+                    self.bot.tree.copy_global_to(guild=guild_obj)  # Takes 1 hour to register
+                    synced = await self.bot.tree.sync(guild=guild_obj)
+                    logging.info(f"Synced {len(synced)} commands to Server ID: {guild_id}")
+                except Exception as e:
+                    logging.error(f"Failed to sync for guild {guild_id}: {e}")
 
         @self.bot.event
         async def on_command_error(ctx, error):
@@ -162,8 +161,10 @@ class DiscordBot:
         # ]
         # cog._index.choices = choices
 
-        await self.bot.start(self.token)
-        logging.info("DiscordBot has started!")
+        try:
+            await self.bot.start(self.token)
+        except Exception as e:
+            logging.error(f"Error starting Discord bot: {e}")
 
     async def stop(self):
         """Stop the Discord bot."""
