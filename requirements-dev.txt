@@ -10,3 +10,8 @@ pre-commit
 # Type Checking
 mypy
 types-requests
+
+#Test Tooling
+pytest
+pytest-asyncio
+pytest-mock

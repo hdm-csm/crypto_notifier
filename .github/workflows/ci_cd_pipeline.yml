@@ -14,6 +14,7 @@ jobs:
   unit-tests:
     name: 🧪 Unit Tests
     runs-on: ubuntu-latest
+    environment: staging
 
     steps:
       - name: Checkout repository
@@ -27,7 +28,19 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Create temporary .env.test file
+        run: |
+          echo "ENV=TEST" > .env.test
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env.test
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env.test
+          echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> .env.test
+          echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env.test
+          echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env.test
+          echo "DATABASE_URL=mysql+mysqlconnector://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.MYSQL_DATABASE }}" >> .env.test
+
       - name: Run unit tests
+        env:
+          ENV: TEST
         run: python -m pytest tests/unit -v
 
   # ---------------------------------------------------
@@ -59,7 +72,7 @@ jobs:
           echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env.test
           echo "DISCORD_BOT_TOKEN=${{ secrets.DISCORD_BOT_TOKEN }}" >> .env.test
           echo "DATABASE_URL=mysql+mysqlconnector://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.MYSQL_DATABASE }}" >> .env.test
-          
+
           cat .env.test
 
       - name: Build and start containers
@@ -185,5 +198,5 @@ jobs:
             # Cleanup old images
             echo "🧹 Removing old unused Docker images..."
             docker image prune -af
-            
+
             echo "✅ Deployment complete!"
