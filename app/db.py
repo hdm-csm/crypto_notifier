@@ -1,7 +1,9 @@
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
-from config.config import DATABASE_URL
+from config import Config
 from contextlib import contextmanager
+
+DATABASE_URL = Config.DATABASE_URL
 
 engine = create_engine(DATABASE_URL, echo=True)
 Session_Factory = sessionmaker(bind=engine)
