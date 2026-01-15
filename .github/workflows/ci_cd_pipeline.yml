@@ -30,7 +30,7 @@ jobs:
 
       - name: Create temporary .env.staging file
         run: |
-          echo "ENV=TEST" > .env.staging
+          echo "ENV=STAGING" > .env.staging
           echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env.staging
           echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env.staging
           echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> .env.staging
