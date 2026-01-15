@@ -4,15 +4,10 @@ from dotenv import load_dotenv
 
 # Load .env file depending on environment
 # defaults to DEV if not set, needs to be set like : "export ENV=PRD"
-ENV = os.getenv("ENV", "DEV")
-# print("ENV =", ENV)
 
-if ENV == "DEV":
-    load_dotenv(".env.dev")
-elif ENV == "PROD":
-    load_dotenv(".env.prod")
-else:
-    load_dotenv(".env.dev")  # default to dev
+ENV = os.getenv("ENV", "dev").lower()
+load_dotenv(f".env.{ENV}")
+
 
 DB_HOST = os.getenv("DB_HOST")
 DB_PORT = os.getenv("DB_PORT")
