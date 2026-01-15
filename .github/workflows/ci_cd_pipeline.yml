@@ -39,6 +39,8 @@ jobs:
           echo "DATABASE_URL=mysql+mysqlconnector://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.MYSQL_DATABASE }}" >> .env.test
 
       - name: Run unit tests
+        env:
+          ENV: TEST
         run: python -m pytest tests/unit -v
 
   # ---------------------------------------------------
