@@ -28,14 +28,6 @@ class Crypto_Notifier_Cog(commands.Cog):
         self._bot_service = bot_service
         self._crypto_api_service = crypto_api_service
 
-    # @commands.Cog.listener()
-    # async def on_ready(self):
-    #     logging.info("Crypto_Notifier_Cog: Syncing for guilds...")
-    #     for guild_id in DISCORD_GUILD_IDS:
-    #         guild_obj = discord.Object(id=guild_id)
-    #         self.bot.tree.copy_global_to(guild=guild_obj)
-    #         await self.bot.tree.sync(guild=guild_obj)
-
     @app_commands.command(name="index", description="Get price/index of a cryptocurrency")
     @app_commands.describe(currency="The type of cryptocurrency")
     async def _index(self, interaction: discord.Interaction, currency: str):
