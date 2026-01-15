@@ -1,6 +1,7 @@
+import os
 import pytest
 import asyncio
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from app.db import Base
 from app.models import Coin
@@ -49,20 +50,57 @@ def sample_coin():
     )
 
 
-# Datenbank Fixture für Integration Tests
-@pytest.fixture(scope="function")
-def db_session():
-    engine = create_engine("sqlite:///:memory:")
+@pytest.fixture(scope="session")
+def db_engine():
+    db_url = os.getenv("TEST_DATABASE_URL")
 
-    # Tabellen erstellen
+    # Fallback: Wenn keine URL da ist, nimm SQLite (für lokales Testen ohne Docker)
+    if not db_url:
+        db_url = "sqlite:///:memory:"
+        print("⚠️  Nutze SQLite In-Memory Datenbank für Tests.")
+    else:
+        print(f"🚀 Nutze externe Datenbank für Tests: {db_url}")
+
+    # Konfiguration je nach Datenbank-Typ
+    connect_args = {}
+    if "sqlite" in db_url:
+        connect_args = {"check_same_thread": False}
+
+    engine = create_engine(db_url, connect_args=connect_args)
+
     Base.metadata.create_all(engine)
 
-    # Session erstellen
-    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    session = TestingSessionLocal()
+    yield engine
+
+    Base.metadata.drop_all(engine)
+    engine.dispose()
+
+
+# Datenbank Fixture für Integration Tests
+@pytest.fixture(scope="function")
+def db_session(db_engine):
+
+    # Verbindung zur DB öffnen
+    connection = db_engine.connect()
+
+    # Session an die Connection binden
+    Session = sessionmaker(bind=connection)
+    session = Session()
 
     yield session
 
-    # Aufräumen nach Tests
+    # NACH DEM TEST:
     session.close()
-    Base.metadata.drop_all(engine)
+
+    # Löschen alle Daten hart aus der Datenbank via SQL
+    with db_engine.connect() as conn:
+        try:
+            conn.execute(text("DELETE FROM notifications"))
+            conn.execute(text("DELETE FROM favorites"))
+            conn.execute(text("DELETE FROM accounts"))
+            conn.execute(text("DELETE FROM cryptocurrencies"))
+            conn.commit()
+        except Exception as e:
+            print(f"Fehler beim Bereinigen der DB: {e}")
+
+    connection.close()
