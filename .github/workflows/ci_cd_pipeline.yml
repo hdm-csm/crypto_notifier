@@ -28,15 +28,15 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Create temporary .env.staging file
+      - name: Create temporary .env.test file
         run: |
-          echo "ENV=STAGING" > .env.staging
-          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env.staging
-          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env.staging
-          echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> .env.staging
-          echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env.staging
-          echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env.staging
-          echo "DATABASE_URL=mysql+mysqlconnector://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.MYSQL_DATABASE }}" >> .env.staging
+          echo "ENV=TEST" > .env.test
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env.test
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env.test
+          echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> .env.test
+          echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env.test
+          echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env.test
+          echo "DATABASE_URL=mysql+mysqlconnector://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.MYSQL_DATABASE }}" >> .env.test
 
       - name: Run unit tests
         run: python -m pytest tests/unit -v
