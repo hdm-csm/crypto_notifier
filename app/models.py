@@ -60,17 +60,17 @@ class NotificationDirection(enum.Enum):
 favorites_table = Table(
     "favorites",
     Base.metadata,
-    Column("userId", Integer, ForeignKey("accounts.userId"), primary_key=True),
-    Column("cryptoID", Integer, ForeignKey("cryptocurrencies.cryptoId"), primary_key=True),
+    Column("account_id", Integer, ForeignKey("accounts.id"), primary_key=True),
+    Column("cryptocurrency_id", Integer, ForeignKey("cryptocurrencies.id"), primary_key=True),
 )
 
 
 class Account(Base):
     __tablename__ = "accounts"
 
-    userId = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     platform: Mapped[PlatformType] = mapped_column(Enum(PlatformType), nullable=False)
-    platformId = Column(String(255), nullable=False, unique=True)
+    platform_id = Column(String(255), nullable=False, unique=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     notifications = relationship("Notification", back_populates="account")
@@ -83,9 +83,9 @@ class Account(Base):
 class Cryptocurrency(Base):
     __tablename__ = "cryptocurrencies"
 
-    cryptoId = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
     symbol = Column(String(255), unique=True, index=True)
-    fullName = Column(String(255))
+    full_name = Column(String(255))
 
     notifications = relationship("Notification", back_populates="cryptocurrency")
 
@@ -97,10 +97,10 @@ class Cryptocurrency(Base):
 class Notification(Base):
     __tablename__ = "notifications"
 
-    notificationID = Column(Integer, primary_key=True, autoincrement=True)
-    userId = Column(Integer, ForeignKey("accounts.userId"))
-    cryptoID = Column(Integer, ForeignKey("cryptocurrencies.cryptoId"))
-    targetPrice = Column(Float)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    account_id = Column(Integer, ForeignKey("accounts.id"))
+    cryptocurrency_id = Column(Integer, ForeignKey("cryptocurrencies.id"))
+    target_price = Column(Float)
     direction: Mapped[NotificationDirection] = mapped_column(Enum(NotificationDirection))
 
     account = relationship("Account", back_populates="notifications")
