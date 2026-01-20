@@ -3,12 +3,9 @@ from dotenv import load_dotenv
 
 ENV = os.getenv("ENV", "DEV")
 
-if ENV == "DEV":
-    load_dotenv(".env.dev")
-elif ENV == "PROD":
-    load_dotenv(".env.prod")
-else:
-    load_dotenv(".env.dev")  # default to dev
+ENV = os.getenv("ENV", "dev").lower()
+load_dotenv(f".env.{ENV}")
+
 
 
 class Config:

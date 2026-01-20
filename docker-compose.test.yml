@@ -9,7 +9,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    command: python -m app.main
+    command: sleep infinity
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   db:
     image: mysql:8.1
