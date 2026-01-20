@@ -1,8 +1,7 @@
 import asyncio
-import os
 import logging
 import httpx
-from dotenv import load_dotenv
+from config import Config
 from app.bots.discord_bot import DiscordBot
 from app.bots.telegram_bot import TelegramBot
 from app.repository.account_repository import AccountRepository
@@ -13,12 +12,9 @@ from app.services.crypto_api_service import CryptoApiService
 from app.services.general_service import GeneralService
 from scripts.init_db import init_db
 
-load_dotenv(dotenv_path=".env.dev")
-DISCORD_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
-TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-DISCORD_GUILD_IDS = [
-    int(gid.strip()) for gid in os.getenv("DISCORD_GUILD_IDS", "").split(",") if gid.strip()
-]
+DISCORD_BOT_TOKEN = Config.DISCORD_BOT_TOKEN
+TELEGRAM_BOT_TOKEN = Config.TELEGRAM_BOT_TOKEN
+DISCORD_GUILD_ID = Config.DISCORD_GUILD_ID
 
 logging.basicConfig(
     level=logging.INFO,
@@ -46,13 +42,14 @@ async def async_main():
     await general_service.initialize_crypto_currencies()
 
     discord_bot = DiscordBot(
-        DISCORD_TOKEN,
-        DISCORD_GUILD_IDS,
+        DISCORD_BOT_TOKEN,
+        DISCORD_GUILD_ID,
         bot_service,
         crypto_api_service,
     )
+    print("Telegram Bot Token:", TELEGRAM_BOT_TOKEN)
     telegram_bot = TelegramBot(
-        TELEGRAM_TOKEN,
+        TELEGRAM_BOT_TOKEN,
         crypto_api_service,
         account_repository,
         favorite_repository,

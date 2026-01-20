@@ -1,8 +1,8 @@
-import os
 import logging
 import discord
 from discord.ext import commands
 from discord import app_commands
+from config import Config
 from app.models import PlatformType
 from app.services.bot_service import BotService
 from app.services.crypto_api_service import CryptoApiService
@@ -12,9 +12,7 @@ logging.basicConfig(
     format="%(asctime)s - %(threadName)s - %(levelname)s - %(message)s",
 )
 # TODO: Load dynamically
-DISCORD_GUILD_IDS = [
-    int(gid.strip()) for gid in os.getenv("DISCORD_GUILD_IDS", "").split(",") if gid.strip()
-]
+DISCORD_GUILD_ID = Config.DISCORD_GUILD_ID
 
 
 class Crypto_Notifier_Cog(commands.Cog):
@@ -29,14 +27,6 @@ class Crypto_Notifier_Cog(commands.Cog):
         self.bot = bot
         self._bot_service = bot_service
         self._crypto_api_service = crypto_api_service
-
-    @commands.Cog.listener()
-    async def on_ready(self):
-        logging.info("Crypto_Notifier_Cog: Syncing for guilds...")
-        for guild_id in DISCORD_GUILD_IDS:
-            guild_obj = discord.Object(id=guild_id)
-            self.bot.tree.copy_global_to(guild=guild_obj)
-            await self.bot.tree.sync(guild=guild_obj)
 
     @app_commands.command(name="index", description="Get price/index of a cryptocurrency")
     @app_commands.describe(currency="The type of cryptocurrency")
@@ -112,13 +102,13 @@ class DiscordBot:
     def __init__(
         self,
         token: str,
-        guild_ids: list[int],
+        guild_id: int,
         bot_service: BotService,
         crypto_api_service: CryptoApiService,
     ):
 
         self.token = token
-        self.guild_ids = guild_ids  # guild = server
+        self.guild_id = guild_id  # guild = server
         self._bot_service = bot_service
         self._crypto_api_service = crypto_api_service
 
@@ -130,14 +120,13 @@ class DiscordBot:
         async def on_ready():
             logging.info(f"Bot logged in as {self.bot.user}")
 
-            for guild_id in self.guild_ids:
-                try:
-                    guild_obj = discord.Object(id=guild_id)
-                    self.bot.tree.copy_global_to(guild=guild_obj)  # Takes 1 hour to register
-                    synced = await self.bot.tree.sync(guild=guild_obj)
-                    logging.info(f"Synced {len(synced)} commands to Server ID: {guild_id}")
-                except Exception as e:
-                    logging.error(f"Failed to sync for guild {guild_id}: {e}")
+            try:
+                guild_obj = discord.Object(id=self.guild_id)
+                self.bot.tree.copy_global_to(guild=guild_obj)  # Takes 1 hour to register
+                synced = await self.bot.tree.sync(guild=guild_obj)
+                logging.info(f"Synced {len(synced)} commands to Server ID: {self.guild_id}")
+            except Exception as e:
+                logging.error(f"Failed to sync for guild {self.guild_id}: {e}")
 
         @self.bot.event
         async def on_command_error(ctx, error):
