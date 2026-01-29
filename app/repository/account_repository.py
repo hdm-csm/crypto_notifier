@@ -16,7 +16,7 @@ class AccountRepository:
     def exists(self, session: Session, platform: PlatformType, platform_id: str) -> bool:
         result = (
             session.query(Account)
-            .filter(Account.platform == platform, Account.platformId == str(platform_id))
+            .filter(Account.platform == platform, Account.platform_id == str(platform_id))
             .first()
         )
         return result is not None
@@ -26,16 +26,16 @@ class AccountRepository:
     ) -> Account | None:
         return (
             session.query(Account)
-            .filter(Account.platform == platform, Account.platformId == str(platform_id))
+            .filter(Account.platform == platform, Account.platform_id == str(platform_id))
             .first()
         )
 
-    def create(self, session: Session, platform: PlatformType, platformId: str) -> Account:
+    def create(self, session: Session, platform: PlatformType, platform_id: str) -> Account:
         new_account = Account(
-            platform=platform, platformId=str(platformId), created_at=datetime.now()
+            platform=platform, platform_id=str(platform_id), created_at=datetime.now()
         )
         session.add(new_account)
         session.commit()
         session.refresh(new_account)
-        logging.info(f"Created new {platform.value} account for {platformId}")
+        logging.info(f"Created new {platform.value} account for {platform_id}")
         return new_account

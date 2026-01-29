@@ -29,7 +29,7 @@ class BotService:
                 )
                 if account is None:
                     account = self._account_repository.create(
-                        session=session, platform=platformType, platformId=user_id
+                        session=session, platform=platformType, platform_id=user_id
                     )
 
                 if not account:
@@ -106,24 +106,25 @@ class BotService:
                 for crypto_currency in favorites:
                     try:
                         price: float | None = await self._crypto_api_service.get_index(
-                            crypto_currency.fullName
+                            crypto_currency.full_name
                         )
                         if price is not None:
                             message += (
-                                f"• {crypto_currency.fullName} "
+                                f"• {crypto_currency.full_name} "
                                 f"({crypto_currency.symbol.upper()})\n"
                             )
                             message += f"   Price: {price:.2f} €\n"
                         else:
                             message += (
-                                f"• {crypto_currency.fullName} "
+                                f"• {crypto_currency.full_name} "
                                 f"({crypto_currency.symbol.upper()})\n"
                             )
                             message += "   Price: Unavailable\n\n"
                     except Exception as e:
                         logging.error(f"Error fetching price for {crypto_currency.symbol}: {e}")
                         message += (
-                            f"• {crypto_currency.fullName} " f"({crypto_currency.symbol.upper()})\n"
+                            f"• {crypto_currency.full_name} "
+                            f"({crypto_currency.symbol.upper()})\n"
                         )
                         message += "   Price: Unavailable\n\n"
                 return message

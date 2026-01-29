@@ -20,7 +20,7 @@ class CryptocurrencyRepository:
             session.query(Cryptocurrency)
             .filter(
                 (func.lower(Cryptocurrency.symbol) == func.lower(identifier))
-                | (func.lower(Cryptocurrency.fullName) == func.lower(identifier))
+                | (func.lower(Cryptocurrency.full_name) == func.lower(identifier))
             )
             .first()
             is not None
@@ -31,7 +31,7 @@ class CryptocurrencyRepository:
             session.query(Cryptocurrency)
             .filter(
                 (func.lower(Cryptocurrency.symbol) == func.lower(identifier))
-                | (func.lower(Cryptocurrency.fullName) == func.lower(identifier))
+                | (func.lower(Cryptocurrency.full_name) == func.lower(identifier))
             )
             .first()
         )
@@ -41,6 +41,6 @@ class CryptocurrencyRepository:
 
     def store_cryptocurrencies(self, session: Session, coins: list[Coin]):
         new_cryptos = [
-            Cryptocurrency(symbol=coin.symbol.upper(), fullName=coin.name) for coin in coins
+            Cryptocurrency(symbol=coin.symbol.upper(), full_name=coin.name) for coin in coins
         ]
         session.add_all(new_cryptos)

@@ -11,12 +11,12 @@ def test_create_and_find_account(db_session):
     # 1. Account erstellen
     new_account = repo.create(db_session, platform, user_id)
     assert new_account is not None
-    assert new_account.platformId == "12345"
+    assert new_account.platform_id == "12345"
 
     # 2. Account wiederfinden
     found_account = repo.find_by_platform_and_id(db_session, platform, user_id)
     assert found_account is not None
-    assert found_account.platformId == user_id
+    assert found_account.platform_id == user_id
     assert found_account.platform == platform
 
 
