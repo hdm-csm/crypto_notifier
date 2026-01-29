@@ -14,6 +14,7 @@ jobs:
   unit-tests:
     name: 🧪 Unit Tests
     runs-on: ubuntu-latest
+    environment: staging
 
     steps:
       - name: Checkout repository
@@ -27,7 +28,19 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Create temporary .env.test file
+        run: |
+          echo "ENV=TEST" > .env.test
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env.test
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env.test
+          echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> .env.test
+          echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env.test
+          echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env.test
+          echo "DATABASE_URL=mysql+mysqlconnector://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.MYSQL_DATABASE }}" >> .env.test
+
       - name: Run unit tests
+        env:
+          ENV: TEST
         run: python -m pytest tests/unit -v
 
   # ---------------------------------------------------
@@ -55,7 +68,11 @@ jobs:
           echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env.test
           echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env.test
           echo "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}" >> .env.test
+          echo "DISCORD_GUILD_ID=${{ secrets.DISCORD_GUILD_ID }}" >> .env.test
+          echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> .env.test
+          echo "DISCORD_BOT_TOKEN=${{ secrets.DISCORD_BOT_TOKEN }}" >> .env.test
           echo "DATABASE_URL=mysql+mysqlconnector://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.MYSQL_DATABASE }}" >> .env.test
+
           cat .env.test
 
       - name: Build and start containers
@@ -92,14 +109,18 @@ jobs:
         id: meta
         run: |
           IMAGE_NAME="ghcr.io/${{ github.repository }}:latest"
+          IMAGE_NAME_SHA="ghcr.io/${{ github.repository }}:${{ github.sha }}"
           echo "image-name=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          echo "image-name-sha=$IMAGE_NAME_SHA" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
         run: |
           docker buildx create --use
           docker buildx build \
             --platform linux/amd64,linux/arm64 \
+            --no-cache \
             -t ${{ steps.meta.outputs.image-name }} \
+            -t ${{ steps.meta.outputs.image-name-sha }} \
             --push .
 
   # ---------------------------------------------------
@@ -160,6 +181,9 @@ jobs:
             MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
             MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
             DATABASE_URL=mysql+mysqlconnector://${{ secrets.MYSQL_USER }}:${{ secrets.MYSQL_PASSWORD }}@${{ secrets.DB_HOST }}:${{ secrets.DB_PORT }}/${{ secrets.MYSQL_DATABASE }}
+            DISCORD_GUILD_ID=${{ secrets.DISCORD_GUILD_ID }}
+            TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+            DISCORD_BOT_TOKEN=${{ secrets.DISCORD_BOT_TOKEN }}
             EOF
 
             # Pull latest image from GHCR
@@ -170,5 +194,9 @@ jobs:
             echo "🐋 Restarting containers..."
             docker compose -f docker-compose.prod.yml --env-file .env.prod down || true
             docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
+
+            # Cleanup old images
+            echo "🧹 Removing old unused Docker images..."
+            docker image prune -af
 
             echo "✅ Deployment complete!"

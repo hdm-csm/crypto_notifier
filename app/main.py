@@ -1,8 +1,7 @@
 import asyncio
-import os
 import logging
 import httpx
-from dotenv import load_dotenv
+from config import Config
 from app.bots.discord_bot import DiscordBot
 from app.bots.telegram_bot import TelegramBot
 from app.repository.account_repository import AccountRepository
@@ -11,13 +10,11 @@ from app.repository.cryptocurrency_repository import CryptocurrencyRepository
 from app.services.bot_service import BotService
 from app.services.crypto_api_service import CryptoApiService
 from app.services.general_service import GeneralService
+from scripts.init_db import init_db
 
-load_dotenv(dotenv_path=".env.dev")
-DISCORD_TOKEN = os.environ.get("DISCORD_BOT_TOKEN", "")
-TELEGRAM_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-DISCORD_GUILD_ID = int(os.environ.get("DISCORD_GUILD_ID", "0"))
-DISCORD_CLIENT_ID = int(os.environ.get("DISCORD_CLIENT_ID", "0"))
-DISCORD_CHANNEL_ID = int(os.environ.get("DISCORD_CHANNEL_ID", "0"))
+DISCORD_BOT_TOKEN = Config.DISCORD_BOT_TOKEN
+TELEGRAM_BOT_TOKEN = Config.TELEGRAM_BOT_TOKEN
+DISCORD_GUILD_ID = Config.DISCORD_GUILD_ID
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,6 +23,10 @@ logging.basicConfig(
 
 
 async def async_main():
+
+    # TODO: Remove this in production; only for initial setup; Use Alembic for DB migrations
+    init_db()
+
     account_repository = AccountRepository()
     favorite_repository = FavoriteRepository()
     cryptocurrency_repository = CryptocurrencyRepository()
@@ -41,15 +42,14 @@ async def async_main():
     await general_service.initialize_crypto_currencies()
 
     discord_bot = DiscordBot(
-        DISCORD_TOKEN,
-        DISCORD_CLIENT_ID,
+        DISCORD_BOT_TOKEN,
         DISCORD_GUILD_ID,
-        DISCORD_CHANNEL_ID,
         bot_service,
         crypto_api_service,
     )
+    print("Telegram Bot Token:", TELEGRAM_BOT_TOKEN)
     telegram_bot = TelegramBot(
-        TELEGRAM_TOKEN,
+        TELEGRAM_BOT_TOKEN,
         crypto_api_service,
         account_repository,
         favorite_repository,
