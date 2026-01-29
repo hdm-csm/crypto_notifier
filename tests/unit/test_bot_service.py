@@ -37,10 +37,10 @@ def test_add_favorite_success(bot_service, mock_deps):
     user_id = "12345"
     crypto_name = "bitcoin"
 
-    mock_account = Account(platform=PlatformType.Discord, platformId=user_id, favorite_cryptos=[])
+    mock_account = Account(platform=PlatformType.Discord, platform_id=user_id, favorite_cryptos=[])
     mock_deps["account_repo"].find_by_platform_and_id.return_value = mock_account
 
-    mock_crypto = Cryptocurrency(symbol="BTC", fullName="Bitcoin")
+    mock_crypto = Cryptocurrency(symbol="BTC", full_name="Bitcoin")
     mock_deps["crypto_repo"].find_by_name_or_symbol.return_value = mock_crypto
 
     # Execution
@@ -57,7 +57,7 @@ def test_add_favorite_success(bot_service, mock_deps):
 def test_add_favorite_crypto_not_found(bot_service, mock_deps):
     # Setup
     user_id = "12345"
-    mock_account = Account(platform=PlatformType.Discord, platformId=user_id)
+    mock_account = Account(platform=PlatformType.Discord, platform_id=user_id)
     mock_deps["account_repo"].find_by_platform_and_id.return_value = mock_account
 
     mock_deps["crypto_repo"].find_by_name_or_symbol.return_value = None
@@ -73,9 +73,9 @@ def test_add_favorite_crypto_not_found(bot_service, mock_deps):
 # Testen für das Hinzufügen von Favoriten, Fall already exists
 def test_add_favorite_already_exists(bot_service, mock_deps):
     # Setup
-    mock_crypto = Cryptocurrency(symbol="BTC", fullName="Bitcoin")
+    mock_crypto = Cryptocurrency(symbol="BTC", full_name="Bitcoin")
     mock_account = Account(
-        platform=PlatformType.Discord, platformId="123", favorite_cryptos=[mock_crypto]
+        platform=PlatformType.Discord, platform_id="123", favorite_cryptos=[mock_crypto]
     )
 
     mock_deps["account_repo"].find_by_platform_and_id.return_value = mock_account
@@ -92,9 +92,9 @@ def test_add_favorite_already_exists(bot_service, mock_deps):
 # Testen für das Entfernen von Favoriten, Fall success
 def test_remove_favorite_success(bot_service, mock_deps):
     # Setup
-    mock_crypto = Cryptocurrency(symbol="ETH", fullName="Ethereum")
+    mock_crypto = Cryptocurrency(symbol="ETH", full_name="Ethereum")
     mock_account = Account(
-        platform=PlatformType.Telegram, platformId="999", favorite_cryptos=[mock_crypto]
+        platform=PlatformType.Telegram, platform_id="999", favorite_cryptos=[mock_crypto]
     )
 
     mock_deps["account_repo"].find_by_platform_and_id.return_value = mock_account
@@ -111,7 +111,7 @@ def test_remove_favorite_success(bot_service, mock_deps):
 # Testen für das Entfernen von Favoriten, Fall not in list
 def test_remove_favorite_not_in_list(bot_service, mock_deps):
     # Setup
-    mock_crypto = Cryptocurrency(symbol="ETH", fullName="Ethereum")
+    mock_crypto = Cryptocurrency(symbol="ETH", full_name="Ethereum")
     mock_account = Account(platform=PlatformType.Telegram, favorite_cryptos=[])
 
     mock_deps["account_repo"].find_by_platform_and_id.return_value = mock_account
@@ -129,7 +129,7 @@ def test_remove_favorite_not_in_list(bot_service, mock_deps):
 @pytest.mark.asyncio
 async def test_list_favorites_with_prices(bot_service, mock_deps):
     # Setup
-    mock_crypto = Cryptocurrency(symbol="BTC", fullName="Bitcoin")
+    mock_crypto = Cryptocurrency(symbol="BTC", full_name="Bitcoin")
     mock_account = Account(favorite_cryptos=[mock_crypto])
 
     mock_deps["account_repo"].find_by_platform_and_id.return_value = mock_account
@@ -161,7 +161,7 @@ async def test_list_favorites_empty(bot_service, mock_deps):
 # Testen für das Löschen aller Favoriten, Fall success
 def test_drop_favorites_success(bot_service, mock_deps):
     # Setup
-    mock_crypto = Cryptocurrency(symbol="BTC", fullName="Bitcoin")
+    mock_crypto = Cryptocurrency(symbol="BTC", full_name="Bitcoin")
     mock_account = Account(favorite_cryptos=[mock_crypto])
     mock_deps["account_repo"].find_by_platform_and_id.return_value = mock_account
 

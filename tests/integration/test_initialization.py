@@ -100,4 +100,4 @@ async def test_startup_initialization_fills_db(db_session, mocker):
 
     stored_btc = crypto_repo.find_by_name_or_symbol(db_session, "BTC")
     assert stored_btc is not None
-    assert stored_btc.fullName == "Bitcoin"
+    assert stored_btc.full_name == "Bitcoin"

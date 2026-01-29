@@ -33,7 +33,7 @@ async def test_full_favorite_lifecycle(db_session, mocker):
     bot_service = BotService(account_repo, fav_repo, crypto_repo, api_service)
 
     # DATEN VORBEREITEN
-    btc = Cryptocurrency(symbol="BTC", fullName="Bitcoin")
+    btc = Cryptocurrency(symbol="BTC", full_name="Bitcoin")
     db_session.add(btc)
     db_session.commit()
 
