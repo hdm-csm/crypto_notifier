@@ -4,7 +4,7 @@ import asyncio
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from app.db import Base
-from app.models import Coin
+from app.models.dtos import Coin
 
 
 # 1. Event Loop Fixture

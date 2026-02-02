@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 from app.services.general_service import GeneralService
 from app.repository.cryptocurrency_repository import CryptocurrencyRepository
 from app.services.crypto_api_service import CryptoApiService
-from app.models import Coin
+from app.models.dtos import Coin
 
 
 @pytest.mark.asyncio

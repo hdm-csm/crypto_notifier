@@ -1,7 +1,8 @@
 import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app.models import Cryptocurrency, Coin
+from app.models.schemas import Cryptocurrency
+from app.models.dtos import Coin
 
 logging.basicConfig(
     level=logging.INFO,
@@ -12,8 +13,7 @@ logging.basicConfig(
 class CryptocurrencyRepository:
 
     def is_empty(self, session: Session) -> bool:
-        count = session.query(Cryptocurrency).count()
-        return count == 0
+        return session.query(Cryptocurrency).count() == 0
 
     def exists(self, session: Session, identifier: str) -> bool:
         return (

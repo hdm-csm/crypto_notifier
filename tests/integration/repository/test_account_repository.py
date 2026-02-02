@@ -1,12 +1,12 @@
 from app.repository.account_repository import AccountRepository
-from app.models import PlatformType
+from app.models.schemas import PlatformType
 
 
 def test_create_and_find_account(db_session):
     # Setup
     repo = AccountRepository()
     user_id = "12345"
-    platform = PlatformType.Discord
+    platform = PlatformType.DISCORD
 
     # 1. Account erstellen
     new_account = repo.create(db_session, platform, user_id)
@@ -23,9 +23,9 @@ def test_create_and_find_account(db_session):
 def test_exists_check(db_session):
     repo = AccountRepository()
 
-    assert repo.exists(db_session, PlatformType.Telegram, "999") is False
+    assert repo.exists(db_session, PlatformType.TELEGRAM, "999") is False
 
     # Account anlegen
-    repo.create(db_session, PlatformType.Telegram, "999")
+    repo.create(db_session, PlatformType.TELEGRAM, "999")
 
-    assert repo.exists(db_session, PlatformType.Telegram, "999") is True
+    assert repo.exists(db_session, PlatformType.TELEGRAM, "999") is True

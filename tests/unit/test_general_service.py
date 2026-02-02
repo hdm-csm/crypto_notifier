@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, AsyncMock
 from app.services.general_service import GeneralService
-from app.models import Coin
+from app.models.dtos import Coin
 
 # Testen der Initialisierung / GeneralService-Klasse
 

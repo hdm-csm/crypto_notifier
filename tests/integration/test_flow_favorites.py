@@ -5,7 +5,7 @@ from app.services.crypto_api_service import CryptoApiService
 from app.repository.account_repository import AccountRepository
 from app.repository.favorite_repository import FavoriteRepository
 from app.repository.cryptocurrency_repository import CryptocurrencyRepository
-from app.models import PlatformType, Cryptocurrency
+from app.models.schemas import PlatformType, Cryptocurrency
 
 
 @pytest.mark.asyncio
@@ -38,7 +38,7 @@ async def test_full_favorite_lifecycle(db_session, mocker):
     db_session.commit()
 
     user_id = "test_user_1"
-    platform = PlatformType.Discord
+    platform = PlatformType.DISCORD
 
     # TEST FLOW
 

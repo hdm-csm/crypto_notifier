@@ -3,7 +3,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from config import Config
-from app.models import PlatformType
+from models.schemas import PlatformType
 from app.services.bot_service import BotService
 from app.services.crypto_api_service import CryptoApiService
 
@@ -97,7 +97,7 @@ class Crypto_Notifier_Cog(commands.Cog):
 
 class DiscordBot:
 
-    PLATFORM_TYPE = PlatformType.Discord
+    PLATFORM_TYPE = PlatformType.DISCORD
 
     def __init__(
         self,

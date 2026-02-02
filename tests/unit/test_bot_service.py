@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import MagicMock, AsyncMock, ANY
 from app.services.bot_service import BotService
-from app.models import PlatformType, Account, Cryptocurrency
+from app.models.schemas import PlatformType, Account, Cryptocurrency
 
 
 @pytest.fixture
@@ -37,14 +37,14 @@ def test_add_favorite_success(bot_service, mock_deps):
     user_id = "12345"
     crypto_name = "bitcoin"
 
-    mock_account = Account(platform=PlatformType.Discord, platform_id=user_id, favorite_cryptos=[])
+    mock_account = Account(platform=PlatformType.DISCORD, platform_id=user_id, favorite_cryptos=[])
     mock_deps["account_repo"].find_by_platform_and_id.return_value = mock_account
 
     mock_crypto = Cryptocurrency(symbol="BTC", full_name="Bitcoin")
     mock_deps["crypto_repo"].find_by_name_or_symbol.return_value = mock_crypto
 
     # Execution
-    result = bot_service.add_favorite(PlatformType.Discord, user_id, crypto_name)
+    result = bot_service.add_favorite(PlatformType.DISCORD, user_id, crypto_name)
 
     # Assertion
     mock_deps["fav_repo"].add_favorite.assert_called_once_with(
@@ -57,13 +57,13 @@ def test_add_favorite_success(bot_service, mock_deps):
 def test_add_favorite_crypto_not_found(bot_service, mock_deps):
     # Setup
     user_id = "12345"
-    mock_account = Account(platform=PlatformType.Discord, platform_id=user_id)
+    mock_account = Account(platform=PlatformType.DISCORD, platform_id=user_id)
     mock_deps["account_repo"].find_by_platform_and_id.return_value = mock_account
 
     mock_deps["crypto_repo"].find_by_name_or_symbol.return_value = None
 
     # Execution
-    result = bot_service.add_favorite(PlatformType.Discord, user_id, "fantasy-coin")
+    result = bot_service.add_favorite(PlatformType.DISCORD, user_id, "fantasy-coin")
 
     # Assertion
     mock_deps["fav_repo"].add_favorite.assert_not_called()
@@ -75,14 +75,14 @@ def test_add_favorite_already_exists(bot_service, mock_deps):
     # Setup
     mock_crypto = Cryptocurrency(symbol="BTC", full_name="Bitcoin")
     mock_account = Account(
-        platform=PlatformType.Discord, platform_id="123", favorite_cryptos=[mock_crypto]
+        platform=PlatformType.DISCORD, platform_id="123", favorite_cryptos=[mock_crypto]
     )
 
     mock_deps["account_repo"].find_by_platform_and_id.return_value = mock_account
     mock_deps["crypto_repo"].find_by_name_or_symbol.return_value = mock_crypto
 
     # Execution
-    result = bot_service.add_favorite(PlatformType.Discord, "123", "bitcoin")
+    result = bot_service.add_favorite(PlatformType.DISCORD, "123", "bitcoin")
 
     # Assertion
     mock_deps["fav_repo"].add_favorite.assert_not_called()
@@ -94,14 +94,14 @@ def test_remove_favorite_success(bot_service, mock_deps):
     # Setup
     mock_crypto = Cryptocurrency(symbol="ETH", full_name="Ethereum")
     mock_account = Account(
-        platform=PlatformType.Telegram, platform_id="999", favorite_cryptos=[mock_crypto]
+        platform=PlatformType.TELEGRAM, platform_id="999", favorite_cryptos=[mock_crypto]
     )
 
     mock_deps["account_repo"].find_by_platform_and_id.return_value = mock_account
     mock_deps["crypto_repo"].find_by_name_or_symbol.return_value = mock_crypto
 
     # Execution
-    result = bot_service.remove_favorite(PlatformType.Telegram, "999", "ethereum")
+    result = bot_service.remove_favorite(PlatformType.TELEGRAM, "999", "ethereum")
 
     # Assertion
     mock_deps["fav_repo"].remove_favorite.assert_called_once()
@@ -112,13 +112,13 @@ def test_remove_favorite_success(bot_service, mock_deps):
 def test_remove_favorite_not_in_list(bot_service, mock_deps):
     # Setup
     mock_crypto = Cryptocurrency(symbol="ETH", full_name="Ethereum")
-    mock_account = Account(platform=PlatformType.Telegram, favorite_cryptos=[])
+    mock_account = Account(platform=PlatformType.TELEGRAM, favorite_cryptos=[])
 
     mock_deps["account_repo"].find_by_platform_and_id.return_value = mock_account
     mock_deps["crypto_repo"].find_by_name_or_symbol.return_value = mock_crypto
 
     # Execution
-    result = bot_service.remove_favorite(PlatformType.Telegram, "999", "ethereum")
+    result = bot_service.remove_favorite(PlatformType.TELEGRAM, "999", "ethereum")
 
     # Assertion
     mock_deps["fav_repo"].remove_favorite.assert_not_called()
@@ -136,7 +136,7 @@ async def test_list_favorites_with_prices(bot_service, mock_deps):
     mock_deps["api_service"].get_index.return_value = 50000.00
 
     # Execution
-    result = await bot_service.list_favorites(PlatformType.Discord, "123")
+    result = await bot_service.list_favorites(PlatformType.DISCORD, "123")
 
     # Assertion
     assert "Bitcoin" in result
@@ -152,7 +152,7 @@ async def test_list_favorites_empty(bot_service, mock_deps):
     mock_deps["account_repo"].find_by_platform_and_id.return_value = mock_account
 
     # Execution
-    result = await bot_service.list_favorites(PlatformType.Discord, "123")
+    result = await bot_service.list_favorites(PlatformType.DISCORD, "123")
 
     # Assertion
     assert "no favorite cryptocurrencies" in result
@@ -166,7 +166,7 @@ def test_drop_favorites_success(bot_service, mock_deps):
     mock_deps["account_repo"].find_by_platform_and_id.return_value = mock_account
 
     # Execution
-    result = bot_service.drop_favorites(PlatformType.Telegram, "555")
+    result = bot_service.drop_favorites(PlatformType.TELEGRAM, "555")
 
     # Assertion
     mock_deps["fav_repo"].drop_favorites.assert_called_once()

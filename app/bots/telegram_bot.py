@@ -5,7 +5,7 @@ from app.repository.account_repository import AccountRepository
 from app.repository.favorite_repository import FavoriteRepository
 from app.services.bot_service import BotService
 from app.services.crypto_api_service import CryptoApiService
-from app.models import PlatformType
+from models.schemas import PlatformType
 
 logging.basicConfig(
     level=logging.INFO,
@@ -15,7 +15,7 @@ logging.basicConfig(
 
 class TelegramBot:
 
-    PLATFORM_TYPE = PlatformType.Telegram
+    PLATFORM_TYPE = PlatformType.TELEGRAM
 
     def __init__(
         self,

@@ -1,5 +1,5 @@
 from app.repository.cryptocurrency_repository import CryptocurrencyRepository
-from app.models import Cryptocurrency
+from app.models.schemas import Cryptocurrency
 
 
 def test_store_and_retrieve_cryptocurrencies(db_session, sample_coin):

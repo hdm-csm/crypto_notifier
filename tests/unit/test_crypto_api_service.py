@@ -4,7 +4,7 @@ import pytest
 import json
 from unittest.mock import MagicMock, AsyncMock
 from app.services.crypto_api_service import CryptoApiService
-from app.models import Coin
+from app.models.dtos import Coin
 
 # Helper Dictionary für Pflichtfelder im Coin-Model
 COIN_DEFAULTS = {
