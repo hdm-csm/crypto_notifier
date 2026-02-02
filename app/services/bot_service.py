@@ -1,5 +1,5 @@
 import logging
-from models.enums import PlatformType
+from app.models.enums import PlatformType
 from app.repository.account_repository import AccountRepository
 from app.repository.cryptocurrency_repository import CryptocurrencyRepository
 from app.repository.favorite_repository import FavoriteRepository

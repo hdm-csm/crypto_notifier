@@ -1,6 +1,6 @@
 import httpx
 import json
-from models.dtos import Coin
+from app.models.dtos import Coin
 
 
 class CryptoApiService:

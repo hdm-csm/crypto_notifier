@@ -3,7 +3,7 @@ from datetime import datetime
 
 # from unittest import result
 from sqlalchemy.orm import Session
-from models.schemas import Account, PlatformType
+from app.models.schemas import Account, PlatformType
 
 logging.basicConfig(
     level=logging.INFO,

@@ -1,6 +1,6 @@
 import logging
 from sqlalchemy.orm import Session
-from models.schemas import Account, Cryptocurrency
+from app.models.schemas import Account, Cryptocurrency
 
 logging.basicConfig(
     level=logging.INFO,

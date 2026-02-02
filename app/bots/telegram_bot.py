@@ -5,7 +5,7 @@ from app.repository.account_repository import AccountRepository
 from app.repository.favorite_repository import FavoriteRepository
 from app.services.bot_service import BotService
 from app.services.crypto_api_service import CryptoApiService
-from models.schemas import PlatformType
+from app.models.schemas import PlatformType
 
 logging.basicConfig(
     level=logging.INFO,

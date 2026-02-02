@@ -3,7 +3,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from config import Config
-from models.schemas import PlatformType
+from app.models.schemas import PlatformType
 from app.services.bot_service import BotService
 from app.services.crypto_api_service import CryptoApiService
 
