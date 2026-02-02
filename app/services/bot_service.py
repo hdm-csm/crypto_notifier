@@ -25,11 +25,11 @@ class BotService:
         try:
             with session_scope() as session:
                 account = self._account_repository.find_by_platform_and_id(
-                    session=session, platform=platformType, platform_id=user_id
+                    session=session, platform=platformType, platform_user_id=user_id
                 )
                 if account is None:
                     account = self._account_repository.create(
-                        session=session, platform=platformType, platform_id=user_id
+                        session=session, platform=platformType, platform_user_id=user_id
                     )
 
                 if not account:
@@ -62,7 +62,7 @@ class BotService:
         try:
             with session_scope() as session:
                 account = self._account_repository.find_by_platform_and_id(
-                    session=session, platform=platformType, platform_id=user_id
+                    session=session, platform=platformType, platform_user_id=user_id
                 )
 
                 if account is None:
@@ -95,7 +95,7 @@ class BotService:
         try:
             with session_scope() as session:
                 account = self._account_repository.find_by_platform_and_id(
-                    session=session, platform=platformType, platform_id=user_id
+                    session=session, platform=platformType, platform_user_id=user_id
                 )
                 if account is None:
                     return "⚠️ Account not found."
@@ -136,7 +136,7 @@ class BotService:
         try:
             with session_scope() as session:
                 account = self._account_repository.find_by_platform_and_id(
-                    session=session, platform=platformType, platform_id=user_id
+                    session=session, platform=platformType, platform_user_id=user_id
                 )
                 if account is None:
                     return "⚠️ Account not found."

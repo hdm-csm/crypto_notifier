@@ -37,7 +37,9 @@ def test_add_favorite_success(bot_service, mock_deps):
     user_id = "12345"
     crypto_name = "bitcoin"
 
-    mock_account = Account(platform=PlatformType.DISCORD, platform_id=user_id, favorite_cryptos=[])
+    mock_account = Account(
+        platform=PlatformType.DISCORD, platform_user_id=user_id, favorite_cryptos=[]
+    )
     mock_deps["account_repo"].find_by_platform_and_id.return_value = mock_account
 
     mock_crypto = Cryptocurrency(symbol="BTC", full_name="Bitcoin")
@@ -57,7 +59,7 @@ def test_add_favorite_success(bot_service, mock_deps):
 def test_add_favorite_crypto_not_found(bot_service, mock_deps):
     # Setup
     user_id = "12345"
-    mock_account = Account(platform=PlatformType.DISCORD, platform_id=user_id)
+    mock_account = Account(platform=PlatformType.DISCORD, platform_user_id=user_id)
     mock_deps["account_repo"].find_by_platform_and_id.return_value = mock_account
 
     mock_deps["crypto_repo"].find_by_name_or_symbol.return_value = None
@@ -75,7 +77,7 @@ def test_add_favorite_already_exists(bot_service, mock_deps):
     # Setup
     mock_crypto = Cryptocurrency(symbol="BTC", full_name="Bitcoin")
     mock_account = Account(
-        platform=PlatformType.DISCORD, platform_id="123", favorite_cryptos=[mock_crypto]
+        platform=PlatformType.DISCORD, platform_user_id="123", favorite_cryptos=[mock_crypto]
     )
 
     mock_deps["account_repo"].find_by_platform_and_id.return_value = mock_account
@@ -94,7 +96,7 @@ def test_remove_favorite_success(bot_service, mock_deps):
     # Setup
     mock_crypto = Cryptocurrency(symbol="ETH", full_name="Ethereum")
     mock_account = Account(
-        platform=PlatformType.TELEGRAM, platform_id="999", favorite_cryptos=[mock_crypto]
+        platform=PlatformType.TELEGRAM, platform_user_id="999", favorite_cryptos=[mock_crypto]
     )
 
     mock_deps["account_repo"].find_by_platform_and_id.return_value = mock_account

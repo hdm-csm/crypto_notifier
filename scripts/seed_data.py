@@ -41,8 +41,10 @@ def seed():
 
         db.add_all([btc, eth, sol])
 
-        discord_user = Account(platform=PlatformType.DISCORD, platform_id="discord_user_12345")
-        telegram_user = Account(platform=PlatformType.TELEGRAM, platform_id="telegram_chat_67890")
+        discord_user = Account(platform=PlatformType.DISCORD, platform_user_id="discord_user_12345")
+        telegram_user = Account(
+            platform=PlatformType.TELEGRAM, platform_user_id="telegram_chat_67890"
+        )
 
         db.add(discord_user)
         db.add(telegram_user)

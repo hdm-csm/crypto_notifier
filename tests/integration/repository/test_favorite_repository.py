@@ -7,7 +7,9 @@ def test_add_and_remove_favorite(db_session):
     repo = FavoriteRepository()
 
     # User und Crypto anlegen
-    account = Account(platform=PlatformType.DISCORD, platform_id="user1", created_at=datetime.now())
+    account = Account(
+        platform=PlatformType.DISCORD, platform_user_id="user1", created_at=datetime.now()
+    )
     crypto = Cryptocurrency(symbol="DOGE", full_name="Dogecoin")
 
     db_session.add(account)
@@ -36,7 +38,7 @@ def test_drop_favorites(db_session):
 
     # User mit 2 Favoriten
     account = Account(
-        platform=PlatformType.TELEGRAM, platform_id="user2", created_at=datetime.now()
+        platform=PlatformType.TELEGRAM, platform_user_id="user2", created_at=datetime.now()
     )
     c1 = Cryptocurrency(symbol="A", full_name="A-Coin")
     c2 = Cryptocurrency(symbol="B", full_name="B-Coin")
