@@ -26,7 +26,7 @@ class Account(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     platform: Mapped[PlatformType] = mapped_column(Enum(PlatformType), nullable=False)
-    platform_id = Column(String(255), nullable=False, unique=True)
+    platform_user_id = Column(String(255), nullable=False, unique=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     notifications = relationship("Notification", back_populates="account")

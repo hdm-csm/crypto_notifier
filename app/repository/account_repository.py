@@ -16,7 +16,7 @@ class AccountRepository:
     def exists(self, session: Session, platform: PlatformType, platform_id: str) -> bool:
         result = (
             session.query(Account)
-            .filter(Account.platform == platform, Account.platform_id == str(platform_id))
+            .filter(Account.platform == platform, Account.platform_user_id == str(platform_id))
             .first()
         )
         return result is not None
@@ -26,7 +26,7 @@ class AccountRepository:
     ) -> Account | None:
         return (
             session.query(Account)
-            .filter(Account.platform == platform, Account.platform_id == str(platform_id))
+            .filter(Account.platform == platform, Account.platform_user_id == str(platform_id))
             .first()
         )
 
