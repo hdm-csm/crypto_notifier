@@ -1,7 +1,8 @@
 import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from app.models import Cryptocurrency, Coin
+from app.models.schemas import Cryptocurrency
+from app.models.dtos import Coin
 
 logging.basicConfig(
     level=logging.INFO,
@@ -12,15 +13,14 @@ logging.basicConfig(
 class CryptocurrencyRepository:
 
     def is_empty(self, session: Session) -> bool:
-        count = session.query(Cryptocurrency).count()
-        return count == 0
+        return session.query(Cryptocurrency).count() == 0
 
     def exists(self, session: Session, identifier: str) -> bool:
         return (
             session.query(Cryptocurrency)
             .filter(
                 (func.lower(Cryptocurrency.symbol) == func.lower(identifier))
-                | (func.lower(Cryptocurrency.fullName) == func.lower(identifier))
+                | (func.lower(Cryptocurrency.full_name) == func.lower(identifier))
             )
             .first()
             is not None
@@ -31,7 +31,7 @@ class CryptocurrencyRepository:
             session.query(Cryptocurrency)
             .filter(
                 (func.lower(Cryptocurrency.symbol) == func.lower(identifier))
-                | (func.lower(Cryptocurrency.fullName) == func.lower(identifier))
+                | (func.lower(Cryptocurrency.full_name) == func.lower(identifier))
             )
             .first()
         )
@@ -41,6 +41,6 @@ class CryptocurrencyRepository:
 
     def store_cryptocurrencies(self, session: Session, coins: list[Coin]):
         new_cryptos = [
-            Cryptocurrency(symbol=coin.symbol.upper(), fullName=coin.name) for coin in coins
+            Cryptocurrency(symbol=coin.symbol.upper(), full_name=coin.name) for coin in coins
         ]
         session.add_all(new_cryptos)

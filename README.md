@@ -60,6 +60,16 @@ Mit MyPy nun pflicht:
 `name: str = "Bitcoin"`
 `def check_limit(current_price: float, limit: float) -> bool: return current_price > limit'`
 
+### Testing
+
+```
+docker-compose -f docker-compose.test.yml --env-file .env.test up -d --build
+docker compose -f docker-compose.test.yml --env-file .env.test up -d --build
+```
+
+```
+docker exec crypto_notifier_app_test pytest -v
+```
 
 # Branching and deployment Strategy
 

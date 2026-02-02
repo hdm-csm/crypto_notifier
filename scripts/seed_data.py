@@ -1,13 +1,8 @@
 # scripts/seed_data.py
 from app.db import Session_Factory, engine
-from app.models import (
-    Base,
-    Account,
-    Cryptocurrency,
-    Notification,
-    PlatformType,
-    NotificationDirection,
-)
+from app.db import Base
+from app.models.schemas import Account, Cryptocurrency, Notification
+from app.models.enums import PlatformType, NotificationDirection
 from sqlalchemy import inspect
 
 
@@ -40,14 +35,16 @@ def seed():
             return
 
         # Insert seed data
-        btc = Cryptocurrency(symbol="BTC", fullName="Bitcoin")
-        eth = Cryptocurrency(symbol="ETH", fullName="Ethereum")
-        sol = Cryptocurrency(symbol="SOL", fullName="Solana")
+        btc = Cryptocurrency(symbol="BTC", full_name="Bitcoin")
+        eth = Cryptocurrency(symbol="ETH", full_name="Ethereum")
+        sol = Cryptocurrency(symbol="SOL", full_name="Solana")
 
         db.add_all([btc, eth, sol])
 
-        discord_user = Account(platform=PlatformType.Discord, platformId="discord_user_12345")
-        telegram_user = Account(platform=PlatformType.Telegram, platformId="telegram_chat_67890")
+        discord_user = Account(platform=PlatformType.DISCORD, platform_user_id="discord_user_12345")
+        telegram_user = Account(
+            platform=PlatformType.TELEGRAM, platform_user_id="telegram_chat_67890"
+        )
 
         db.add(discord_user)
         db.add(telegram_user)
@@ -58,9 +55,10 @@ def seed():
 
         notification_1 = Notification(
             account=discord_user,
+            deinemom="",
             cryptocurrency=btc,
-            targetPrice=60000.0,
-            direction=NotificationDirection.above,
+            target_price=60000.0,
+            direction=NotificationDirection.ABOVE,
         )
 
         db.add(notification_1)

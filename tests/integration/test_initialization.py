@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 from app.services.general_service import GeneralService
 from app.repository.cryptocurrency_repository import CryptocurrencyRepository
 from app.services.crypto_api_service import CryptoApiService
-from app.models import Coin
+from app.models.dtos import Coin
 
 
 @pytest.mark.asyncio
@@ -100,4 +100,4 @@ async def test_startup_initialization_fills_db(db_session, mocker):
 
     stored_btc = crypto_repo.find_by_name_or_symbol(db_session, "BTC")
     assert stored_btc is not None
-    assert stored_btc.fullName == "Bitcoin"
+    assert stored_btc.full_name == "Bitcoin"

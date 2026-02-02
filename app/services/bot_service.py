@@ -1,5 +1,5 @@
 import logging
-from app.models import PlatformType
+from app.models.enums import PlatformType
 from app.repository.account_repository import AccountRepository
 from app.repository.cryptocurrency_repository import CryptocurrencyRepository
 from app.repository.favorite_repository import FavoriteRepository
@@ -25,11 +25,11 @@ class BotService:
         try:
             with session_scope() as session:
                 account = self._account_repository.find_by_platform_and_id(
-                    session=session, platform=platformType, platform_id=user_id
+                    session=session, platform=platformType, platform_user_id=user_id
                 )
                 if account is None:
                     account = self._account_repository.create(
-                        session=session, platform=platformType, platformId=user_id
+                        session=session, platform=platformType, platform_user_id=user_id
                     )
 
                 if not account:
@@ -62,7 +62,7 @@ class BotService:
         try:
             with session_scope() as session:
                 account = self._account_repository.find_by_platform_and_id(
-                    session=session, platform=platformType, platform_id=user_id
+                    session=session, platform=platformType, platform_user_id=user_id
                 )
 
                 if account is None:
@@ -95,7 +95,7 @@ class BotService:
         try:
             with session_scope() as session:
                 account = self._account_repository.find_by_platform_and_id(
-                    session=session, platform=platformType, platform_id=user_id
+                    session=session, platform=platformType, platform_user_id=user_id
                 )
                 if account is None:
                     return "⚠️ Account not found."
@@ -106,24 +106,25 @@ class BotService:
                 for crypto_currency in favorites:
                     try:
                         price: float | None = await self._crypto_api_service.get_index(
-                            crypto_currency.fullName
+                            crypto_currency.full_name
                         )
                         if price is not None:
                             message += (
-                                f"• {crypto_currency.fullName} "
+                                f"• {crypto_currency.full_name} "
                                 f"({crypto_currency.symbol.upper()})\n"
                             )
                             message += f"   Price: {price:.2f} €\n"
                         else:
                             message += (
-                                f"• {crypto_currency.fullName} "
+                                f"• {crypto_currency.full_name} "
                                 f"({crypto_currency.symbol.upper()})\n"
                             )
                             message += "   Price: Unavailable\n\n"
                     except Exception as e:
                         logging.error(f"Error fetching price for {crypto_currency.symbol}: {e}")
                         message += (
-                            f"• {crypto_currency.fullName} " f"({crypto_currency.symbol.upper()})\n"
+                            f"• {crypto_currency.full_name} "
+                            f"({crypto_currency.symbol.upper()})\n"
                         )
                         message += "   Price: Unavailable\n\n"
                 return message
@@ -135,7 +136,7 @@ class BotService:
         try:
             with session_scope() as session:
                 account = self._account_repository.find_by_platform_and_id(
-                    session=session, platform=platformType, platform_id=user_id
+                    session=session, platform=platformType, platform_user_id=user_id
                 )
                 if account is None:
                     return "⚠️ Account not found."
