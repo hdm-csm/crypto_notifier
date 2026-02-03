@@ -1,6 +1,6 @@
 import logging
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord import app_commands
 from config import Config
 from app.models.schemas import PlatformType
@@ -27,6 +27,35 @@ class Crypto_Notifier_Cog(commands.Cog):
         self.bot = bot
         self._bot_service = bot_service
         self._crypto_api_service = crypto_api_service
+
+    def cog_load(self):
+        self.update_status.start()
+        return super().cog_load()
+
+    def cog_unload(self):
+        self.update_status.cancel()
+
+    @tasks.loop(minutes=1)
+    async def update_status(self):
+        """Automatically updates the bot status with BTC price every 1 minutes."""
+        try:
+            coins = await self._crypto_api_service.list_top_crypto_currencies(amount=1)
+            status_message = ""
+            for coin in coins:
+                status_message += f"{coin.symbol.upper()}: {coin.current_price:.2f} € "
+            status_message += "(live)"
+            if status_message:
+                await self.bot.change_presence(
+                    activity=discord.Activity(
+                        type=discord.ActivityType.watching, name=status_message.strip()
+                    )
+                )
+        except Exception as e:
+            logging.error(f"Failed to update status: {e}")
+
+    @update_status.before_loop
+    async def before_update_status(self):
+        await self.bot.wait_until_ready()
 
     @app_commands.command(name="index", description="Get price/index of a cryptocurrency")
     @app_commands.describe(currency="The type of cryptocurrency")
