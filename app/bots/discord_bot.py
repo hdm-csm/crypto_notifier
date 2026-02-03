@@ -2,6 +2,7 @@ import logging
 import discord
 from discord.ext import commands
 from discord import app_commands
+from app.bots.discord.cogs.settings_cog import SettingsCog
 from config import Config
 from app.models.schemas import PlatformType
 from app.services.bot_service import BotService
@@ -57,7 +58,7 @@ class Crypto_Notifier_Cog(commands.Cog):
         input_crypto = currency.lower()
         answer = self._bot_service.add_favorite(
             platformType=self.platform_type,
-            user_id=str(user_id),
+            platform_user_id=str(user_id),
             input_crypto=input_crypto,
         )
         await ctx.send(answer)
@@ -139,7 +140,10 @@ class DiscordBot:
         cog = Crypto_Notifier_Cog(
             self.PLATFORM_TYPE, self.bot, self._bot_service, self._crypto_api_service
         )
+        settings_cog = SettingsCog(self.bot, self._bot_service)
+
         await self.bot.add_cog(cog)
+        await self.bot.add_cog(settings_cog)
 
         # TODO: Make it work
         # Build choices from cryptocurrency repository

@@ -7,8 +7,11 @@ class FiatCurrencyRepository:
     def is_empty(self, session: Session) -> bool:
         return session.query(FiatCurrency).count() == 0
 
-    def store_fiat_currencies(self, session: Session, fiat_currencies: list[FiatCurrency]):
+    def store_all(self, session: Session, fiat_currencies: list[FiatCurrency]):
         session.add_all(fiat_currencies)
 
     def find_by_short_name(self, session: Session, short_name: str) -> FiatCurrency | None:
         return session.query(FiatCurrency).filter(FiatCurrency.short_name.ilike(short_name)).first()
+
+    def list_all(self, session: Session) -> list[FiatCurrency]:
+        return session.query(FiatCurrency).all()

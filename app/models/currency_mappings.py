@@ -1,0 +1,84 @@
+"""
+Fiat Currency Mappings
+Maps currency short codes to their full names.
+Source: ISO 4217 and common currency names
+"""
+
+FIAT_CURRENCY_MAPPING = {
+    "aed": "United Arab Emirates Dirham",
+    "ars": "Argentine Peso",
+    "aud": "Australian Dollar",
+    "bch": "Bitcoin Cash",
+    "bdt": "Bangladeshi Taka",
+    "bhd": "Bahraini Dinar",
+    "bits": "Bitcoin Bits",
+    "bmd": "Bermudian Dollar",
+    "bnb": "Binance Coin",
+    "brl": "Brazilian Real",
+    "btc": "Bitcoin",
+    "cad": "Canadian Dollar",
+    "chf": "Swiss Franc",
+    "clp": "Chilean Peso",
+    "cny": "Chinese Yuan",
+    "czk": "Czech Koruna",
+    "dkk": "Danish Krone",
+    "dot": "Polkadot",
+    "eos": "EOS",
+    "eth": "Ethereum",
+    "eur": "Euro",
+    "gbp": "British Pound",
+    "gel": "Georgian Lari",
+    "hkd": "Hong Kong Dollar",
+    "huf": "Hungarian Forint",
+    "idr": "Indonesian Rupiah",
+    "ils": "Israeli Shekel",
+    "inr": "Indian Rupee",
+    "jpy": "Japanese Yen",
+    "krw": "South Korean Won",
+    "kwd": "Kuwaiti Dinar",
+    "link": "Chainlink",
+    "lkr": "Sri Lankan Rupee",
+    "ltc": "Litecoin",
+    "mmk": "Myanmar Kyat",
+    "mxn": "Mexican Peso",
+    "myr": "Malaysian Ringgit",
+    "ngn": "Nigerian Naira",
+    "nok": "Norwegian Krone",
+    "nzd": "New Zealand Dollar",
+    "php": "Philippine Peso",
+    "pkr": "Pakistani Rupee",
+    "pln": "Polish Zloty",
+    "rub": "Russian Ruble",
+    "sar": "Saudi Riyal",
+    "sats": "Bitcoin Satoshis",
+    "sek": "Swedish Krona",
+    "sgd": "Singapore Dollar",
+    "sol": "Solana",
+    "thb": "Thai Baht",
+    "try": "Turkish Lira",
+    "twd": "New Taiwan Dollar",
+    "uah": "Ukrainian Hryvnia",
+    "usd": "US Dollar",
+    "vef": "Venezuelan Bolívar",
+    "vnd": "Vietnamese Dong",
+    "xag": "Silver Ounce",
+    "xau": "Gold Ounce",
+    "xdr": "Special Drawing Right",
+    "xlm": "Stellar Lumens",
+    "xrp": "Ripple",
+    "yfi": "Yearn Finance",
+    "zar": "South African Rand",
+}
+
+
+def get_currency_full_name(short_name: str) -> str | None:
+    """
+    Get the full name for a currency short code.
+
+    Args:
+        short_name: Currency short code (e.g., 'usd', 'eur')
+
+    Returns:
+        Full currency name or None if not found
+    """
+    return FIAT_CURRENCY_MAPPING.get(short_name.lower())

@@ -84,7 +84,7 @@ def db_session(db_engine):
     connection = db_engine.connect()
 
     # Session an die Connection binden
-    Session = sessionmaker(bind=connection)
+    Session = sessionmaker(bind=connection, expire_on_commit=False)
     session = Session()
 
     yield session

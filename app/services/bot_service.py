@@ -6,6 +6,8 @@ from app.repository.favorite_repository import FavoriteRepository
 from app.repository.fiat_currency_repository import FiatCurrencyRepository
 from app.db import session_scope
 from app.services.crypto_api_service import CryptoApiService
+from app.models.schemas import Account, FiatCurrency
+from sqlalchemy.orm import Session
 
 
 class BotService:
@@ -24,26 +26,17 @@ class BotService:
         self._cryptocurrency_repository = cryptocurrency_repository
         self._crypto_api_service = crypto_api_service
 
-    def add_favorite(self, platformType: PlatformType, user_id: str, input_crypto: str) -> str:
+    def add_favorite(
+        self, platformType: PlatformType, platform_user_id: str, input_crypto: str
+    ) -> str:
         try:
             with session_scope() as session:
-                account = self._account_repository.find_by_platform_and_id(
-                    session=session, platform=platformType, platform_user_id=user_id
+                account = self.find_or_create_account(
+                    session=session, platformType=platformType, platform_user_id=platform_user_id
                 )
-                if account is None:
-                    eur_currency = self._fiat_currency_repository.find_by_short_name(session, "EUR")
-                    preferred_fiat_currency_id = 0
-                    if eur_currency is not None:
-                        preferred_fiat_currency_id = int(eur_currency.id)
-                    account = self._account_repository.create(
-                        session=session,
-                        platform=platformType,
-                        platform_user_id=user_id,
-                        preferred_fiat_currency_id=preferred_fiat_currency_id,
-                    )
 
                 if not account:
-                    return f"⚠️ Could not find or create account for user ID {user_id}."
+                    return f"⚠️ Could not find or create account for user ID {platform_user_id}."
 
                 cryptocurrency = self._cryptocurrency_repository.find_by_name_or_symbol(
                     session, input_crypto
@@ -157,3 +150,33 @@ class BotService:
         except Exception as e:
             logging.error(f"Error dropping favorites: {e}")
             return "❌ An error occurred while dropping your favorites. " "Please try again later."
+
+    def list_supported_fiat_currencies(self) -> list[FiatCurrency]:
+        try:
+            with session_scope() as session:
+                fiat_currencies = self._fiat_currency_repository.list_all(session)
+                return fiat_currencies
+        except Exception as e:
+            logging.error(f"Error listing supported fiat currencies: {e}")
+            return []
+
+    # Internal methods
+
+    def find_or_create_account(
+        self, session: Session, platformType: PlatformType, platform_user_id: str
+    ) -> Account | None:
+        account = self._account_repository.find_by_platform_and_id(
+            session=session, platform=platformType, platform_user_id=platform_user_id
+        )
+        if account is None:
+            eur_currency = self._fiat_currency_repository.find_by_short_name(session, "EUR")
+            preferred_fiat_currency_id = 0
+            if eur_currency is not None:
+                preferred_fiat_currency_id = int(eur_currency.id)
+            account = self._account_repository.create(
+                session=session,
+                platform=platformType,
+                platform_user_id=platform_user_id,
+                preferred_fiat_currency_id=preferred_fiat_currency_id,
+            )
+        return account

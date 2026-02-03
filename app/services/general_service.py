@@ -1,4 +1,5 @@
 from app.models.schemas import FiatCurrency
+from app.models.currency_mappings import get_currency_full_name
 from app.repository.cryptocurrency_repository import CryptocurrencyRepository
 from app.repository.fiat_currency_repository import FiatCurrencyRepository
 from app.services.crypto_api_service import CryptoApiService
@@ -23,9 +24,12 @@ class GeneralService:
                     await self._crypto_api_service.get_supported_fiat_currencies()
                 )
                 fiat_currencies = [
-                    FiatCurrency(short_name=short_name) for short_name in supported_fiat_currencies
+                    FiatCurrency(
+                        short_name=short_name, full_name=get_currency_full_name(short_name)
+                    )
+                    for short_name in supported_fiat_currencies
                 ]
-                self._fiat_currency_repository.store_fiat_currencies(session, fiat_currencies)
+                self._fiat_currency_repository.store_all(session, fiat_currencies)
 
     async def initialize_crypto_currencies(self):
         with session_scope() as session:

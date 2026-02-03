@@ -98,7 +98,7 @@ class TelegramBot:
         input_crypto = context.args[0].lower()
         answer = self._bot_service.add_favorite(
             platformType=self.PLATFORM_TYPE,
-            user_id=str(user_id),
+            platform_user_id=str(user_id),
             input_crypto=input_crypto,
         )
         await update.message.reply_text(answer)

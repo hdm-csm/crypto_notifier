@@ -70,3 +70,4 @@ class FiatCurrency(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     short_name = Column(String(10), unique=True, index=True)
+    full_name = Column(String(255))
