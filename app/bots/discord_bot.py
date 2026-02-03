@@ -42,7 +42,8 @@ class Crypto_Notifier_Cog(commands.Cog):
             coins = await self._crypto_api_service.list_top_crypto_currencies(amount=1)
             status_message = ""
             for coin in coins:
-                status_message += f"{coin.symbol.upper()}: {coin.current_price:.2f} € (live)\n"
+                status_message += f"{coin.symbol.upper()}: {coin.current_price:.2f} € "
+            status_message += "(live)"
             if status_message:
                 await self.bot.change_presence(
                     activity=discord.Activity(
