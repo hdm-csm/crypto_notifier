@@ -4,7 +4,7 @@ from app.models.dtos import Coin
 
 
 class CryptoApiService:
-    BASE_URL = "https://api.coingecko.com/api/v3/coins"
+    BASE_URL = "https://api.coingecko.com/api/v3"
 
     def __init__(self, client: httpx.AsyncClient):
         self.client = client
@@ -15,7 +15,7 @@ class CryptoApiService:
             "order": "market_cap_desc",
             "per_page": amount,
         }
-        url = f"{self.BASE_URL}/markets"
+        url = f"{self.BASE_URL}/coins/markets"
         response = await self.client.get(url, params=params)
         json_obj = json.loads(response.text)
         coins = [Coin(**coin_data) for coin_data in json_obj]
@@ -25,7 +25,7 @@ class CryptoApiService:
         # TODO: Allow symbol as input aswell (must be done before)
         name = crypto_name.lower().strip()
         params: dict[str, str] = {"vs_currency": "eur"}
-        url = f"{self.BASE_URL}/{name}"
+        url = f"{self.BASE_URL}/coins/{name}"
         response = await self.client.get(url, params=params)
         json_obj = json.loads(response.text)
         result = json_obj.get("market_data", {}).get("current_price", {}).get("eur")
@@ -33,3 +33,11 @@ class CryptoApiService:
         if result is not None:
             return float(result)
         return None
+
+    async def get_supported_fiat_currencies(self) -> list[str]:
+        url = f"{self.BASE_URL}/simple/supported_vs_currencies"
+        response = await self.client.get(url)
+        json_obj = json.loads(response.text)
+        if not isinstance(json_obj, list):
+            return []
+        return [str(currency) for currency in json_obj]

@@ -7,6 +7,7 @@ from app.bots.telegram_bot import TelegramBot
 from app.repository.account_repository import AccountRepository
 from app.repository.favorite_repository import FavoriteRepository
 from app.repository.cryptocurrency_repository import CryptocurrencyRepository
+from app.repository.fiat_currency_repository import FiatCurrencyRepository
 from app.services.bot_service import BotService
 from app.services.crypto_api_service import CryptoApiService
 from app.services.general_service import GeneralService
@@ -30,15 +31,23 @@ async def async_main():
     account_repository = AccountRepository()
     favorite_repository = FavoriteRepository()
     cryptocurrency_repository = CryptocurrencyRepository()
+    fiat_currency_repository = FiatCurrencyRepository()
 
     http_client = httpx.AsyncClient()
     crypto_api_service = CryptoApiService(http_client)
 
-    general_service = GeneralService(cryptocurrency_repository, crypto_api_service)
+    general_service = GeneralService(
+        fiat_currency_repository, cryptocurrency_repository, crypto_api_service
+    )
     bot_service = BotService(
-        account_repository, favorite_repository, cryptocurrency_repository, crypto_api_service
+        fiat_currency_repository,
+        account_repository,
+        favorite_repository,
+        cryptocurrency_repository,
+        crypto_api_service,
     )
 
+    await general_service.init_fiat_currencies()
     await general_service.initialize_crypto_currencies()
 
     discord_bot = DiscordBot(

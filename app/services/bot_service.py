@@ -3,6 +3,7 @@ from app.models.enums import PlatformType
 from app.repository.account_repository import AccountRepository
 from app.repository.cryptocurrency_repository import CryptocurrencyRepository
 from app.repository.favorite_repository import FavoriteRepository
+from app.repository.fiat_currency_repository import FiatCurrencyRepository
 from app.db import session_scope
 from app.services.crypto_api_service import CryptoApiService
 
@@ -11,11 +12,13 @@ class BotService:
 
     def __init__(
         self,
+        fiat_currency_repository: FiatCurrencyRepository,
         account_repository: AccountRepository,
         favorite_repository: FavoriteRepository,
         cryptocurrency_repository: CryptocurrencyRepository,
         crypto_api_service: CryptoApiService,
     ):
+        self._fiat_currency_repository = fiat_currency_repository
         self._account_repository = account_repository
         self._favorite_repository = favorite_repository
         self._cryptocurrency_repository = cryptocurrency_repository
@@ -28,8 +31,15 @@ class BotService:
                     session=session, platform=platformType, platform_user_id=user_id
                 )
                 if account is None:
+                    eur_currency = self._fiat_currency_repository.find_by_short_name(session, "EUR")
+                    preferred_fiat_currency_id = 0
+                    if eur_currency is not None:
+                        preferred_fiat_currency_id = int(eur_currency.id)
                     account = self._account_repository.create(
-                        session=session, platform=platformType, platform_user_id=user_id
+                        session=session,
+                        platform=platformType,
+                        platform_user_id=user_id,
+                        preferred_fiat_currency_id=preferred_fiat_currency_id,
                     )
 
                 if not account:
