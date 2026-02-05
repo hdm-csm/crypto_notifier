@@ -1,4 +1,3 @@
-from app.models.schemas import Account
 from app.repository.account_repository import AccountRepository
 
 

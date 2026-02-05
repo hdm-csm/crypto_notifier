@@ -100,11 +100,11 @@ class TelegramBot:
         if context.args is None or not context.args:
             await update.message.reply_text("Please provide a cryptocurrency name.")
             return
-        user_id = update.effective_user.id
+        user_id: str = str(update.effective_user.id)
         input_crypto = context.args[0].lower()
         answer = self._favorites_service.remove_favorite(
             platform_type=self.PLATFORM_TYPE,
-            platform_user_id=str(user_id),
+            platform_user_id=user_id,
             input_crypto=input_crypto,
         )
         await update.message.reply_text(answer)

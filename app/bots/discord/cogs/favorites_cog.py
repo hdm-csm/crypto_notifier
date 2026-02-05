@@ -20,7 +20,7 @@ class FavoritesCog(commands.Cog):
         """Save cryptocurrency as favorite."""
         user_id = ctx.author.id
         input_crypto = currency.lower()
-        answer = self._bot_service.add_favorite(
+        answer = self._favorites_service.add_favorite(
             platform_type=self.PLATFORM_TYPE,
             platform_user_id=str(user_id),
             input_crypto=input_crypto,
@@ -31,7 +31,7 @@ class FavoritesCog(commands.Cog):
     async def _list_favs(self, ctx: commands.Context):
         """List favorite cryptocurrencies."""
         user_id = ctx.author.id
-        answer = await self._bot_service.list_favorites(
+        answer = await self._favorites_service.list_favorites(
             platform_type=self.PLATFORM_TYPE,
             platform_user_id=str(user_id),
         )
@@ -42,7 +42,7 @@ class FavoritesCog(commands.Cog):
         """Remove cryptocurrency from favorites."""
         user_id = ctx.author.id
         input_crypto = currency.lower()
-        answer = self._bot_service.remove_favorite(
+        answer = self._favorites_service.remove_favorite(
             platform_type=self.PLATFORM_TYPE,
             platform_user_id=str(user_id),
             input_crypto=input_crypto,
@@ -53,7 +53,7 @@ class FavoritesCog(commands.Cog):
     async def _drop_favs(self, ctx: commands.Context):
         """Remove all favorite cryptocurrencies."""
         user_id = ctx.author.id
-        answer = self._bot_service.drop_favorites(
+        answer = self._favorites_service.drop_favorites(
             platform_type=self.PLATFORM_TYPE,
             platform_user_id=str(user_id),
         )

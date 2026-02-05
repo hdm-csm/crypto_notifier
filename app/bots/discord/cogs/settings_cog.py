@@ -1,7 +1,7 @@
 from discord.ext import commands
 from app.db import session_scope
 from app.models.enums import PlatformType
-from app.models.schemas import Account, FiatCurrency
+from app.models.schemas import Account
 from app.services.account_lookup_service import AccountLookupService
 from app.services.fiat_currency_service import FiatCurrencyService
 
@@ -44,7 +44,7 @@ class SettingsCog(commands.Cog):
     async def _set_fiat_currency(self, ctx: commands.Context, input: str):
         """Set preferred fiat currency."""
         user_id: str = str(ctx.author.id)
-        answer: str = self._bot_service.set_fiat_currency(
+        answer: str = self._fiat_currency_service.set_fiat_currency(
             platform_type=self.PLATFORM_TYPE,
             platform_user_id=user_id,
             input=input,

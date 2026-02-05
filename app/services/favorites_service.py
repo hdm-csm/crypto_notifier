@@ -58,11 +58,13 @@ class FavoritesService:
             logging.error(f"Error adding favorite: {e}")
             return "❌ An error occurred while saving your favorite. " "Please try again later."
 
-    def remove_favorite(self, platform_type: PlatformType, user_id: str, input_crypto: str) -> str:
+    def remove_favorite(
+        self, platform_type: PlatformType, platform_user_id: str, input_crypto: str
+    ) -> str:
         try:
             with session_scope() as session:
                 account: Account = self._account_lookup_service.find_or_create_account(
-                    session=session, platform_type=platform_type, platform_user_id=user_id
+                    session=session, platform_type=platform_type, platform_user_id=platform_user_id
                 )
 
                 cryptocurrency = self._cryptocurrency_repository.find_by_name_or_symbol(
@@ -91,11 +93,11 @@ class FavoritesService:
             logging.error(f"Error removing favorite: {e}")
             return "❌ An error occurred while removing your favorite. " "Please try again later."
 
-    async def list_favorites(self, platform_type: PlatformType, user_id: str) -> str:
+    async def list_favorites(self, platform_type: PlatformType, platform_user_id: str) -> str:
         try:
             with session_scope() as session:
                 account: Account = self._account_lookup_service.find_or_create_account(
-                    session=session, platform=platform_type, platform_user_id=user_id
+                    session=session, platform_type=platform_type, platform_user_id=platform_user_id
                 )
                 favorites = account.favorite_cryptos
                 if not favorites or len(favorites) == 0:
@@ -133,11 +135,11 @@ class FavoritesService:
             logging.error(f"Error listing favorites: {e}")
             return "❌ An error occurred while listing your favorites. " "Please try again later."
 
-    def drop_favorites(self, platform_type: PlatformType, user_id: str) -> str:
+    def drop_favorites(self, platform_type: PlatformType, platform_user_id: str) -> str:
         try:
             with session_scope() as session:
                 account: Account = self._account_lookup_service.find_or_create_account(
-                    session=session, platform=platform_type, platform_user_id=user_id
+                    session=session, platform_type=platform_type, platform_user_id=platform_user_id
                 )
                 if not account.favorite_cryptos:
                     return "ℹ️ You have no favorite cryptocurrencies to drop."

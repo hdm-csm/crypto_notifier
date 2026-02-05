@@ -10,11 +10,9 @@ from app.repository.cryptocurrency_repository import CryptocurrencyRepository
 from app.repository.fiat_currency_repository import FiatCurrencyRepository
 from app.services.crypto_api_service import CryptoApiService
 from app.services.account_lookup_service import AccountLookupService
-from app.services.account_service import AccountService
 from app.services.crypto_currency_service import CryptoCurrencyService
 from app.services.favorites_service import FavoritesService
 from app.services.fiat_currency_service import FiatCurrencyService
-from app.services.init_service import InitService
 from scripts.init_db import init_db
 
 DISCORD_BOT_TOKEN = Config.DISCORD_BOT_TOKEN
