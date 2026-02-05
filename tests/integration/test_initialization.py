@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
-from app.services.general_service import GeneralService
+from app.services.init_service import InitService
 from app.repository.cryptocurrency_repository import CryptocurrencyRepository
 from app.services.crypto_api_service import CryptoApiService
 from app.models.dtos import Coin
@@ -84,7 +84,7 @@ async def test_startup_initialization_fills_db(db_session, mocker):
 
     mocker.patch("app.services.general_service.session_scope", return_value=mock_scope)
 
-    general_service = GeneralService(crypto_repo, api_service)
+    general_service = InitService(crypto_repo, api_service)
 
     # EXECUTION
     # Datenbank am Anfang leer

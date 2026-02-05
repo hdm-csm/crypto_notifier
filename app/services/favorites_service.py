@@ -1,42 +1,36 @@
 import logging
 from app.models.enums import PlatformType
-from app.repository.account_repository import AccountRepository
 from app.repository.cryptocurrency_repository import CryptocurrencyRepository
 from app.repository.favorite_repository import FavoriteRepository
-from app.repository.fiat_currency_repository import FiatCurrencyRepository
 from app.db import session_scope
+from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
-from app.models.schemas import Account, FiatCurrency
-from sqlalchemy.orm import Session
+from app.models.schemas import Account
+from app.utils.exceptions import AccountNotFoundOrCreatedException
 
 
-class BotService:
+class FavoritesService:
 
     def __init__(
         self,
-        fiat_currency_repository: FiatCurrencyRepository,
-        account_repository: AccountRepository,
         favorite_repository: FavoriteRepository,
         cryptocurrency_repository: CryptocurrencyRepository,
         crypto_api_service: CryptoApiService,
+        account_lookup_service: AccountLookupService,
     ):
-        self._fiat_currency_repository = fiat_currency_repository
-        self._account_repository = account_repository
         self._favorite_repository = favorite_repository
         self._cryptocurrency_repository = cryptocurrency_repository
         self._crypto_api_service = crypto_api_service
+        self._account_lookup_service = account_lookup_service
 
     def add_favorite(
-        self, platformType: PlatformType, platform_user_id: str, input_crypto: str
+        self, platform_type: PlatformType, platform_user_id: str, input_crypto: str
     ) -> str:
         try:
             with session_scope() as session:
-                account = self.find_or_create_account(
-                    session=session, platformType=platformType, platform_user_id=platform_user_id
+                account: Account = self._account_lookup_service.find_or_create_account(
+                    session=session, platform_type=platform_type, platform_user_id=platform_user_id
                 )
-
-                if not account:
-                    return f"⚠️ Could not find or create account for user ID {platform_user_id}."
 
                 cryptocurrency = self._cryptocurrency_repository.find_by_name_or_symbol(
                     session, input_crypto
@@ -57,19 +51,19 @@ class BotService:
 
                 return f"✅ Saved {input_crypto} as your favorite cryptocurrency!"
 
+        except AccountNotFoundOrCreatedException as e:
+            logging.exception(str(e))
+            return "⚠️ Account not found for user."
         except Exception as e:
             logging.error(f"Error adding favorite: {e}")
             return "❌ An error occurred while saving your favorite. " "Please try again later."
 
-    def remove_favorite(self, platformType: PlatformType, user_id: str, input_crypto: str) -> str:
+    def remove_favorite(self, platform_type: PlatformType, user_id: str, input_crypto: str) -> str:
         try:
             with session_scope() as session:
-                account = self._account_repository.find_by_platform_and_id(
-                    session=session, platform=platformType, platform_user_id=user_id
+                account: Account = self._account_lookup_service.find_or_create_account(
+                    session=session, platform_type=platform_type, platform_user_id=user_id
                 )
-
-                if account is None:
-                    return f"⚠️ Account not found for user ID {user_id}."
 
                 cryptocurrency = self._cryptocurrency_repository.find_by_name_or_symbol(
                     session, input_crypto
@@ -90,18 +84,19 @@ class BotService:
 
                 return f"✅ Removed {input_crypto} from your favorites!"
 
+        except AccountNotFoundOrCreatedException as e:
+            logging.exception(str(e))
+            return "⚠️ Account not found for user."
         except Exception as e:
             logging.error(f"Error removing favorite: {e}")
             return "❌ An error occurred while removing your favorite. " "Please try again later."
 
-    async def list_favorites(self, platformType: PlatformType, user_id: str) -> str:
+    async def list_favorites(self, platform_type: PlatformType, user_id: str) -> str:
         try:
             with session_scope() as session:
-                account = self._account_repository.find_by_platform_and_id(
-                    session=session, platform=platformType, platform_user_id=user_id
+                account: Account = self._account_lookup_service.find_or_create_account(
+                    session=session, platform=platform_type, platform_user_id=user_id
                 )
-                if account is None:
-                    return "⚠️ Account not found."
                 favorites = account.favorite_cryptos
                 if not favorites or len(favorites) == 0:
                     return "ℹ️ You have no favorite cryptocurrencies yet."
@@ -131,88 +126,26 @@ class BotService:
                         )
                         message += "   Price: Unavailable\n\n"
                 return message
+        except AccountNotFoundOrCreatedException as e:
+            logging.exception(str(e))
+            return "⚠️ Account not found for user."
         except Exception as e:
             logging.error(f"Error listing favorites: {e}")
             return "❌ An error occurred while listing your favorites. " "Please try again later."
 
-    def drop_favorites(self, platformType: PlatformType, user_id: str) -> str:
+    def drop_favorites(self, platform_type: PlatformType, user_id: str) -> str:
         try:
             with session_scope() as session:
-                account = self._account_repository.find_by_platform_and_id(
-                    session=session, platform=platformType, platform_user_id=user_id
+                account: Account = self._account_lookup_service.find_or_create_account(
+                    session=session, platform=platform_type, platform_user_id=user_id
                 )
-                if account is None:
-                    return "⚠️ Account not found."
                 if not account.favorite_cryptos:
                     return "ℹ️ You have no favorite cryptocurrencies to drop."
                 self._favorite_repository.drop_favorites(session=session, account=account)
                 return "✅ All favorite cryptocurrencies have been removed!"
+        except AccountNotFoundOrCreatedException as e:
+            logging.exception(str(e))
+            return "⚠️ Account not found for user."
         except Exception as e:
             logging.error(f"Error dropping favorites: {e}")
             return "❌ An error occurred while dropping your favorites. " "Please try again later."
-
-    # CURRENCIES
-
-    def list_supported_fiat_currencies(self) -> list[FiatCurrency]:
-        try:
-            with session_scope() as session:
-                fiat_currencies = self._fiat_currency_repository.list_all(session)
-                return fiat_currencies
-        except Exception as e:
-            logging.error(f"Error listing supported fiat currencies: {e}")
-            return []
-
-    def set_fiat_currency(
-        self, platformType: PlatformType, platform_user_id: str, input: str
-    ) -> str:
-        try:
-            with session_scope() as session:
-                account: Account | None = self.find_or_create_account(
-                    session=session, platformType=platformType, platform_user_id=platform_user_id
-                )
-
-                if not account:
-                    return f"⚠️ Could not find or create account for user ID {platform_user_id}."
-
-                fiat_currency: FiatCurrency | None = (
-                    self._fiat_currency_repository.find_by_full_or_short_name(session, input)
-                )
-
-                if not fiat_currency:
-                    return (
-                        f"⚠️ Currency '{input}' not found. "
-                        "Please check the name/symbol and try again."
-                    )
-
-                self._account_repository.set_fiat_currency(
-                    session=session, account=account, fiat_currency_id=int(fiat_currency.id)
-                )
-
-                return f"✅ Saved {input} as your preferred currency!"
-        except Exception as e:
-            logging.error(f"Error changing currency: {e}")
-            return (
-                "❌ An error occurred while saving your preferred currency. "
-                "Please try again later."
-            )
-
-    # Internal methods
-
-    def find_or_create_account(
-        self, session: Session, platformType: PlatformType, platform_user_id: str
-    ) -> Account | None:
-        account = self._account_repository.find_by_platform_and_id(
-            session=session, platform=platformType, platform_user_id=platform_user_id
-        )
-        if account is None:
-            eur_currency = self._fiat_currency_repository.find_by_short_name(session, "EUR")
-            preferred_fiat_currency_id = 0
-            if eur_currency is not None:
-                preferred_fiat_currency_id = int(eur_currency.id)
-            account = self._account_repository.create(
-                session=session,
-                platform=platformType,
-                platform_user_id=platform_user_id,
-                preferred_fiat_currency_id=preferred_fiat_currency_id,
-            )
-        return account

@@ -1,6 +1,6 @@
 import pytest
 from unittest.mock import MagicMock, AsyncMock
-from app.services.general_service import GeneralService
+from app.services.init_service import InitService
 from app.models.dtos import Coin
 
 # Testen der Initialisierung / GeneralService-Klasse
@@ -81,7 +81,7 @@ async def test_initialize_crypto_currencies_when_empty(mocker):
     mock_session_scope.return_value.__enter__.return_value = mock_session
 
     # Initialisieren des Services mit Mock
-    service = GeneralService(mock_repo, mock_api)
+    service = InitService(mock_repo, mock_api)
 
     await service.initialize_crypto_currencies()
 
@@ -112,7 +112,7 @@ async def test_initialize_does_nothing_when_repo_not_empty(mocker):
     # Session Scope Mocking
     mocker.patch("app.services.general_service.session_scope")
 
-    service = GeneralService(mock_repo, mock_api)
+    service = InitService(mock_repo, mock_api)
 
     # --- EXECUTION ---
     await service.initialize_crypto_currencies()

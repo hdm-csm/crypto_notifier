@@ -1,5 +1,6 @@
+import logging
 from sqlalchemy.orm import Session
-from app.models.schemas import FiatCurrency
+from app.models.schemas import Account, FiatCurrency
 from sqlalchemy import or_
 
 
@@ -23,3 +24,13 @@ class FiatCurrencyRepository:
 
     def list_all(self, session: Session) -> list[FiatCurrency]:
         return session.query(FiatCurrency).all()
+
+    def set_fiat_currency(
+        self, session: Session, account: Account, fiat_currency_id: int
+    ) -> Account:
+        account.selected_fiat_currency_id = fiat_currency_id
+        session.flush()
+        logging.info(
+            f"Updated fiat currency for {account.platform.value} account {account.platform_user_id} to {fiat_currency_id}"
+        )
+        return account

@@ -18,7 +18,7 @@ def session_scope():
         session.commit()
     except Exception:
         session.rollback()
-        raise
+        raise  # re-throw the exception
     finally:
         session.close()
 

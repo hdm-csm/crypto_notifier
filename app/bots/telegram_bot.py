@@ -1,11 +1,9 @@
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler, ApplicationBuilder
-from app.repository.account_repository import AccountRepository
-from app.repository.favorite_repository import FavoriteRepository
-from app.services.bot_service import BotService
 from app.services.crypto_api_service import CryptoApiService
 from app.models.schemas import PlatformType
+from app.services.favorites_service import FavoritesService
 
 logging.basicConfig(
     level=logging.INFO,
@@ -18,18 +16,11 @@ class TelegramBot:
     PLATFORM_TYPE = PlatformType.TELEGRAM
 
     def __init__(
-        self,
-        token: str,
-        crypto_api_service: CryptoApiService,
-        account_repository: AccountRepository,
-        favorite_repository: FavoriteRepository,
-        bot_service: BotService,
+        self, token: str, crypto_api_service: CryptoApiService, favorites_service: FavoritesService
     ):
-        self.token = token
-        self.crypto_api_service = crypto_api_service
-        self.account_repository = account_repository
-        self.favorite_repository = favorite_repository
-        self._bot_service = bot_service
+        self._token = token
+        self._crypto_api_service = crypto_api_service
+        self._favorites_service = favorites_service
 
         self.app = ApplicationBuilder().token(token).build()
         self.app.add_handler(CommandHandler("index", self.index_command, block=False))
@@ -68,7 +59,7 @@ class TelegramBot:
             )
             return
         input = context.args[0]
-        result = await self.crypto_api_service.get_index(input)
+        result = await self._crypto_api_service.get_index(input)
         if result is None:
             await update.message.reply_text(
                 f'Could not find price for "{input}".\nPlease enter correct id.'
@@ -79,7 +70,7 @@ class TelegramBot:
     async def list_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if update.message is None:
             return
-        result = await self.crypto_api_service.list_top_crypto_currencies(amount=10)
+        result = await self._crypto_api_service.list_top_crypto_currencies(amount=10)
         message = "Top 10 Cryptocurrencies by Market Cap:\n\n"
         for coin in result:
             message += f"{coin.market_cap_rank}. {coin.name} ({coin.symbol.upper()})\n"
@@ -96,8 +87,8 @@ class TelegramBot:
             return
         user_id = update.effective_user.id
         input_crypto = context.args[0].lower()
-        answer = self._bot_service.add_favorite(
-            platformType=self.PLATFORM_TYPE,
+        answer = self._favorites_service.add_favorite(
+            platform_type=self.PLATFORM_TYPE,
             platform_user_id=str(user_id),
             input_crypto=input_crypto,
         )
@@ -111,9 +102,9 @@ class TelegramBot:
             return
         user_id = update.effective_user.id
         input_crypto = context.args[0].lower()
-        answer = self._bot_service.remove_favorite(
-            platformType=self.PLATFORM_TYPE,
-            user_id=str(user_id),
+        answer = self._favorites_service.remove_favorite(
+            platform_type=self.PLATFORM_TYPE,
+            platform_user_id=str(user_id),
             input_crypto=input_crypto,
         )
         await update.message.reply_text(answer)
@@ -122,9 +113,9 @@ class TelegramBot:
         if update.effective_user is None or update.message is None:
             return
         user_id = update.effective_user.id
-        answer = await self._bot_service.list_favorites(
-            platformType=self.PLATFORM_TYPE,
-            user_id=str(user_id),
+        answer = await self._favorites_service.list_favorites(
+            platform_type=self.PLATFORM_TYPE,
+            platform_user_id=str(user_id),
         )
         await update.message.reply_text(answer)
 
@@ -132,8 +123,8 @@ class TelegramBot:
         if update.effective_user is None or update.message is None:
             return
         user_id = update.effective_user.id
-        answer = self._bot_service.drop_favorites(
-            platformType=self.PLATFORM_TYPE,
-            user_id=str(user_id),
+        answer = self._favorites_service.drop_favorites(
+            platform_type=self.PLATFORM_TYPE,
+            platform_user_id=str(user_id),
         )
         await update.message.reply_text(answer)
