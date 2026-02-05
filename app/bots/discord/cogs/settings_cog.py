@@ -1,5 +1,6 @@
 from discord.ext import commands
 from app.models.enums import PlatformType
+from app.models.schemas import FiatCurrency
 from app.services.bot_service import BotService
 
 
@@ -15,22 +16,24 @@ class SettingsCog(commands.Cog):
         self.bot = bot
         self._bot_service = bot_service
 
-    @commands.command(name="list_currencies")
-    async def _list_currencies(self, ctx: commands.Context):
-        fiat_currencies = self._bot_service.list_supported_fiat_currencies()
-        message = "List of the supported currencies:\n"
+    @commands.command(name="list_fiat")
+    async def _list_fiat_currencies(self, ctx: commands.Context):
+        fiat_currencies: list[FiatCurrency] = self._bot_service.list_supported_fiat_currencies()
+        message: str = "List of the supported currencies:\n"
         for currency in fiat_currencies:
             message += f"`{currency.short_name.upper()}` - {currency.full_name}\n"
-        message += "\nTo change your preferred currency, use the command:\n`/change_currency <CURRENCY_CODE>`"
+        message += (
+            "\nTo change your preferred currency, use the command:\n`/set_fiat <CURRENCY_CODE>`"
+        )
         await ctx.send(message)
 
-    @commands.command(name="change_currency")
-    async def _change_currency(self, ctx: commands.Context, input: str):
-        """Change preferred fiat currency."""
-        user_id = ctx.author.id
-        answer = self._bot_service.set_currency(
+    @commands.command(name="set_fiat")
+    async def _set_fiat_currency(self, ctx: commands.Context, input: str):
+        """Set preferred fiat currency."""
+        user_id: str = str(ctx.author.id)
+        answer: str = self._bot_service.set_fiat_currency(
             platformType=self.PLATFORM_TYPE,
-            platform_user_id=str(user_id),
+            platform_user_id=user_id,
             input=input,
         )
         await ctx.send(answer)

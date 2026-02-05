@@ -27,7 +27,7 @@ class Account(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     platform: Mapped[PlatformType] = mapped_column(Enum(PlatformType), nullable=False)
     platform_user_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
-    preferred_fiat_currency_id: Mapped[int] = mapped_column(
+    selected_fiat_currency_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("fiat_currencies.id"), nullable=False
     )
     created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -35,8 +35,9 @@ class Account(Base):
     notifications: Mapped[list["Notification"]] = relationship(
         "Notification", back_populates="account"
     )
-    preferred_fiat_currency: Mapped["FiatCurrency"] = relationship("FiatCurrency")
-
+    selected_fiat_currency: Mapped["FiatCurrency"] = relationship(
+        "FiatCurrency", foreign_keys=[selected_fiat_currency_id]
+    )
     favorite_cryptos: Mapped[list["Cryptocurrency"]] = relationship(
         "Cryptocurrency", secondary=favorites_table, back_populates="favorited_by"
     )

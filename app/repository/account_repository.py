@@ -14,7 +14,7 @@ logging.basicConfig(
 class AccountRepository:
 
     def exists(self, session: Session, platform: PlatformType, platform_user_id: str) -> bool:
-        result = (
+        result: Account | None = (
             session.query(Account)
             .filter(Account.platform == platform, Account.platform_user_id == str(platform_user_id))
             .first()
@@ -39,25 +39,25 @@ class AccountRepository:
     ) -> Account:
         new_account = Account(
             platform=platform,
-            platform_user_id=str(platform_user_id),
+            platform_user_id=platform_user_id,
             preferred_fiat_currency_id=preferred_fiat_currency_id,
             created_at=datetime.now(),
         )
         session.add(new_account)
-        session.commit()
+        session.flush()
         session.refresh(new_account)
         logging.info(f"Created new {platform.value} account for {platform_user_id}")
         return new_account
 
-    def set_currency(
+    def set_fiat_currency(
         self,
         session: Session,
         account: Account,
         fiat_currency_id: int,
     ) -> Account:
-        account.preferred_fiat_currency_id = fiat_currency_id
-        session.commit()
-        session.refresh(account)
+        account.selected_fiat_currency_id = fiat_currency_id
+        session.flush()
+        # session.refresh(account) not needed here
         logging.info(
             f"Set preferred fiat currency to ID {fiat_currency_id} for "
             f"{account.platform.value} account {account.platform_user_id}"
