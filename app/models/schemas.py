@@ -24,16 +24,20 @@ favorites_table = Table(
 class Account(Base):
     __tablename__ = "accounts"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     platform: Mapped[PlatformType] = mapped_column(Enum(PlatformType), nullable=False)
-    platform_user_id = Column(String(255), nullable=False, unique=True)
-    preferred_fiat_currency_id = Column(Integer, ForeignKey("fiat_currencies.id"), nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    platform_user_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    preferred_fiat_currency_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("fiat_currencies.id"), nullable=False
+    )
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    notifications = relationship("Notification", back_populates="account")
-    preferred_fiat_currency = relationship("FiatCurrency")
+    notifications: Mapped[list["Notification"]] = relationship(
+        "Notification", back_populates="account"
+    )
+    preferred_fiat_currency: Mapped["FiatCurrency"] = relationship("FiatCurrency")
 
-    favorite_cryptos = relationship(
+    favorite_cryptos: Mapped[list["Cryptocurrency"]] = relationship(
         "Cryptocurrency", secondary=favorites_table, back_populates="favorited_by"
     )
 
@@ -41,13 +45,15 @@ class Account(Base):
 class Cryptocurrency(Base):
     __tablename__ = "cryptocurrencies"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    symbol = Column(String(255), unique=True, index=True)
-    full_name = Column(String(255))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    full_name: Mapped[str] = mapped_column(String(255))
 
-    notifications = relationship("Notification", back_populates="cryptocurrency")
+    notifications: Mapped[list["Notification"]] = relationship(
+        "Notification", back_populates="cryptocurrency"
+    )
 
-    favorited_by = relationship(
+    favorited_by: Mapped[list["Account"]] = relationship(
         "Account", secondary=favorites_table, back_populates="favorite_cryptos"
     )
 
@@ -55,19 +61,21 @@ class Cryptocurrency(Base):
 class Notification(Base):
     __tablename__ = "notifications"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    account_id = Column(Integer, ForeignKey("accounts.id"))
-    cryptocurrency_id = Column(Integer, ForeignKey("cryptocurrencies.id"))
-    target_price = Column(Float)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    account_id: Mapped[int] = mapped_column(Integer, ForeignKey("accounts.id"))
+    cryptocurrency_id: Mapped[int] = mapped_column(Integer, ForeignKey("cryptocurrencies.id"))
+    target_price: Mapped[float] = mapped_column(Float)
     direction: Mapped[NotificationDirection] = mapped_column(Enum(NotificationDirection))
 
-    account = relationship("Account", back_populates="notifications")
-    cryptocurrency = relationship("Cryptocurrency", back_populates="notifications")
+    account: Mapped["Account"] = relationship("Account", back_populates="notifications")
+    cryptocurrency: Mapped["Cryptocurrency"] = relationship(
+        "Cryptocurrency", back_populates="notifications"
+    )
 
 
 class FiatCurrency(Base):
     __tablename__ = "fiat_currencies"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    short_name = Column(String(10), unique=True, index=True)
-    full_name = Column(String(255))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    short_name: Mapped[str] = mapped_column(String(10), unique=True, index=True)
+    full_name: Mapped[str] = mapped_column(String(255))

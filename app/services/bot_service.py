@@ -151,6 +151,8 @@ class BotService:
             logging.error(f"Error dropping favorites: {e}")
             return "❌ An error occurred while dropping your favorites. " "Please try again later."
 
+    # CURRENCIES
+
     def list_supported_fiat_currencies(self) -> list[FiatCurrency]:
         try:
             with session_scope() as session:
@@ -159,6 +161,38 @@ class BotService:
         except Exception as e:
             logging.error(f"Error listing supported fiat currencies: {e}")
             return []
+
+    def set_currency(self, platformType: PlatformType, platform_user_id: str, input: str) -> str:
+        try:
+            with session_scope() as session:
+                account = self.find_or_create_account(
+                    session=session, platformType=platformType, platform_user_id=platform_user_id
+                )
+
+                if not account:
+                    return f"⚠️ Could not find or create account for user ID {platform_user_id}."
+
+                fiat_currency = self._fiat_currency_repository.find_by_full_or_short_name(
+                    session, input
+                )
+
+                if not fiat_currency:
+                    return (
+                        f"⚠️ Currency '{input}' not found. "
+                        "Please check the name/symbol and try again."
+                    )
+
+                self._account_repository.set_currency(
+                    session=session, account=account, fiat_currency_id=int(fiat_currency.id)
+                )
+
+                return f"✅ Saved {input} as your preferred currency!"
+        except Exception as e:
+            logging.error(f"Error changing currency: {e}")
+            return (
+                "❌ An error occurred while saving your preferred currency. "
+                "Please try again later."
+            )
 
     # Internal methods
 

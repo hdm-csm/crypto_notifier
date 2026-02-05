@@ -7,7 +7,6 @@ ENV = os.getenv("ENV", "dev").lower()
 load_dotenv(f".env.{ENV}")
 
 
-
 class Config:
     """Centralized configuration"""
 

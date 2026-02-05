@@ -48,3 +48,18 @@ class AccountRepository:
         session.refresh(new_account)
         logging.info(f"Created new {platform.value} account for {platform_user_id}")
         return new_account
+
+    def set_currency(
+        self,
+        session: Session,
+        account: Account,
+        fiat_currency_id: int,
+    ) -> Account:
+        account.preferred_fiat_currency_id = fiat_currency_id
+        session.commit()
+        session.refresh(account)
+        logging.info(
+            f"Set preferred fiat currency to ID {fiat_currency_id} for "
+            f"{account.platform.value} account {account.platform_user_id}"
+        )
+        return account
