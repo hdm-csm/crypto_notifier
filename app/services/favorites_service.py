@@ -23,6 +23,30 @@ class FavoritesService:
         self._crypto_api_service = crypto_api_service
         self._account_lookup_service = account_lookup_service
 
+    def add_favorite_2(self, account: Account, input_crypto: str) -> str:
+        try:
+            with session_scope() as session:
+                # Merge the detached account into this session
+                account = session.merge(account)
+
+                cryptocurrency = self._cryptocurrency_repository.find_by_name_or_symbol(
+                    session, input_crypto
+                )
+                if not cryptocurrency:
+                    return (
+                        f"⚠️ Cryptocurrency '{input_crypto}' not found. "
+                        "Please check the name/symbol and try again."
+                    )
+                if cryptocurrency in account.favorite_cryptos:
+                    return f"⚠️ {input_crypto} is already in your favorites."
+                self._favorite_repository.add_favorite(
+                    session=session, account=account, crypto=cryptocurrency
+                )
+                return f"✅ Saved {input_crypto} as your favorite cryptocurrency!"
+        except Exception as e:
+            logging.error(f"Error adding favorite: {e}")
+            return "❌ An error occurred while saving your favorite. " "Please try again later."
+
     def add_favorite(
         self, platform_type: PlatformType, platform_user_id: str, input_crypto: str
     ) -> str:

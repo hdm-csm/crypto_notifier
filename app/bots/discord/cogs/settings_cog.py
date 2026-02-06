@@ -1,9 +1,11 @@
+import logging
 from discord.ext import commands
 from app.db import session_scope
 from app.models.enums import PlatformType
 from app.models.schemas import Account
 from app.services.account_lookup_service import AccountLookupService
 from app.services.fiat_currency_service import FiatCurrencyService
+from app.utils.exceptions import AccountNotFoundOrCreatedException
 
 
 class SettingsCog(commands.Cog):
@@ -23,16 +25,23 @@ class SettingsCog(commands.Cog):
     @commands.command(name="get_fiat")
     async def _get_fiat_currency(self, ctx: commands.Context):
         with session_scope() as session:
-            account: Account = self._account_lookup_service.find_or_create_account(
-                session=session,
-                platform_type=self.PLATFORM_TYPE,
-                platform_user_id=str(ctx.author.id),
-            )
-        message: str = "Your current fiat currency: "
-        message += f"`{account.selected_fiat_currency.short_name.upper()}` - {account.selected_fiat_currency.full_name}\n"
-        message += (
-            "\nTo change your preferred currency, use the command:\n`/set_fiat <CURRENCY_CODE>`"
-        )
+            try:
+                account: Account = self._account_lookup_service.find_or_create_account(
+                    session=session,
+                    platform_type=self.PLATFORM_TYPE,
+                    platform_user_id=str(ctx.author.id),
+                )
+                message: str = "Your current fiat currency: "
+                message += f"`{account.selected_fiat_currency.short_name.upper()}` - {account.selected_fiat_currency.full_name}\n"
+                message += (
+                    "\nTo change your preferred currency, use the command:\n`/set_fiat <CURRENCY_CODE>`"
+                )
+            except AccountNotFoundOrCreatedException as e:
+                logging.exception(str(e))
+                return "⚠️ Account not found for user."
+            except Exception as e:
+                logging.error(f"Error adding favorite: {e}")
+                return "❌ An error occurred while saving your favorite. " "Please try again later."
         await ctx.send(message)
 
     @commands.command(name="list_fiat")

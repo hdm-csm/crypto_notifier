@@ -60,7 +60,9 @@ class DiscordBot:
             self.bot, self._account_lookup_service, self._fiat_currency_service
         )
         crypto_info_cog = CrpytoInfoCog(self.bot, self._crypto_api_service)
-        favorites_cog = FavoritesCog(self.bot, self._favorites_service)
+        favorites_cog = FavoritesCog(
+            self.bot, self._favorites_service, self._account_lookup_service
+        )
 
         await self.bot.add_cog(settings_cog)
         await self.bot.add_cog(crypto_info_cog)

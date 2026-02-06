@@ -14,15 +14,17 @@ class CrpytoInfoCog(commands.Cog):
         self._crypto_api_service = crypto_api_service
 
     @app_commands.command(name="index", description="Get price/index of a cryptocurrency")
-    @app_commands.describe(currency="The type of cryptocurrency")
-    async def _index(self, interaction: discord.Interaction, currency: str):
-        result = await self._crypto_api_service.get_index(currency)
+    @app_commands.describe(crypto_currency="The type of cryptocurrency")
+    async def _index(self, interaction: discord.Interaction, crypto_currency: str):
+        result = await self._crypto_api_service.get_index(crypto_currency)
         if result is None:
             await interaction.response.send_message(
-                f'Could not find price for "{currency}".\nPlease enter correct id.'
+                f'Could not find price for "{crypto_currency}".\nPlease enter correct id.'
             )
         else:
-            await interaction.response.send_message(f"{currency.capitalize()}: {result:.2f} €")
+            await interaction.response.send_message(
+                f"{crypto_currency.capitalize()}: {result:.2f} €"
+            )
 
     @commands.command(name="list")
     async def _list(self, ctx: commands.Context):

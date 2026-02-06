@@ -16,8 +16,6 @@ class AccountLookupService:
         self._account_repository = account_repository
         self._fiat_currency_repository = fiat_currency_repository
 
-    # Internal methods
-
     def find_or_create_account(
         self, session: Session, platform_type: PlatformType, platform_user_id: str
     ) -> Account:
