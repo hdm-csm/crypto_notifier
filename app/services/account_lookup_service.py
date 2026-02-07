@@ -19,7 +19,6 @@ class AccountLookupService:
     def find_or_create_account(
         self, session: Session, platform_type: PlatformType, platform_user_id: str
     ) -> Account:
-        raise Exception("Simulated error in find_or_create_account")
         try:
             account = self._account_repository.find_by_platform_and_id(
                 session=session, platform=platform_type, platform_user_id=platform_user_id

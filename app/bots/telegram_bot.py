@@ -1,6 +1,7 @@
 import logging
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler, ApplicationBuilder
+from app.db import session_scope
 from app.services.crypto_api_service import CryptoApiService
 from app.models.schemas import PlatformType
 from app.services.favorites_service import FavoritesService
@@ -87,11 +88,13 @@ class TelegramBot:
             return
         user_id = update.effective_user.id
         input_crypto = context.args[0].lower()
-        answer = self._favorites_service.add_favorite(
-            platform_type=self.PLATFORM_TYPE,
-            platform_user_id=str(user_id),
-            input_crypto=input_crypto,
-        )
+        with session_scope() as db_session:
+            account = self._favorites_service._account_lookup_service.find_or_create_account(
+                session=db_session, platform_type=self.PLATFORM_TYPE, platform_user_id=str(user_id)
+            )
+            answer = self._favorites_service.add_favorite(
+                session_db=db_session, account=account, input_crypto=input_crypto
+            )
         await update.message.reply_text(answer)
 
     async def remove_fav_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:

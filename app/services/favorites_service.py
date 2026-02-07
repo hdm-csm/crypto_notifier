@@ -25,7 +25,7 @@ class FavoritesService:
         self._crypto_api_service = crypto_api_service
         self._account_lookup_service = account_lookup_service
 
-    def add_favorite_2(self, db_session: Session, account: Account, input_crypto: str) -> str:
+    def add_favorite(self, db_session: Session, account: Account, input_crypto: str) -> str:
         cryptocurrency = self._cryptocurrency_repository.find_by_name_or_symbol(
             db_session, input_crypto
         )
@@ -43,46 +43,7 @@ class FavoritesService:
             session=db_session, account=account, crypto=cryptocurrency
         )
 
-        raise Exception(
-            "Simulated error after adding favorite"
-        )  # Simulate an error to test transaction rollback
-
         return f"✅ Saved {input_crypto} as your favorite cryptocurrency!"
-
-    def add_favorite(
-        self, platform_type: PlatformType, platform_user_id: str, input_crypto: str
-    ) -> str:
-        try:
-            with session_scope() as session:
-                account: Account = self._account_lookup_service.find_or_create_account(
-                    session=session, platform_type=platform_type, platform_user_id=platform_user_id
-                )
-
-                cryptocurrency = self._cryptocurrency_repository.find_by_name_or_symbol(
-                    session, input_crypto
-                )
-
-                if not cryptocurrency:
-                    return (
-                        f"⚠️ Cryptocurrency '{input_crypto}' not found. "
-                        "Please check the name/symbol and try again."
-                    )
-
-                if cryptocurrency in account.favorite_cryptos:
-                    return f"⚠️ {input_crypto} is already in your favorites."
-
-                self._favorite_repository.add_favorite(
-                    session=session, account=account, crypto=cryptocurrency
-                )
-
-                return f"✅ Saved {input_crypto} as your favorite cryptocurrency!"
-
-        except AccountNotFoundOrCreatedException as e:
-            logging.exception(str(e))
-            return "⚠️ Account not found for user."
-        except Exception as e:
-            logging.error(f"Error adding favorite: {e}")
-            return "❌ An error occurred while saving your favorite. " "Please try again later."
 
     def remove_favorite(
         self, platform_type: PlatformType, platform_user_id: str, input_crypto: str
@@ -119,40 +80,35 @@ class FavoritesService:
             logging.error(f"Error removing favorite: {e}")
             return "❌ An error occurred while removing your favorite. " "Please try again later."
 
-    async def list_favorites(self, platform_type: PlatformType, platform_user_id: str) -> str:
+    async def list_favorites(self, db_session: Session, account: Account) -> str:
         try:
-            with session_scope() as session:
-                account: Account = self._account_lookup_service.find_or_create_account(
-                    session=session, platform_type=platform_type, platform_user_id=platform_user_id
-                )
-                favorites = account.favorite_cryptos
-                if not favorites or len(favorites) == 0:
-                    return "ℹ️ You have no favorite cryptocurrencies yet."
-                message = "Your Favorite Cryptocurrencies:\n\n"
-                for crypto_currency in favorites:
-                    try:
-                        price: float | None = await self._crypto_api_service.get_index(
-                            crypto_currency.full_name
+            favorites = account.favorite_cryptos
+            if not favorites or len(favorites) == 0:
+                return "ℹ️ You have no favorite cryptocurrencies yet."
+            message = "Your Favorite Cryptocurrencies:\n\n"
+            for crypto_currency in favorites:
+                try:
+                    price: float | None = await self._crypto_api_service.get_index(
+                        crypto_currency.full_name
+                    )
+                    if price is not None:
+                        message += (
+                            f"• {crypto_currency.full_name} "
+                            f"({crypto_currency.symbol.upper()})\n"
                         )
-                        if price is not None:
-                            message += (
-                                f"• {crypto_currency.full_name} "
-                                f"({crypto_currency.symbol.upper()})\n"
-                            )
-                            message += f"   Price: {price:.2f} €\n"
-                        else:
-                            message += (
-                                f"• {crypto_currency.full_name} "
-                                f"({crypto_currency.symbol.upper()})\n"
-                            )
-                            message += "   Price: Unavailable\n\n"
-                    except Exception as e:
-                        logging.error(f"Error fetching price for {crypto_currency.symbol}: {e}")
+                        message += f"   Price: {price:.2f} €\n"
+                    else:
                         message += (
                             f"• {crypto_currency.full_name} "
                             f"({crypto_currency.symbol.upper()})\n"
                         )
                         message += "   Price: Unavailable\n\n"
+                except Exception as e:
+                    logging.error(f"Error fetching price for {crypto_currency.symbol}: {e}")
+                    message += (
+                        f"• {crypto_currency.full_name} " f"({crypto_currency.symbol.upper()})\n"
+                    )
+                    message += "   Price: Unavailable\n\n"
                 return message
         except AccountNotFoundOrCreatedException as e:
             logging.exception(str(e))

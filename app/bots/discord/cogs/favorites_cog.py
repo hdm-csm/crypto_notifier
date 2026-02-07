@@ -91,15 +91,7 @@ class FavoritesCog(commands.Cog):
     @commands.command(name="add_fav")
     async def _add_fav(self, ctx: CustomContext, currency: str) -> None:
         """Save cryptocurrency as favorite."""
-        # user_id = ctx.author.id
-        # input_crypto = currency.lower()
-        # answer = self._favorites_service.add_favorite(
-        #     platform_type=self.PLATFORM_TYPE,
-        #     platform_user_id=str(user_id),
-        #     input_crypto=input_crypto,
-        # )
-        # await ctx.send(answer)
-        answer = self._favorites_service.add_favorite_2(
+        answer = self._favorites_service.add_favorite(
             db_session=ctx.db_session, account=ctx.account, input_crypto=currency.lower()
         )
         await ctx.send(answer)
