@@ -3,7 +3,7 @@ from app.db import Session_Factory
 from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
 from app.services.favorites_service import FavoritesService
-from app.bots.discord.context import CustomContext
+from app.bots.discord.custom_context import CustomContext
 import logging
 
 

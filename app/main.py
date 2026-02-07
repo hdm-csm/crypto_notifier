@@ -2,8 +2,8 @@ import asyncio
 import logging
 import httpx
 from config import Config
-from app.bots.discord_bot import DiscordBot
-from app.bots.telegram_bot import TelegramBot
+from app.bots.discord.discord_bot import DiscordBot
+from app.bots.telegram.telegram_bot import TelegramBot
 from app.repository.account_repository import AccountRepository
 from app.repository.favorite_repository import FavoriteRepository
 from app.repository.cryptocurrency_repository import CryptocurrencyRepository
