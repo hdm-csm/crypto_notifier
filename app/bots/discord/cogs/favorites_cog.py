@@ -1,27 +1,27 @@
 from discord.ext import commands
-from app.db import session_scope
+from app.db import Session_Factory
 from app.models.enums import PlatformType
-from app.models.schemas import Account
 from app.services.account_lookup_service import AccountLookupService
 from app.services.favorites_service import FavoritesService
 from app.bots.discord.context import CustomContext
+import logging
 
 
-class AccountConverter(commands.Converter):
-    PLATFORM_TYPE = PlatformType.DISCORD
+# class AccountConverter(commands.Converter):
+#     PLATFORM_TYPE = PlatformType.DISCORD
 
-    async def convert(self, ctx, argument):
-        user_id = str(ctx.author.id)
-        try:
-            with session_scope() as session:
-                account: Account = ctx.bot.account_lookup_service.find_or_create_account(
-                    session=session,
-                    platform_type=self.PLATFORM_TYPE,
-                    platform_user_id=user_id,
-                )
-                return account
-        except Exception:
-            raise commands.CommandError("⚠️ Could not load account.")
+#     async def convert(self, ctx, argument):
+#         user_id = str(ctx.author.id)
+#         try:
+#             with session_scope() as session:
+#                 account: Account = ctx.bot.account_lookup_service.find_or_create_account(
+#                     session=session,
+#                     platform_type=self.PLATFORM_TYPE,
+#                     platform_user_id=user_id,
+#                 )
+#                 return account
+#         except Exception:
+#             raise commands.CommandError("⚠️ Could not load account.")
 
 
 class FavoritesCog(commands.Cog):
@@ -38,18 +38,55 @@ class FavoritesCog(commands.Cog):
         self._favorites_service = favorites_service
         self._account_lookup_service = account_lookup_service
 
-    async def cog_before_invoke(self, ctx: commands.Context) -> None:
-        user_id = str(ctx.author.id)
+    async def cog_before_invoke(self, ctx: CustomContext) -> None:
+        """
+        Called before the command is invoked, after the command checks have been made.
+        Loads the account from the database.
+        """
         try:
-            with session_scope() as session:
-                account: Account = self._account_lookup_service.find_or_create_account(
-                    session=session,
-                    platform_type=self.PLATFORM_TYPE,
-                    platform_user_id=user_id,
-                )
-                ctx.account = account
+            ctx.db_session = Session_Factory()
+            ctx.account = self._account_lookup_service.find_or_create_account(
+                session=ctx.db_session,
+                platform_type=self.PLATFORM_TYPE,
+                platform_user_id=str(ctx.author.id),
+            )
         except Exception:
-            raise commands.CommandError("⚠️ Could not load account.")
+            if hasattr(ctx, "db_session"):
+                ctx.db_session.rollback()
+                ctx.db_session.close()
+            raise
+        return await super().cog_before_invoke(ctx)
+
+    async def cog_after_invoke(self, ctx: CustomContext) -> None:
+        """
+        Called after the command is invoked, regardless of whether it succeeded or raised an exception.
+        Called before cog_command_error.
+        """
+        if hasattr(ctx, "db_session") and not ctx.command_failed:
+            try:
+                logging.info("Committing current db session.")
+                ctx.db_session.commit()
+            finally:
+                ctx.db_session.close()
+        return await super().cog_after_invoke(ctx)
+
+    async def cog_command_error(self, ctx: CustomContext, error: Exception) -> None:
+        """
+        Called after cog_after_invoke if an exception was raised in the command or in cog_after_invoke.
+        """
+        if hasattr(ctx, "db_session"):
+            try:
+                logging.error("Rolling back current db session.")
+                ctx.db_session.rollback()
+            finally:
+                ctx.db_session.close()
+
+        logging.error(f"Command error in {ctx.command}: {error}")
+
+        # Send error message to user
+        await ctx.send(f"❌ An error occurred: {str(error)}")
+
+        return await super().cog_command_error(ctx, error)
 
     @commands.command(name="add_fav")
     async def _add_fav(self, ctx: CustomContext, currency: str) -> None:
@@ -63,22 +100,18 @@ class FavoritesCog(commands.Cog):
         # )
         # await ctx.send(answer)
         answer = self._favorites_service.add_favorite_2(
-            account=ctx.account, input_crypto=currency.lower()
+            db_session=ctx.db_session, account=ctx.account, input_crypto=currency.lower()
         )
         await ctx.send(answer)
-        # await ctx.send(ctx.account.selected_fiat_currency_id)
 
     @commands.command(name="list_favs")
-    async def _list_favs(self, ctx: CustomContext, account: AccountConverter):
+    async def _list_favs(self, ctx: CustomContext) -> None:
         """List favorite cryptocurrencies."""
-        # user_id = ctx.author.id
-        # answer = await self._favorites_service.list_favorites(
-        #     platform_type=self.PLATFORM_TYPE,
-        #     platform_user_id=str(user_id),
-        # )
-        # await ctx.send(answer)
-        await ctx.send(f"{account.id}, {account.selected_fiat_currency_id}")
-        # await ctx.send(ctx.account.selected_fiat_currency_id)
+        answer = await self._favorites_service.list_favorites(
+            platform_type=self.PLATFORM_TYPE,
+            platform_user_id=str(ctx.author.id),
+        )
+        await ctx.send(answer)
 
     @commands.command(name="remove_fav")
     async def _remove_fav(self, ctx: CustomContext, currency: str):

@@ -9,6 +9,7 @@ engine = create_engine(DATABASE_URL, echo=True)
 Session_Factory = sessionmaker(bind=engine, expire_on_commit=False)
 
 
+# Session.begin() would also commit the transaction + closes the session
 @contextmanager
 def session_scope():
     """Provide a transactional scope around a series of operations."""
