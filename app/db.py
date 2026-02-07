@@ -1,3 +1,4 @@
+import logging
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 from config import Config
@@ -9,7 +10,7 @@ engine = create_engine(DATABASE_URL, echo=True)
 Session_Factory = sessionmaker(bind=engine, expire_on_commit=False)
 
 
-# Session.begin() would also commit the transaction + closes the session
+# "with Session.begin() as session" would also commit the transaction + close the session
 @contextmanager
 def session_scope():
     """Provide a transactional scope around a series of operations."""
@@ -18,6 +19,7 @@ def session_scope():
         yield session
         session.commit()
     except Exception:
+        logging.error("Error in session_scope, rolling back transaction.", exc_info=True)
         session.rollback()
         raise  # re-throw the exception
     finally:

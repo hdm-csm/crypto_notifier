@@ -26,9 +26,9 @@ class CryptocurrencyRepository:
             is not None
         )
 
-    def find_by_name_or_symbol(self, session: Session, identifier: str) -> Cryptocurrency | None:
+    def find_by_name_or_symbol(self, db_session: Session, identifier: str) -> Cryptocurrency | None:
         return (
-            session.query(Cryptocurrency)
+            db_session.query(Cryptocurrency)
             .filter(
                 (func.lower(Cryptocurrency.symbol) == func.lower(identifier))
                 | (func.lower(Cryptocurrency.full_name) == func.lower(identifier))

@@ -1,5 +1,4 @@
 import logging
-from sqlalchemy.orm import Session
 from app.models.schemas import Account, Cryptocurrency
 
 logging.basicConfig(
@@ -10,11 +9,11 @@ logging.basicConfig(
 
 class FavoriteRepository:
 
-    def add_favorite(self, session: Session, account: Account, crypto: Cryptocurrency):
+    def add_favorite(self, account: Account, crypto: Cryptocurrency):
         account.favorite_cryptos.append(crypto)
 
-    def remove_favorite(self, session: Session, account: Account, crypto: Cryptocurrency):
+    def remove_favorite(self, account: Account, crypto: Cryptocurrency):
         account.favorite_cryptos.remove(crypto)
 
-    def drop_favorites(self, session: Session, account: Account) -> None:
+    def drop_favorites(self, account: Account) -> None:
         account.favorite_cryptos.clear()

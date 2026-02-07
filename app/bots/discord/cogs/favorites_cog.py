@@ -7,23 +7,6 @@ from app.bots.discord.context import CustomContext
 import logging
 
 
-# class AccountConverter(commands.Converter):
-#     PLATFORM_TYPE = PlatformType.DISCORD
-
-#     async def convert(self, ctx, argument):
-#         user_id = str(ctx.author.id)
-#         try:
-#             with session_scope() as session:
-#                 account: Account = ctx.bot.account_lookup_service.find_or_create_account(
-#                     session=session,
-#                     platform_type=self.PLATFORM_TYPE,
-#                     platform_user_id=user_id,
-#                 )
-#                 return account
-#         except Exception:
-#             raise commands.CommandError("⚠️ Could not load account.")
-
-
 class FavoritesCog(commands.Cog):
 
     PLATFORM_TYPE = PlatformType.DISCORD
@@ -89,10 +72,10 @@ class FavoritesCog(commands.Cog):
         return await super().cog_command_error(ctx, error)
 
     @commands.command(name="add_fav")
-    async def _add_fav(self, ctx: CustomContext, currency: str) -> None:
+    async def _add_fav(self, ctx: CustomContext, input_crypto: str) -> None:
         """Save cryptocurrency as favorite."""
         answer = self._favorites_service.add_favorite(
-            db_session=ctx.db_session, account=ctx.account, input_crypto=currency.lower()
+            db_session=ctx.db_session, account=ctx.account, input_crypto=input_crypto.lower()
         )
         await ctx.send(answer)
 
@@ -106,14 +89,10 @@ class FavoritesCog(commands.Cog):
         await ctx.send(answer)
 
     @commands.command(name="remove_fav")
-    async def _remove_fav(self, ctx: CustomContext, currency: str):
+    async def _remove_fav(self, ctx: CustomContext, input_crypto: str):
         """Remove cryptocurrency from favorites."""
-        user_id = ctx.author.id
-        input_crypto = currency.lower()
         answer = self._favorites_service.remove_favorite(
-            platform_type=self.PLATFORM_TYPE,
-            platform_user_id=str(user_id),
-            input_crypto=input_crypto,
+            db_session=ctx.db_session, account=ctx.account, input_crypto=input_crypto.lower()
         )
         await ctx.send(answer)
 
