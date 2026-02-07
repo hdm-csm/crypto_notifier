@@ -1,10 +1,13 @@
 import logging
+from pytest import Session
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler, ApplicationBuilder
 from app.db import session_scope
 from app.services.crypto_api_service import CryptoApiService
-from app.models.schemas import PlatformType
+from app.models.schemas import Account, PlatformType
 from app.services.favorites_service import FavoritesService
+from functools import wraps
+from typing import Callable
 
 logging.basicConfig(
     level=logging.INFO,
@@ -51,6 +54,24 @@ class TelegramBot:
         await self.app.stop()
         await self.app.shutdown()
 
+    def with_session_and_account(func: Callable) -> Callable:
+        """Decorator that provides db_session and account to command handlers."""
+
+        @wraps(func)
+        async def wrapper(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+            if update.effective_user is None or update.message is None:
+                return
+            user_id = update.effective_user.id
+            with session_scope() as db_session:
+                account = self._favorites_service._account_lookup_service.find_or_create_account(
+                    session=db_session,
+                    platform_type=self.PLATFORM_TYPE,
+                    platform_user_id=str(user_id),
+                )
+                await func(self, update, context, db_session, account)
+
+        return wrapper
+
     async def index_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         if update.message is None:
             return
@@ -80,21 +101,23 @@ class TelegramBot:
             message += f"   Index ID: {coin.id}\n\n"
         await update.message.reply_text(message)
 
-    async def add_fav_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    @with_session_and_account
+    async def add_fav_command(
+        self,
+        update: Update,
+        context: ContextTypes.DEFAULT_TYPE,
+        db_session: Session, 
+        account: Account, 
+    ) -> None:
         if update.effective_user is None or update.message is None:
             return
         if context.args is None or not context.args:
             await update.message.reply_text("Please provide a cryptocurrency name.")
             return
-        user_id = update.effective_user.id
         input_crypto = context.args[0].lower()
-        with session_scope() as db_session:
-            account = self._favorites_service._account_lookup_service.find_or_create_account(
-                session=db_session, platform_type=self.PLATFORM_TYPE, platform_user_id=str(user_id)
-            )
-            answer = self._favorites_service.add_favorite(
-                session_db=db_session, account=account, input_crypto=input_crypto
-            )
+        answer = self._favorites_service.add_favorite(
+            db_session=db_session, account=account, input_crypto=input_crypto
+        )
         await update.message.reply_text(answer)
 
     async def remove_fav_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
