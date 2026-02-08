@@ -52,7 +52,9 @@ async def async_main():
         crypto_api_service=crypto_api_service,
     )
     favorites_service = FavoritesService(
-        favorite_repository, cryptocurrency_repository, crypto_api_service, account_lookup_service
+        favorite_repository=favorite_repository,
+        cryptocurrency_repository=cryptocurrency_repository,
+        crypto_api_service=crypto_api_service,
     )
 
     await fiat_currency_service.init_fiat_currencies()
@@ -69,6 +71,7 @@ async def async_main():
     print("Telegram Bot Token:", TELEGRAM_BOT_TOKEN)
     telegram_bot = TelegramBot(
         token=TELEGRAM_BOT_TOKEN,
+        account_lookup_service=account_lookup_service,
         crypto_api_service=crypto_api_service,
         favorites_service=favorites_service,
     )

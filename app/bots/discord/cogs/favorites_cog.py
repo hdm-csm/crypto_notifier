@@ -82,10 +82,7 @@ class FavoritesCog(commands.Cog):
     @commands.command(name="list_favs")
     async def _list_favs(self, ctx: CustomContext) -> None:
         """List favorite cryptocurrencies."""
-        answer = await self._favorites_service.list_favorites(
-            platform_type=self.PLATFORM_TYPE,
-            platform_user_id=str(ctx.author.id),
-        )
+        answer = await self._favorites_service.list_favorites(account=ctx.account)
         await ctx.send(answer)
 
     @commands.command(name="remove_fav")
@@ -99,9 +96,5 @@ class FavoritesCog(commands.Cog):
     @commands.command(name="drop_favs")
     async def _drop_favs(self, ctx: CustomContext):
         """Remove all favorite cryptocurrencies."""
-        user_id = ctx.author.id
-        answer = self._favorites_service.drop_favorites(
-            platform_type=self.PLATFORM_TYPE,
-            platform_user_id=str(user_id),
-        )
+        answer = self._favorites_service.drop_favorites(account=ctx.account)
         await ctx.send(answer)

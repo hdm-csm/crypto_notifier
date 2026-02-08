@@ -1,11 +1,14 @@
+from typing import TYPE_CHECKING
 from telegram import Update
-from app.bots.telegram.telegram_bot import TelegramBot
 from app.db import session_scope
 from functools import wraps
 from typing import Callable
 from telegram.ext import ContextTypes
-
+import logging
 from app.utils.exceptions import AccountNotFoundOrCreatedException
+
+if TYPE_CHECKING:
+    from app.bots.telegram.modules.telegram_module import TelegramModule
 
 
 def with_session_and_account(func: Callable) -> Callable:
@@ -13,14 +16,14 @@ def with_session_and_account(func: Callable) -> Callable:
 
     @wraps(func)
     async def wrapper(
-        self: "TelegramBot", update: Update, context: ContextTypes.DEFAULT_TYPE
+        self: "TelegramModule", update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> None:
         if update.effective_user is None or update.message is None:
             return
         user_id = update.effective_user.id
         with session_scope() as db_session:
             try:
-                account = self._favorites_service._account_lookup_service.find_or_create_account(
+                account = self._account_lookup_service.find_or_create_account(
                     session=db_session,
                     platform_type=self.PLATFORM_TYPE,
                     platform_user_id=str(user_id),

@@ -2,7 +2,6 @@ import logging
 from sqlalchemy.orm import Session
 from app.repository.cryptocurrency_repository import CryptocurrencyRepository
 from app.repository.favorite_repository import FavoriteRepository
-from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
 from app.models.schemas import Account
 
@@ -14,12 +13,10 @@ class FavoritesService:
         favorite_repository: FavoriteRepository,
         cryptocurrency_repository: CryptocurrencyRepository,
         crypto_api_service: CryptoApiService,
-        account_lookup_service: AccountLookupService,
     ):
         self._favorite_repository = favorite_repository
         self._cryptocurrency_repository = cryptocurrency_repository
         self._crypto_api_service = crypto_api_service
-        self._account_lookup_service = account_lookup_service
 
     def add_favorite(self, db_session: Session, account: Account, input_crypto: str) -> str:
         cryptocurrency = self._cryptocurrency_repository.find_by_name_or_symbol(

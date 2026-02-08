@@ -1,23 +1,28 @@
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from app.bots.telegram.decorators import with_session_and_account
+from app.bots.telegram.modules.telegram_module import TelegramModule
 from app.models.enums import PlatformType
+from app.services.account_lookup_service import AccountLookupService
 from app.services.favorites_service import FavoritesService
 from app.models.schemas import Account
 from sqlalchemy.orm import Session
 
 
-class FavoritesModule:
+class FavoritesModule(TelegramModule):
     PLATFORM_TYPE = PlatformType.TELEGRAM
 
-    def __init__(self, favorites_service: FavoritesService):
+    def __init__(
+        self, account_lookup_service: AccountLookupService, favorites_service: FavoritesService
+    ):
         self._favorites_service = favorites_service
+        super().__init__(account_lookup_service)
 
     def register(self, app: Application):
-        app.add_handler(CommandHandler("add_fav", self.add_fav))
-        app.add_handler(CommandHandler("list_favs", self.list_favs))
-        app.add_handler(CommandHandler("remove_fav", self.remove_fav))
-        app.add_handler(CommandHandler("drop_favs", self.drop_favs))
+        app.add_handler(CommandHandler("add_fav", self.add_fav_command))
+        app.add_handler(CommandHandler("list_favs", self.list_favs_command))
+        app.add_handler(CommandHandler("remove_fav", self.remove_fav_command))
+        app.add_handler(CommandHandler("drop_favs", self.drop_favs_command))
 
     @with_session_and_account
     async def add_fav_command(
