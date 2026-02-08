@@ -1,7 +1,8 @@
 import logging
 from sqlalchemy.orm import Session
 from app.models.schemas import Account, FiatCurrency
-from sqlalchemy import or_
+from sqlalchemy import select, or_
+import logging
 
 
 class FiatCurrencyRepository:
@@ -21,6 +22,13 @@ class FiatCurrencyRepository:
             .filter(or_(FiatCurrency.full_name.ilike(name), FiatCurrency.short_name.ilike(name)))
             .first()
         )
+
+    def find_by_full_or_short_name_2(self, session: Session, input: str) -> FiatCurrency | None:
+        stmt = select(FiatCurrency).where(
+            or_(FiatCurrency.full_name.ilike(input), FiatCurrency.short_name.ilike(input))
+        )
+        # scalar_one_or_none is strictly typed to return the model or None
+        return session.execute(stmt).scalar_one_or_none()
 
     def list_all(self, session: Session) -> list[FiatCurrency]:
         return session.query(FiatCurrency).all()

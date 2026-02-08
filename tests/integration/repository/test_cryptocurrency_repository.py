@@ -1,4 +1,4 @@
-from app.repository.cryptocurrency_repository import CryptocurrencyRepository
+from app.repository.crypto_currency_repository import CryptocurrencyRepository
 from app.models.schemas import Cryptocurrency
 
 

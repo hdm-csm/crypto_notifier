@@ -1,10 +1,10 @@
-from app.repository.favorite_repository import FavoriteRepository
+from app.repository.favorites_repository import FavoritesRepository
 from app.models.schemas import Account, Cryptocurrency, PlatformType
 from datetime import datetime
 
 
 def test_add_and_remove_favorite(db_session):
-    repo = FavoriteRepository()
+    repo = FavoritesRepository()
 
     # User und Crypto anlegen
     account = Account(
@@ -34,7 +34,7 @@ def test_add_and_remove_favorite(db_session):
 
 
 def test_drop_favorites(db_session):
-    repo = FavoriteRepository()
+    repo = FavoritesRepository()
 
     # User mit 2 Favoriten
     account = Account(

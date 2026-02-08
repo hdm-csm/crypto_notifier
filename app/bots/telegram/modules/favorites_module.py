@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from app.bots.telegram.decorators import with_session_and_account
-from app.bots.telegram.modules.telegram_module import TelegramModule
+from app.bots.telegram.modules.base import TelegramModule
 from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
 from app.services.favorites_service import FavoritesService

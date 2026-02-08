@@ -1,4 +1,4 @@
-from app.bots.telegram.modules.telegram_module import TelegramModule
+from app.bots.telegram.modules.base import TelegramModule
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
 from telegram.ext import Application, CommandHandler, ContextTypes

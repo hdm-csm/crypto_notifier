@@ -3,8 +3,8 @@ from unittest.mock import AsyncMock, MagicMock
 from app.services.bot_service import BotService
 from app.services.crypto_api_service import CryptoApiService
 from app.repository.account_repository import AccountRepository
-from app.repository.favorite_repository import FavoriteRepository
-from app.repository.cryptocurrency_repository import CryptocurrencyRepository
+from app.repository.favorites_repository import FavoritesRepository
+from app.repository.crypto_currency_repository import CryptocurrencyRepository
 from app.models.schemas import PlatformType, Cryptocurrency
 
 
@@ -12,7 +12,7 @@ from app.models.schemas import PlatformType, Cryptocurrency
 async def test_full_favorite_lifecycle(db_session, mocker):
     # SETUP
     account_repo = AccountRepository()
-    fav_repo = FavoriteRepository()
+    fav_repo = FavoritesRepository()
     crypto_repo = CryptocurrencyRepository()
 
     # API Mocken

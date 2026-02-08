@@ -8,7 +8,7 @@ import logging
 from app.utils.exceptions import AccountNotFoundOrCreatedException
 
 if TYPE_CHECKING:
-    from app.bots.telegram.modules.telegram_module import TelegramModule
+    from app.bots.telegram.modules.base import TelegramModule
 
 
 def with_session_and_account(func: Callable) -> Callable:
@@ -24,7 +24,7 @@ def with_session_and_account(func: Callable) -> Callable:
         with session_scope() as db_session:
             try:
                 account = self._account_lookup_service.find_or_create_account(
-                    session=db_session,
+                    db_session=db_session,
                     platform_type=self.PLATFORM_TYPE,
                     platform_user_id=str(user_id),
                 )
@@ -37,6 +37,7 @@ def with_session_and_account(func: Callable) -> Callable:
                 await func(self, update, context, db_session, account)
             except Exception as e:
                 logging.error(f"Command error in {func.__name__}: {e}", exc_info=True)
+                # TODO: Return command in error message ?
                 await update.message.reply_text(f"❌ An error occurred: {str(e)}")
 
     return wrapper

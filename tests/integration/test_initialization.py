@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 from app.services.init_service import InitService
-from app.repository.cryptocurrency_repository import CryptocurrencyRepository
+from app.repository.crypto_currency_repository import CryptocurrencyRepository
 from app.services.crypto_api_service import CryptoApiService
 from app.models.dtos import Coin
 

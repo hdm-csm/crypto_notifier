@@ -1,5 +1,5 @@
 from app.db import session_scope
-from app.repository.cryptocurrency_repository import CryptocurrencyRepository
+from app.repository.crypto_currency_repository import CryptocurrencyRepository
 from app.services.crypto_api_service import CryptoApiService
 
 

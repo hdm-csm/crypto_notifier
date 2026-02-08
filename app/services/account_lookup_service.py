@@ -17,21 +17,21 @@ class AccountLookupService:
         self._fiat_currency_repository = fiat_currency_repository
 
     def find_or_create_account(
-        self, session: Session, platform_type: PlatformType, platform_user_id: str
+        self, db_session: Session, platform_type: PlatformType, platform_user_id: str
     ) -> Account:
         try:
             account = self._account_repository.find_by_platform_and_id(
-                session=session, platform=platform_type, platform_user_id=platform_user_id
+                session=db_session, platform=platform_type, platform_user_id=platform_user_id
             )
             if account is None:
                 euro: FiatCurrency | None = self._fiat_currency_repository.find_by_short_name(
-                    session, "EUR"
+                    db_session, "EUR"
                 )
                 selected_fiat_currency_id: int = 0  # TODO: FIX
                 if euro is not None:
                     selected_fiat_currency_id = euro.id
                 account = self._account_repository.create(
-                    session=session,
+                    session=db_session,
                     platform=platform_type,
                     platform_user_id=platform_user_id,
                     selected_fiat_currency_id=selected_fiat_currency_id,

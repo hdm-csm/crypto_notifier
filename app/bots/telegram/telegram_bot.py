@@ -2,11 +2,13 @@ import logging
 from telegram.ext import ApplicationBuilder
 from app.bots.telegram.modules.crypto_info_module import CryptoInfoModule
 from app.bots.telegram.modules.favorites_module import FavoritesModule
-from app.bots.telegram.modules.telegram_module import TelegramModule
+from app.bots.telegram.modules.base import TelegramModule
+from app.bots.telegram.modules.settings_module import SettingsModule
 from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
 from app.services.favorites_service import FavoritesService
+from app.services.fiat_currency_service import FiatCurrencyService
 
 
 class TelegramBot:
@@ -19,17 +21,20 @@ class TelegramBot:
         account_lookup_service: AccountLookupService,
         crypto_api_service: CryptoApiService,
         favorites_service: FavoritesService,
+        _fiat_currency_service: FiatCurrencyService,
     ):
         self._token = token
         self._account_lookup_service = account_lookup_service
         self._crypto_api_service = crypto_api_service
         self._favorites_service = favorites_service
+        self._fiat_currency_service = _fiat_currency_service
 
         self.app = ApplicationBuilder().token(token).build()
 
         modules: list[TelegramModule] = [
             FavoritesModule(account_lookup_service, favorites_service),
             CryptoInfoModule(account_lookup_service, crypto_api_service),
+            SettingsModule(account_lookup_service, _fiat_currency_service),
         ]
 
         for module in modules:

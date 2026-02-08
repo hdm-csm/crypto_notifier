@@ -5,8 +5,8 @@ from config import Config
 from app.bots.discord.discord_bot import DiscordBot
 from app.bots.telegram.telegram_bot import TelegramBot
 from app.repository.account_repository import AccountRepository
-from app.repository.favorite_repository import FavoriteRepository
-from app.repository.cryptocurrency_repository import CryptocurrencyRepository
+from app.repository.favorites_repository import FavoritesRepository
+from app.repository.crypto_currency_repository import CryptocurrencyRepository
 from app.repository.fiat_currency_repository import FiatCurrencyRepository
 from app.services.crypto_api_service import CryptoApiService
 from app.services.account_lookup_service import AccountLookupService
@@ -31,7 +31,7 @@ async def async_main():
     init_db()
 
     account_repository = AccountRepository()
-    favorite_repository = FavoriteRepository()
+    favorite_repository = FavoritesRepository()
     cryptocurrency_repository = CryptocurrencyRepository()
     fiat_currency_repository = FiatCurrencyRepository()
 
@@ -74,6 +74,7 @@ async def async_main():
         account_lookup_service=account_lookup_service,
         crypto_api_service=crypto_api_service,
         favorites_service=favorites_service,
+        _fiat_currency_service=fiat_currency_service,
     )
     try:
         await asyncio.gather(discord_bot.start(), telegram_bot.start())

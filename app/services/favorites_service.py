@@ -1,7 +1,7 @@
 import logging
 from sqlalchemy.orm import Session
-from app.repository.cryptocurrency_repository import CryptocurrencyRepository
-from app.repository.favorite_repository import FavoriteRepository
+from app.repository.crypto_currency_repository import CryptocurrencyRepository
+from app.repository.favorites_repository import FavoritesRepository
 from app.services.crypto_api_service import CryptoApiService
 from app.models.schemas import Account
 
@@ -10,7 +10,7 @@ class FavoritesService:
 
     def __init__(
         self,
-        favorite_repository: FavoriteRepository,
+        favorite_repository: FavoritesRepository,
         cryptocurrency_repository: CryptocurrencyRepository,
         crypto_api_service: CryptoApiService,
     ):

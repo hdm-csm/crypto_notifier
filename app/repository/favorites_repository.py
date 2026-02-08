@@ -7,7 +7,7 @@ logging.basicConfig(
 )
 
 
-class FavoriteRepository:
+class FavoritesRepository:
 
     def add_favorite(self, account: Account, crypto: Cryptocurrency):
         account.favorite_cryptos.append(crypto)
