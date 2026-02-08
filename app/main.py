@@ -65,8 +65,8 @@ async def async_main():
         guild_id=DISCORD_GUILD_ID,
         crypto_api_service=crypto_api_service,
         favorites_service=favorites_service,
-        _account_lookup_service=account_lookup_service,
-        _fiat_currency_service=fiat_currency_service,
+        account_lookup_service=account_lookup_service,
+        fiat_currency_service=fiat_currency_service,
     )
     print("Telegram Bot Token:", TELEGRAM_BOT_TOKEN)
     telegram_bot = TelegramBot(

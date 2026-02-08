@@ -16,11 +16,11 @@ class SettingsCog(AccountCog):
 
     def __init__(
         self,
-        _account_lookup_service: AccountLookupService,
-        _fiat_currency_service: FiatCurrencyService,
+        account_lookup_service: AccountLookupService,
+        fiat_currency_service: FiatCurrencyService,
     ):
-        super().__init__(_account_lookup_service)
-        self._fiat_currency_service = _fiat_currency_service
+        super().__init__(account_lookup_service)
+        self._fiat_currency_service = fiat_currency_service
 
     @commands.command(name="get_fiat")
     async def _get_fiat_currency(self, ctx: CustomContext):

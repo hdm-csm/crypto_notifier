@@ -1,6 +1,5 @@
 from discord.ext import commands
 from app.bots.discord.cogs.base import AccountCog
-from app.db import Session_Factory
 from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
 from app.services.favorites_service import FavoritesService

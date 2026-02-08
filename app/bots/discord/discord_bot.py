@@ -21,16 +21,16 @@ class DiscordBot:
         guild_id: int,
         crypto_api_service: CryptoApiService,
         favorites_service: FavoritesService,
-        _account_lookup_service: AccountLookupService,
-        _fiat_currency_service: FiatCurrencyService,
+        account_lookup_service: AccountLookupService,
+        fiat_currency_service: FiatCurrencyService,
     ):
 
         self.token = token
         self.guild_id = guild_id  # guild = server
         self._crypto_api_service = crypto_api_service
         self._favorites_service = favorites_service
-        self._account_lookup_service = _account_lookup_service
-        self._fiat_currency_service = _fiat_currency_service
+        self._account_lookup_service = account_lookup_service
+        self._fiat_currency_service = fiat_currency_service
 
         intents = discord.Intents.default()
         intents.message_content = True
@@ -57,15 +57,15 @@ class DiscordBot:
 
     async def start(self):
         settings_cog = SettingsCog(
-            _account_lookup_service=self._account_lookup_service,
-            _fiat_currency_service=self._fiat_currency_service,
+            account_lookup_service=self._account_lookup_service,
+            fiat_currency_service=self._fiat_currency_service,
         )
         crypto_info_cog = CrpytoInfoCog(
-            _account_lookup_service=self._account_lookup_service,
+            account_lookup_service=self._account_lookup_service,
             crypto_api_service=self._crypto_api_service,
         )
         favorites_cog = FavoritesCog(
-            _account_lookup_service=self._account_lookup_service,
+            account_lookup_service=self._account_lookup_service,
             favorites_service=self._favorites_service,
         )
 
