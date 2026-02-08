@@ -10,8 +10,8 @@ class CryptoInfoModule(TelegramModule):
     def __init__(
         self, account_lookup_service: AccountLookupService, crypto_api_service: CryptoApiService
     ):
-        self._crypto_api_service = crypto_api_service
         super().__init__(account_lookup_service)
+        self._crypto_api_service = crypto_api_service
 
     def register(self, app: Application):
         app.add_handler(CommandHandler("index", self.index_command, block=False))

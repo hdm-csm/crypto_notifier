@@ -57,11 +57,16 @@ class DiscordBot:
 
     async def start(self):
         settings_cog = SettingsCog(
-            self.bot, self._account_lookup_service, self._fiat_currency_service
+            _account_lookup_service=self._account_lookup_service,
+            _fiat_currency_service=self._fiat_currency_service,
         )
-        crypto_info_cog = CrpytoInfoCog(self.bot, self._crypto_api_service)
+        crypto_info_cog = CrpytoInfoCog(
+            _account_lookup_service=self._account_lookup_service,
+            crypto_api_service=self._crypto_api_service,
+        )
         favorites_cog = FavoritesCog(
-            self.bot, self._favorites_service, self._account_lookup_service
+            _account_lookup_service=self._account_lookup_service,
+            favorites_service=self._favorites_service,
         )
 
         await self.bot.add_cog(settings_cog)

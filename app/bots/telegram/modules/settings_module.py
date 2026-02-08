@@ -18,8 +18,8 @@ class SettingsModule(TelegramModule):
         account_lookup_service: AccountLookupService,
         _fiat_currency_service: FiatCurrencyService,
     ):
-        self._fiat_currency_service: FiatCurrencyService = _fiat_currency_service
         super().__init__(account_lookup_service)
+        self._fiat_currency_service: FiatCurrencyService = _fiat_currency_service
 
     def register(self, app: Application):
         app.add_handler(CommandHandler("get_fiat", self._get_fiat_currency_command))

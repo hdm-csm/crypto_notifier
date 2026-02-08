@@ -15,8 +15,8 @@ class FavoritesModule(TelegramModule):
     def __init__(
         self, account_lookup_service: AccountLookupService, favorites_service: FavoritesService
     ):
-        self._favorites_service = favorites_service
         super().__init__(account_lookup_service)
+        self._favorites_service = favorites_service
 
     def register(self, app: Application):
         app.add_handler(CommandHandler("add_fav", self.add_fav_command))

@@ -2,9 +2,17 @@ import logging
 from discord.ext import commands
 from app.db import Session_Factory
 from app.bots.discord.custom_context import CustomContext
+from app.models.enums import PlatformType
+from app.services.account_lookup_service import AccountLookupService
 
 
 class AccountCog(commands.Cog):
+
+    PLATFORM_TYPE = PlatformType.DISCORD
+
+    def __init__(self, _account_lookup_service: AccountLookupService):
+        self._account_lookup_service = _account_lookup_service
+
     async def cog_before_invoke(self, ctx: CustomContext) -> None:
         """
         Called before the command is invoked, after the command checks have been made.

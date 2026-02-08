@@ -1,6 +1,6 @@
 import logging
 from discord.ext import commands
-from app.bots.discord.cogs.account_cog import AccountCog
+from app.bots.discord.cogs.base import AccountCog
 from app.bots.discord.custom_context import CustomContext
 from app.db import session_scope
 from app.models.enums import PlatformType
@@ -16,12 +16,10 @@ class SettingsCog(AccountCog):
 
     def __init__(
         self,
-        bot,
         _account_lookup_service: AccountLookupService,
         _fiat_currency_service: FiatCurrencyService,
     ):
-        self.bot = bot
-        self._account_lookup_service = _account_lookup_service
+        super().__init__(_account_lookup_service)
         self._fiat_currency_service = _fiat_currency_service
 
     @commands.command(name="get_fiat")

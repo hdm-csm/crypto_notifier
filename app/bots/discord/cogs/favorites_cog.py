@@ -1,5 +1,5 @@
 from discord.ext import commands
-from app.bots.discord.cogs.account_cog import AccountCog
+from app.bots.discord.cogs.base import AccountCog
 from app.db import Session_Factory
 from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
@@ -13,13 +13,11 @@ class FavoritesCog(AccountCog):
 
     def __init__(
         self,
-        bot,
-        favorites_service: FavoritesService,
         account_lookup_service: AccountLookupService,
+        favorites_service: FavoritesService,
     ):
-        self.bot = bot
+        super().__init__(account_lookup_service)
         self._favorites_service = favorites_service
-        self._account_lookup_service = account_lookup_service
 
     @commands.command(name="add_fav")
     async def _add_fav(self, ctx: CustomContext, input_crypto: str) -> None:

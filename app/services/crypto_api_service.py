@@ -9,9 +9,9 @@ class CryptoApiService:
     def __init__(self, client: httpx.AsyncClient):
         self.client = client
 
-    async def list_top_crypto_currencies(self, amount: int) -> list[Coin]:
+    async def list_top_crypto_currencies(self, amount: int, vs_currency: str = "eur") -> list[Coin]:
         params: dict[str, str | int] = {
-            "vs_currency": "eur",
+            "vs_currency": vs_currency,
             "order": "market_cap_desc",
             "per_page": amount,
         }

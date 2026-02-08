@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from discord.ext import commands
-from app.models.schemas import Account
 from sqlalchemy.orm import Session
+
+if TYPE_CHECKING:
+    from app.models.schemas import Account
 
 
 class CustomContext(commands.Context):
