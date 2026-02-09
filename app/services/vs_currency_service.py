@@ -3,7 +3,7 @@ from app.db import session_scope
 from app.models.schemas import Account, VsCurrency
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
-from app.models.currency_mappings import get_currency_full_name
+from app.utils.currency_mappings import get_currency_full_name
 from sqlalchemy.orm import Session
 
 

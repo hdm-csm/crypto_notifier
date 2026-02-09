@@ -96,10 +96,14 @@ async def test_get_index_success():
     mock_client = AsyncMock()
 
     api_response_data = {
-        "id": "bitcoin",
-        "symbol": "btc",
-        "name": "Bitcoin",
-        "market_data": {"current_price": {"eur": 45000.50, "usd": 50000.00}},
+        "bitcoin": {
+            "eur": 45000.50,
+            "usd": 50000.00,
+            "eur_market_cap": 900000000000,
+            "eur_24h_vol": 30000000000,
+            "eur_24h_change": 2.5,
+            "last_updated_at": 1234567890,
+        }
     }
 
     mock_response = MagicMock()
@@ -114,8 +118,10 @@ async def test_get_index_success():
     # --- ASSERTION ---
     # Prüfen ob die URL korrekt gebaut wurde (lowercase und stripped)
     mock_client.get.assert_called_once()
-    args, _ = mock_client.get.call_args
-    assert "https://api.coingecko.com/api/v3/coins/bitcoin" in args[0]
+    args, kwargs = mock_client.get.call_args
+    assert "https://api.coingecko.com/api/v3/simple/price" in args[0]
+    assert kwargs["params"]["ids"] == "bitcoin"
+    assert kwargs["params"]["vs_currencies"] == "eur"
 
     # Prüfen ob der Preis korrekt extrahiert wurde
     assert price == 45000.50

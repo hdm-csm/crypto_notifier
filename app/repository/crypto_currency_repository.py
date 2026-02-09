@@ -36,10 +36,10 @@ class CryptocurrencyRepository:
             .first()
         )
 
-    def get_all_cryptocurrencies(self, session: Session) -> list[Cryptocurrency]:
+    def get_all(self, session: Session) -> list[Cryptocurrency]:
         return session.query(Cryptocurrency).all()
 
-    def store_cryptocurrencies(self, session: Session, coins: list[CoinMarketData]):
+    def store_all(self, session: Session, coins: list[CoinMarketData]):
         new_cryptos = [
             Cryptocurrency(symbol=coin.symbol.upper(), full_name=coin.name) for coin in coins
         ]

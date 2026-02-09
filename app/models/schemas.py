@@ -11,6 +11,7 @@ from sqlalchemy import (
     Table,
     DateTime,
     func,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.models.enums import PlatformType, NotificationDirection
@@ -49,10 +50,11 @@ class Notification(Base):
 
 class Account(Base):
     __tablename__ = "accounts"
+    __table_args__ = (UniqueConstraint("platform", "platform_user_id", name="uq_platform_user"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     platform: Mapped[PlatformType] = mapped_column(Enum(PlatformType), nullable=False)
-    platform_user_id: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    platform_user_id: Mapped[str] = mapped_column(String(255), nullable=False)
     selected_vs_currency_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("vs_currencies.id"), nullable=False
     )

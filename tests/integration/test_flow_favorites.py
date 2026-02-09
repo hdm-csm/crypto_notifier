@@ -1,38 +1,33 @@
 import pytest
-from unittest.mock import AsyncMock, MagicMock
-from app.services.bot_service import BotService
+from unittest.mock import AsyncMock
 from app.services.crypto_api_service import CryptoApiService
-from app.repository.account_repository import AccountRepository
 from app.repository.favorites_repository import FavoritesRepository
 from app.repository.crypto_currency_repository import CryptocurrencyRepository
-from app.models.schemas import PlatformType, Cryptocurrency
+from app.models.schemas import PlatformType, Cryptocurrency, Account, VsCurrency
+from app.services.favorites_service import FavoritesService
 
 
 @pytest.mark.asyncio
 async def test_full_favorite_lifecycle(db_session, mocker):
     # SETUP
-    account_repo = AccountRepository()
     fav_repo = FavoritesRepository()
     crypto_repo = CryptocurrencyRepository()
 
     # API Mocken
     mock_http_client = AsyncMock()
     api_service = CryptoApiService(mock_http_client)
-    api_service.get_index = AsyncMock(return_value=999.99)
 
-    # session_scope patchen
+    # Mock get_index method
+    mocker.patch.object(api_service, "get_index", new_callable=AsyncMock, return_value=999.99)
 
-    mock_scope = MagicMock()
-
-    mock_scope.__enter__.return_value = db_session
-    mock_scope.__exit__.return_value = None
-
-    mocker.patch("app.services.bot_service.session_scope", return_value=mock_scope)
-
-    # Service mit echten Repos und Fake-API erstellen
-    bot_service = BotService(account_repo, fav_repo, crypto_repo, api_service)
+    favorites_service = FavoritesService(fav_repo, crypto_repo, api_service)
 
     # DATEN VORBEREITEN
+    # Create VsCurrency first
+    vs_currency = VsCurrency(short_name="EUR", full_name="Euro")
+    db_session.add(vs_currency)
+    db_session.flush()
+
     btc = Cryptocurrency(symbol="BTC", full_name="Bitcoin")
     db_session.add(btc)
     db_session.commit()
@@ -40,24 +35,31 @@ async def test_full_favorite_lifecycle(db_session, mocker):
     user_id = "test_user_1"
     platform = PlatformType.DISCORD
 
+    # Account erstellen
+    account = Account(
+        platform=platform, platform_user_id=user_id, selected_vs_currency_id=vs_currency.id
+    )
+    db_session.add(account)
+    db_session.commit()
+
     # TEST FLOW
 
     # Favorit hinzufügen
-    response_add = bot_service.add_favorite(platform, user_id, "bitcoin")
+    response_add = favorites_service.add_favorite(db_session, account, "bitcoin")
     assert "Saved bitcoin" in response_add
 
     # Prüfen in der DB
-    account = account_repo.find_by_platform_and_id(db_session, platform, user_id)
+    db_session.refresh(account)
     assert account is not None
     assert len(account.favorite_cryptos) == 1
 
     # Auflisten
-    response_list = await bot_service.list_favorites(platform, user_id)
+    response_list = await favorites_service.list_favorites(account)
     assert "Bitcoin" in response_list
-    assert "999.99 €" in response_list
+    assert "999.99" in response_list
 
     # Entfernen
-    response_remove = bot_service.remove_favorite(platform, user_id, "bitcoin")
+    response_remove = favorites_service.remove_favorite(db_session, account, "bitcoin")
     assert "Removed bitcoin" in response_remove
 
     # Prüfen in der DB
@@ -65,5 +67,5 @@ async def test_full_favorite_lifecycle(db_session, mocker):
     assert len(account.favorite_cryptos) == 0
 
     # Leere Liste anzeigen
-    response_empty = await bot_service.list_favorites(platform, user_id)
+    response_empty = await favorites_service.list_favorites(account)
     assert "no favorite cryptocurrencies" in response_empty

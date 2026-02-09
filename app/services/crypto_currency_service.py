@@ -25,4 +25,4 @@ class CryptoCurrencyService:
                         seen_symbols.add(coin.symbol)
                         unique_coins.append(coin)
 
-                self._crypto_currency_repository.store_cryptocurrencies(session, unique_coins)
+                self._crypto_currency_repository.store_all(session, unique_coins)

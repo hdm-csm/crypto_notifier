@@ -30,59 +30,59 @@ async def async_main():
     # TODO: Remove this in production; only for initial setup; Use Alembic for DB migrations
     init_db()
 
-    account_repository = AccountRepository()
-    favorite_repository = FavoritesRepository()
-    cryptocurrency_repository = CryptocurrencyRepository()
-    vs_currency_repository = VsCurrencyRepository()
+    _account_repository = AccountRepository()
+    _favorite_repository = FavoritesRepository()
+    _cryptocurrency_repository = CryptocurrencyRepository()
+    _vs_currency_repository = VsCurrencyRepository()
 
-    http_client = httpx.AsyncClient()
-    crypto_api_service = CryptoApiService(http_client)
+    _http_client = httpx.AsyncClient()
+    _crypto_api_service = CryptoApiService(_http_client)
 
-    account_lookup_service = AccountLookupService(
-        account_repository=account_repository, vs_currency_repository=vs_currency_repository
+    _account_lookup_service = AccountLookupService(
+        account_repository=_account_repository, vs_currency_repository=_vs_currency_repository
     )
-    vs_currency_service = VsCurrencyService(
-        vs_currency_repository=vs_currency_repository,
-        account_lookup_service=account_lookup_service,
-        crypto_api_service=crypto_api_service,
+    _vs_currency_service = VsCurrencyService(
+        vs_currency_repository=_vs_currency_repository,
+        account_lookup_service=_account_lookup_service,
+        crypto_api_service=_crypto_api_service,
     )
     _crypto_currency_service = CryptoCurrencyService(
-        crypto_currency_repository=cryptocurrency_repository,
-        crypto_api_service=crypto_api_service,
+        crypto_currency_repository=_cryptocurrency_repository,
+        crypto_api_service=_crypto_api_service,
     )
-    favorites_service = FavoritesService(
-        favorite_repository=favorite_repository,
-        cryptocurrency_repository=cryptocurrency_repository,
-        crypto_api_service=crypto_api_service,
+    _favorites_service = FavoritesService(
+        favorite_repository=_favorite_repository,
+        cryptocurrency_repository=_cryptocurrency_repository,
+        crypto_api_service=_crypto_api_service,
     )
 
-    await vs_currency_service.init_vs_currencies()
+    await _vs_currency_service.init_vs_currencies()
     await _crypto_currency_service.init_crypto_currencies()
 
-    discord_bot = DiscordBot(
+    _discord_bot = DiscordBot(
         token=DISCORD_BOT_TOKEN,
         guild_id=DISCORD_GUILD_ID,
-        crypto_api_service=crypto_api_service,
-        favorites_service=favorites_service,
-        account_lookup_service=account_lookup_service,
-        vs_currency_service=vs_currency_service,
+        crypto_api_service=_crypto_api_service,
+        favorites_service=_favorites_service,
+        account_lookup_service=_account_lookup_service,
+        vs_currency_service=_vs_currency_service,
     )
     print("Telegram Bot Token:", TELEGRAM_BOT_TOKEN)
-    telegram_bot = TelegramBot(
+    _telegram_bot = TelegramBot(
         token=TELEGRAM_BOT_TOKEN,
-        account_lookup_service=account_lookup_service,
-        crypto_api_service=crypto_api_service,
-        favorites_service=favorites_service,
-        vs_currency_service=vs_currency_service,
+        account_lookup_service=_account_lookup_service,
+        crypto_api_service=_crypto_api_service,
+        favorites_service=_favorites_service,
+        vs_currency_service=_vs_currency_service,
     )
     try:
-        await asyncio.gather(discord_bot.start(), telegram_bot.start())
+        await asyncio.gather(_discord_bot.start(), _telegram_bot.start())
     except KeyboardInterrupt:
         logging.info("Shutting down bots...")
     finally:
-        await discord_bot.stop()
-        await telegram_bot.stop()
-        await http_client.aclose()
+        await _discord_bot.stop()
+        await _telegram_bot.stop()
+        await _http_client.aclose()
 
 
 if __name__ == "__main__":

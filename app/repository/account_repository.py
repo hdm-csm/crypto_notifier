@@ -11,14 +11,6 @@ logging.basicConfig(
 
 class AccountRepository:
 
-    def exists(self, session: Session, platform: PlatformType, platform_user_id: str) -> bool:
-        result: Account | None = (
-            session.query(Account)
-            .filter(Account.platform == platform, Account.platform_user_id == str(platform_user_id))
-            .first()
-        )
-        return result is not None
-
     def find_by_platform_and_id(
         self, session: Session, platform: PlatformType, platform_user_id: str
     ) -> Account | None:

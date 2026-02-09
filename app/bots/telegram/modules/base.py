@@ -4,7 +4,7 @@ from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
 
 
-class TelegramModule(ABC):
+class AccountModule(ABC):
     PLATFORM_TYPE = PlatformType.TELEGRAM
     _account_lookup_service: AccountLookupService
 

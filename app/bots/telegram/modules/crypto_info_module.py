@@ -1,5 +1,5 @@
 from app.bots.telegram.decorators import with_session_and_account
-from app.bots.telegram.modules.base import TelegramModule
+from app.bots.telegram.modules.base import AccountModule
 from app.models.schemas import Account
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
@@ -8,7 +8,7 @@ from telegram import Update
 from sqlalchemy.orm import Session
 
 
-class CryptoInfoModule(TelegramModule):
+class CryptoInfoModule(AccountModule):
 
     def __init__(
         self, account_lookup_service: AccountLookupService, crypto_api_service: CryptoApiService

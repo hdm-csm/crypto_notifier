@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from app.bots.telegram.decorators import with_session_and_account
-from app.bots.telegram.modules.base import TelegramModule
+from app.bots.telegram.modules.base import AccountModule
 from app.services.account_lookup_service import AccountLookupService
 from app.models.schemas import Account
 from sqlalchemy.orm import Session
@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.services.vs_currency_service import VsCurrencyService
 
 
-class SettingsModule(TelegramModule):
+class SettingsModule(AccountModule):
 
     def __init__(
         self,

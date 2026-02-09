@@ -99,6 +99,7 @@ def db_session(db_engine):
             conn.execute(text("DELETE FROM favorites"))
             conn.execute(text("DELETE FROM accounts"))
             conn.execute(text("DELETE FROM cryptocurrencies"))
+            conn.execute(text("DELETE FROM vs_currencies"))
             conn.commit()
         except Exception as e:
             print(f"Fehler beim Bereinigen der DB: {e}")
