@@ -49,13 +49,6 @@ class VsCurrencyService:
         )
         return message
 
-    # except Exception as e:
-    #     logging.error(f"Error listing supported vs currencies: {e}")
-    #     return (
-    #         "❌ An error occurred while listing supported vs currencies. "
-    #         "Please try again later."
-    #     )
-
     def set_vs_currency(self, db_session: Session, account: Account, input: str) -> str:
         vs_currency: VsCurrency | None = self._vs_currency_repository.find_by_full_or_short_name_2(
             session=db_session, input=input
@@ -69,13 +62,3 @@ class VsCurrencyService:
         )
 
         return f"✅ Saved {input} as your preferred currency!"
-
-        # except AccountNotFoundOrCreatedException as e:
-        #     logging.exception(str(e))
-        #     return "⚠️ Account not found for user."
-        # except Exception as e:
-        #     logging.error(f"Error changing currency: {e}")
-        #     return (
-        #         "❌ An error occurred while saving your preferred currency. "
-        #         "Please try again later."
-        #     )

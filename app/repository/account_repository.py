@@ -1,7 +1,5 @@
 import logging
 from datetime import datetime
-
-# from unittest import result
 from sqlalchemy.orm import Session
 from app.models.schemas import Account, PlatformType
 

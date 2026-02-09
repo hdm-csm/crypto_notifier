@@ -41,7 +41,6 @@ async def async_main():
     account_lookup_service = AccountLookupService(
         account_repository=account_repository, vs_currency_repository=vs_currency_repository
     )
-    # account_service = AccountService(account_repository)
     vs_currency_service = VsCurrencyService(
         vs_currency_repository=vs_currency_repository,
         account_lookup_service=account_lookup_service,

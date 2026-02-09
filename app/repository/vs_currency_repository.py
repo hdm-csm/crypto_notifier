@@ -26,7 +26,6 @@ class VsCurrencyRepository:
         stmt = select(VsCurrency).where(
             or_(VsCurrency.full_name.ilike(input), VsCurrency.short_name.ilike(input))
         )
-        # scalar_one_or_none is strictly typed to return the model or None
         return session.execute(stmt).scalar_one_or_none()
 
     def list_all(self, session: Session) -> list[VsCurrency]:
