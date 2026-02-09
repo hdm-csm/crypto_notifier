@@ -14,10 +14,10 @@ class SettingsModule(TelegramModule):
     def __init__(
         self,
         account_lookup_service: AccountLookupService,
-        _vs_currency_service: VsCurrencyService,
+        vs_currency_service: VsCurrencyService,
     ):
         super().__init__(account_lookup_service)
-        self._vs_currency_service: VsCurrencyService = _vs_currency_service
+        self._vs_currency_service: VsCurrencyService = vs_currency_service
 
     def register(self, app: Application):
         app.add_handler(CommandHandler("get_vs", self._get_vs_currency_command))

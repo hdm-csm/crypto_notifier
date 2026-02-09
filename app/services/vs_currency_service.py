@@ -13,11 +13,11 @@ class VsCurrencyService:
         self,
         vs_currency_repository: VsCurrencyRepository,
         account_lookup_service: AccountLookupService,
-        _crypto_api_service: CryptoApiService,
+        crypto_api_service: CryptoApiService,
     ):
         self._vs_currency_repository = vs_currency_repository
         self._account_lookup_service = account_lookup_service
-        self._crypto_api_service = _crypto_api_service
+        self._crypto_api_service = crypto_api_service
 
     async def init_vs_currencies(self):
         with session_scope() as session:

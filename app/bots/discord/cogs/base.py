@@ -11,8 +11,8 @@ class AccountCog(commands.Cog):
 
     PLATFORM_TYPE = PlatformType.DISCORD
 
-    def __init__(self, _account_lookup_service: AccountLookupService):
-        self._account_lookup_service = _account_lookup_service
+    def __init__(self, account_lookup_service: AccountLookupService):
+        self._account_lookup_service = account_lookup_service
 
     async def cog_before_invoke(self, ctx: commands.Context) -> None:
         """

@@ -21,20 +21,20 @@ class TelegramBot:
         account_lookup_service: AccountLookupService,
         crypto_api_service: CryptoApiService,
         favorites_service: FavoritesService,
-        _vs_currency_service: VsCurrencyService,
+        vs_currency_service: VsCurrencyService,
     ):
         self._token = token
         self._account_lookup_service = account_lookup_service
         self._crypto_api_service = crypto_api_service
         self._favorites_service = favorites_service
-        self._vs_currency_service = _vs_currency_service
+        self._vs_currency_service = vs_currency_service
 
         self.app = ApplicationBuilder().token(token).build()
 
         modules: list[TelegramModule] = [
             FavoritesModule(account_lookup_service, favorites_service),
             CryptoInfoModule(account_lookup_service, crypto_api_service),
-            SettingsModule(account_lookup_service, _vs_currency_service),
+            SettingsModule(account_lookup_service, vs_currency_service),
         ]
 
         for module in modules:

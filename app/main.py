@@ -45,7 +45,7 @@ async def async_main():
     vs_currency_service = VsCurrencyService(
         vs_currency_repository=vs_currency_repository,
         account_lookup_service=account_lookup_service,
-        _crypto_api_service=crypto_api_service,
+        crypto_api_service=crypto_api_service,
     )
     _crypto_currency_service = CryptoCurrencyService(
         crypto_currency_repository=cryptocurrency_repository,
@@ -74,7 +74,7 @@ async def async_main():
         account_lookup_service=account_lookup_service,
         crypto_api_service=crypto_api_service,
         favorites_service=favorites_service,
-        _vs_currency_service=vs_currency_service,
+        vs_currency_service=vs_currency_service,
     )
     try:
         await asyncio.gather(discord_bot.start(), telegram_bot.start())
