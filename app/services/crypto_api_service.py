@@ -34,7 +34,7 @@ class CryptoApiService:
             return float(result)
         return None
 
-    async def get_supported_fiat_currencies(self) -> list[str]:
+    async def get_supported_vs_currencies(self) -> list[str]:
         url = f"{self.BASE_URL}/simple/supported_vs_currencies"
         response = await self.client.get(url)
         json_obj = json.loads(response.text)

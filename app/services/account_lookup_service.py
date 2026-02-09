@@ -1,8 +1,8 @@
 import logging
 from app.models.enums import PlatformType
-from app.models.schemas import Account, FiatCurrency
+from app.models.schemas import Account, VsCurrency
 from app.repository.account_repository import AccountRepository
-from app.repository.fiat_currency_repository import FiatCurrencyRepository
+from app.repository.vs_currency_repository import VsCurrencyRepository
 from app.utils.exceptions import AccountNotFoundOrCreatedException
 from sqlalchemy.orm import Session
 
@@ -11,10 +11,10 @@ class AccountLookupService:
     def __init__(
         self,
         account_repository: AccountRepository,
-        fiat_currency_repository: FiatCurrencyRepository,
+        vs_currency_repository: VsCurrencyRepository,
     ):
         self._account_repository = account_repository
-        self._fiat_currency_repository = fiat_currency_repository
+        self._vs_currency_repository = vs_currency_repository
 
     def find_or_create_account(
         self, db_session: Session, platform_type: PlatformType, platform_user_id: str
@@ -24,17 +24,17 @@ class AccountLookupService:
                 session=db_session, platform=platform_type, platform_user_id=platform_user_id
             )
             if account is None:
-                euro: FiatCurrency | None = self._fiat_currency_repository.find_by_short_name(
+                euro: VsCurrency | None = self._vs_currency_repository.find_by_short_name(
                     db_session, "EUR"
                 )
-                selected_fiat_currency_id: int = 0  # TODO: FIX
+                selected_vs_currency_id: int = 0  # TODO: FIX
                 if euro is not None:
-                    selected_fiat_currency_id = euro.id
+                    selected_vs_currency_id = euro.id
                 account = self._account_repository.create(
                     session=db_session,
                     platform=platform_type,
                     platform_user_id=platform_user_id,
-                    selected_fiat_currency_id=selected_fiat_currency_id,
+                    selected_vs_currency_id=selected_vs_currency_id,
                 )
             return account
         except Exception as e:

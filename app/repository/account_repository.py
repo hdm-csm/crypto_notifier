@@ -35,12 +35,12 @@ class AccountRepository:
         session: Session,
         platform: PlatformType,
         platform_user_id: str,
-        selected_fiat_currency_id: int,
+        selected_vs_currency_id: int,
     ) -> Account:
         new_account = Account(
             platform=platform,
             platform_user_id=platform_user_id,
-            selected_fiat_currency_id=selected_fiat_currency_id,
+            selected_vs_currency_id=selected_vs_currency_id,
             created_at=datetime.now(),
         )
         session.add(new_account)

@@ -41,8 +41,8 @@ class CrpytoInfoCog(AccountCog):
     @commands.command(name="list")
     async def _list(self, ctx: CustomContext):
         vs_currency = "eur"
-        if ctx.account and ctx.account.selected_fiat_currency:
-            vs_currency = ctx.account.selected_fiat_currency.short_name.lower()
+        if ctx.account and ctx.account.selected_vs_currency:
+            vs_currency = ctx.account.selected_vs_currency.short_name.lower()
 
         result = await self._crypto_api_service.list_top_crypto_currencies(
             amount=10, vs_currency=vs_currency

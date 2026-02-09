@@ -3,7 +3,7 @@ from app.bots.discord.cogs.base import AccountCog
 from app.bots.discord.custom_context import CustomContext
 from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
-from app.services.fiat_currency_service import FiatCurrencyService
+from app.services.vs_currency_service import VsCurrencyService
 
 
 class SettingsCog(AccountCog):
@@ -13,25 +13,23 @@ class SettingsCog(AccountCog):
     def __init__(
         self,
         account_lookup_service: AccountLookupService,
-        fiat_currency_service: FiatCurrencyService,
+        vs_currency_service: VsCurrencyService,
     ):
         super().__init__(account_lookup_service)
-        self._fiat_currency_service = fiat_currency_service
+        self._vs_currency_service = vs_currency_service
 
-    @commands.command(name="get_fiat")
-    async def _get_fiat_currency(self, ctx: CustomContext):
-        answer: str = self._fiat_currency_service.get_fiat_currency(ctx.account)
+    @commands.command(name="get_vs")
+    async def _get_vs_currency(self, ctx: CustomContext):
+        answer: str = self._vs_currency_service.get_vs_currency(ctx.account)
         await ctx.send(answer)
 
-    @commands.command(name="list_fiat")
-    async def _list_fiat_currencies(self, ctx: CustomContext):
-        message = self._fiat_currency_service.list_supported_fiat_currencies(ctx.db_session)
+    @commands.command(name="list_vs")
+    async def _list_vs_currencies(self, ctx: CustomContext):
+        message = self._vs_currency_service.list_supported_vs_currencies(ctx.db_session)
         await ctx.send(message)
 
-    @commands.command(name="set_fiat")
-    async def _set_fiat_currency(self, ctx: CustomContext, input: str):
-        """Set preferred fiat currency."""
-        answer: str = self._fiat_currency_service.set_fiat_currency(
-            ctx.db_session, ctx.account, input
-        )
+    @commands.command(name="set_vs")
+    async def _set_vs_currency(self, ctx: CustomContext, input: str):
+        """Set preferred vs currency."""
+        answer: str = self._vs_currency_service.set_vs_currency(ctx.db_session, ctx.account, input)
         await ctx.send(answer)

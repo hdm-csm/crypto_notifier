@@ -9,7 +9,7 @@ from app.models.schemas import PlatformType
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
 from app.services.favorites_service import FavoritesService
-from app.services.fiat_currency_service import FiatCurrencyService
+from app.services.vs_currency_service import VsCurrencyService
 
 
 class CustomDiscordBot(commands.Bot):
@@ -30,7 +30,7 @@ class DiscordBot:
         crypto_api_service: CryptoApiService,
         favorites_service: FavoritesService,
         account_lookup_service: AccountLookupService,
-        fiat_currency_service: FiatCurrencyService,
+        vs_currency_service: VsCurrencyService,
     ):
 
         self.token = token
@@ -38,7 +38,7 @@ class DiscordBot:
         self._crypto_api_service = crypto_api_service
         self._favorites_service = favorites_service
         self._account_lookup_service = account_lookup_service
-        self._fiat_currency_service = fiat_currency_service
+        self._vs_currency_service = vs_currency_service
 
         intents = discord.Intents.default()
         intents.message_content = True
@@ -67,7 +67,7 @@ class DiscordBot:
     async def start(self):
         settings_cog = SettingsCog(
             account_lookup_service=self._account_lookup_service,
-            fiat_currency_service=self._fiat_currency_service,
+            vs_currency_service=self._vs_currency_service,
         )
         crypto_info_cog = CrpytoInfoCog(
             account_lookup_service=self._account_lookup_service,

@@ -1,10 +1,10 @@
 """
-Fiat Currency Mappings
+VS Currency Mappings
 Maps currency short codes to their full names.
 Source: ISO 4217 and common currency names
 """
 
-FIAT_CURRENCY_MAPPING = {
+VS_CURRENCY_MAPPING = {
     "aed": "United Arab Emirates Dirham",
     "ars": "Argentine Peso",
     "aud": "Australian Dollar",
@@ -81,4 +81,4 @@ def get_currency_full_name(short_name: str) -> str | None:
     Returns:
         Full currency name or None if not found
     """
-    return FIAT_CURRENCY_MAPPING.get(short_name.lower())
+    return VS_CURRENCY_MAPPING.get(short_name.lower())

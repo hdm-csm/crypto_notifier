@@ -6,7 +6,7 @@ from app.services.account_lookup_service import AccountLookupService
 from app.models.schemas import Account
 from sqlalchemy.orm import Session
 
-from app.services.fiat_currency_service import FiatCurrencyService
+from app.services.vs_currency_service import VsCurrencyService
 
 
 class SettingsModule(TelegramModule):
@@ -14,18 +14,18 @@ class SettingsModule(TelegramModule):
     def __init__(
         self,
         account_lookup_service: AccountLookupService,
-        _fiat_currency_service: FiatCurrencyService,
+        _vs_currency_service: VsCurrencyService,
     ):
         super().__init__(account_lookup_service)
-        self._fiat_currency_service: FiatCurrencyService = _fiat_currency_service
+        self._vs_currency_service: VsCurrencyService = _vs_currency_service
 
     def register(self, app: Application):
-        app.add_handler(CommandHandler("get_fiat", self._get_fiat_currency_command))
-        app.add_handler(CommandHandler("list_fiat", self._list_fiat_currencies))
-        app.add_handler(CommandHandler("set_fiat", self._set_fiat_currency))
+        app.add_handler(CommandHandler("get_vs", self._get_vs_currency_command))
+        app.add_handler(CommandHandler("list_vs", self._list_vs_currencies))
+        app.add_handler(CommandHandler("set_vs", self._set_vs_currency))
 
     @with_session_and_account
-    async def _get_fiat_currency_command(
+    async def _get_vs_currency_command(
         self,
         update: Update,
         context: ContextTypes.DEFAULT_TYPE,
@@ -34,11 +34,11 @@ class SettingsModule(TelegramModule):
     ) -> None:
         if update.message is None:
             return
-        answer: str = self._fiat_currency_service.get_fiat_currency(account)
+        answer: str = self._vs_currency_service.get_vs_currency(account)
         await update.message.reply_text(answer)
 
     @with_session_and_account
-    async def _list_fiat_currencies(
+    async def _list_vs_currencies(
         self,
         update: Update,
         context: ContextTypes.DEFAULT_TYPE,
@@ -47,23 +47,23 @@ class SettingsModule(TelegramModule):
     ) -> None:
         if update.message is None:
             return
-        answer: str = self._fiat_currency_service.list_supported_fiat_currencies(db_session)
+        answer: str = self._vs_currency_service.list_supported_vs_currencies(db_session)
         await update.message.reply_text(answer)
 
     @with_session_and_account
-    async def _set_fiat_currency(
+    async def _set_vs_currency(
         self,
         update: Update,
         context: ContextTypes.DEFAULT_TYPE,
         db_session: Session,
         account: Account,
     ) -> None:
-        """Set preferred fiat currency."""
+        """Set preferred vs currency."""
         if update.message is None:
             return
         if context.args is None or not context.args:
-            await update.message.reply_text("Please provide a fiat currency name.")
+            await update.message.reply_text("Please provide a vs currency name.")
             return
         input = context.args[0].lower()
-        answer: str = self._fiat_currency_service.set_fiat_currency(db_session, account, input)
+        answer: str = self._vs_currency_service.set_vs_currency(db_session, account, input)
         await update.message.reply_text(answer)
