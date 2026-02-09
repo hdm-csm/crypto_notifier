@@ -43,14 +43,14 @@ class CrpytoInfoCog(AccountCog):
         vs_currency = "eur"
         if ctx.account and ctx.account.selected_vs_currency:
             vs_currency = ctx.account.selected_vs_currency.short_name.lower()
-
         result = await self._crypto_api_service.list_top_crypto_currencies(
             amount=10, vs_currency=vs_currency
         )
+        currency_display = self.get_currency_display(vs_currency)
         message = "Top 10 Cryptocurrencies by Market Cap:\n\n"
         for coin in result:
             message += f"{coin.market_cap_rank}. {coin.name} ({coin.symbol.upper()})\n"
-            message += f"   Price: ${coin.current_price:.2f} €\n"
-            message += f"   Market Cap: ${coin.market_cap:,} €\n"
+            message += f"   Price: {coin.current_price:.2f} {currency_display}\n"
+            message += f"   Market Cap: {coin.market_cap:,} {currency_display}\n"
             message += f"   Index ID: {coin.id}\n\n"
         await ctx.send(message)

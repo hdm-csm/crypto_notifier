@@ -4,7 +4,7 @@ import pytest
 import json
 from unittest.mock import MagicMock, AsyncMock
 from app.services.crypto_api_service import CryptoApiService
-from app.models.dtos import Coin
+from app.models.dtos import CoinMarketData
 
 # Helper Dictionary für Pflichtfelder im Coin-Model
 COIN_DEFAULTS = {
@@ -82,7 +82,7 @@ async def test_list_top_crypto_currencies_success():
 
     # 2. Wurden die Daten korrekt in Coin-Objekte umgewandelt?
     assert len(result) == 2
-    assert isinstance(result[0], Coin)
+    assert isinstance(result[0], CoinMarketData)
     assert result[0].name == "Bitcoin"
     assert result[0].current_price == 50000.0
     assert result[1].symbol == "eth"

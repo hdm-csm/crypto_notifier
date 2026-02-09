@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, MagicMock
 from app.services.init_service import InitService
 from app.repository.crypto_currency_repository import CryptocurrencyRepository
 from app.services.crypto_api_service import CryptoApiService
-from app.models.dtos import Coin
+from app.models.dtos import CoinMarketData
 
 
 @pytest.mark.asyncio
@@ -17,7 +17,7 @@ async def test_startup_initialization_fills_db(db_session, mocker):
 
     # Fake Antwort der API: 2 Coins
     fake_coins = [
-        Coin(
+        CoinMarketData(
             id="bitcoin",
             symbol="btc",
             name="Bitcoin",
@@ -45,7 +45,7 @@ async def test_startup_initialization_fills_db(db_session, mocker):
             roi=None,
             last_updated="",
         ),
-        Coin(
+        CoinMarketData(
             id="ethereum",
             symbol="eth",
             name="Ethereum",

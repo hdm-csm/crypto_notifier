@@ -1,7 +1,7 @@
 import pytest
 from unittest.mock import MagicMock, AsyncMock
 from app.services.init_service import InitService
-from app.models.dtos import Coin
+from app.models.dtos import CoinMarketData
 
 # Testen der Initialisierung / GeneralService-Klasse
 
@@ -44,7 +44,7 @@ async def test_initialize_crypto_currencies_when_empty(mocker):
     # API-Antwort mit 3 Coins, wobei "BTC" doppelt vorkommt
     # Test, ob Code das Duplikat rauswirft
     fake_coins = [
-        Coin(
+        CoinMarketData(
             id="bitcoin",
             symbol="btc",
             name="Bitcoin",
@@ -53,7 +53,7 @@ async def test_initialize_crypto_currencies_when_empty(mocker):
             market_cap_rank=1,
             **defaults,
         ),
-        Coin(
+        CoinMarketData(
             id="bitcoin",
             symbol="btc",
             name="Bitcoin",
@@ -62,7 +62,7 @@ async def test_initialize_crypto_currencies_when_empty(mocker):
             market_cap_rank=1,
             **defaults,
         ),
-        Coin(
+        CoinMarketData(
             id="ethereum",
             symbol="eth",
             name="Ethereum",
