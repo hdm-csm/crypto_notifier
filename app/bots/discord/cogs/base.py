@@ -65,16 +65,3 @@ class AccountCog(commands.Cog):
         # if not getattr(ctx, "command_failed", False): CANNOT DO THIS BC IT IGNORES REAL ERRORS DURING COMMANDS
         await ctx.send(f"❌ An error occurred: {str(error)}")
         return await super().cog_command_error(ctx, error)
-
-    def get_currency_display(self, vs_currency: str) -> str:
-        """
-        Get the currency symbol or short name for display.
-        Returns € for EUR, $ for USD, or the currency short name in uppercase for others.
-        """
-        vs_currency_lower = vs_currency.lower()
-        if vs_currency_lower == "eur":
-            return "€"
-        elif vs_currency_lower == "usd":
-            return "$"
-        else:
-            return vs_currency.upper()

@@ -1,8 +1,11 @@
+from app.bots.telegram.decorators import with_session_and_account
 from app.bots.telegram.modules.base import TelegramModule
+from app.models.schemas import Account
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
 from telegram.ext import Application, CommandHandler, ContextTypes
 from telegram import Update
+from sqlalchemy.orm import Session
 
 
 class CryptoInfoModule(TelegramModule):
@@ -17,7 +20,14 @@ class CryptoInfoModule(TelegramModule):
         app.add_handler(CommandHandler("index", self.index_command, block=False))
         app.add_handler(CommandHandler("list", self.list_command, block=False))
 
-    async def index_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    @with_session_and_account
+    async def index_command(
+        self,
+        update: Update,
+        context: ContextTypes.DEFAULT_TYPE,
+        db_session: Session,
+        account: Account,
+    ) -> None:
         if update.message is None:
             return
         if not context.args:
@@ -25,23 +35,29 @@ class CryptoInfoModule(TelegramModule):
                 "Please provide a cryptocurrency name. Usage: /index bitcoin"
             )
             return
-        input = context.args[0]
-        result = await self._crypto_api_service.get_index(input)
-        if result is None:
-            await update.message.reply_text(
-                f'Could not find price for "{input}".\nPlease enter correct id.'
-            )
-        else:
-            await update.message.reply_text(f"{input.capitalize()}: {result:.2f} €")
+        crypto_currency_input: str = context.args[0]
+        vs_currency = "eur"
+        if account and account.selected_vs_currency:
+            vs_currency = account.selected_vs_currency.short_name.lower()
+        answer: str = await self._crypto_api_service.get_index_str(
+            crypto_currency_input=crypto_currency_input, vs_currency=vs_currency
+        )
+        await update.message.reply_text(answer)
 
-    async def list_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    @with_session_and_account
+    async def list_command(
+        self,
+        update: Update,
+        context: ContextTypes.DEFAULT_TYPE,
+        db_session: Session,
+        account: Account,
+    ) -> None:
         if update.message is None:
             return
-        result = await self._crypto_api_service.list_top_crypto_currencies(amount=10)
-        message = "Top 10 Cryptocurrencies by Market Cap:\n\n"
-        for coin in result:
-            message += f"{coin.market_cap_rank}. {coin.name} ({coin.symbol.upper()})\n"
-            message += f"   Price: {coin.current_price:.2f} €\n"
-            message += f"   Market Cap: {coin.market_cap:,} €\n"
-            message += f"   Index ID: {coin.id}\n\n"
-        await update.message.reply_text(message)
+        vs_currency = "eur"
+        if account and account.selected_vs_currency:
+            vs_currency = account.selected_vs_currency.short_name.lower()
+        answer: str = await self._crypto_api_service.list_top_crypto_currencies_str(
+            amount=10, vs_currency=vs_currency
+        )
+        await update.message.reply_text(answer)

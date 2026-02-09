@@ -1,6 +1,7 @@
 import httpx
 import json
 from app.models.dtos import CoinMarketData, SimpleCoinPrice
+from app.utils.functions import get_currency_display
 
 
 class CryptoApiService:
@@ -20,8 +21,20 @@ class CryptoApiService:
         url = f"{self.BASE_URL}/coins/markets"
         response = await self.client.get(url, params=params)
         json_obj = json.loads(response.text)
+        # list[CoinMarketData] =
         coins = [CoinMarketData(**coin_data) for coin_data in json_obj]
         return coins
+
+    async def list_top_crypto_currencies_str(self, amount: int, vs_currency: str = "eur") -> str:
+        coins = await self.list_top_crypto_currencies(amount, vs_currency)
+        currency_display = get_currency_display(vs_currency)
+        message = "Top 10 Cryptocurrencies by Market Cap:\n\n"
+        for coin in coins:
+            message += f"{coin.market_cap_rank}. {coin.name} ({coin.symbol.upper()})\n"
+            message += f"   Price: {coin.current_price:.2f} {currency_display}\n"
+            message += f"   Market Cap: {coin.market_cap:,} {currency_display}\n"
+            message += f"   Index ID: {coin.id}\n\n"
+        return message
 
     async def get_index(self, crypto_currency_input: str, vs_currency: str = "eur") -> float | None:
         crypto_currency_input = crypto_currency_input.lower().strip()
@@ -51,6 +64,16 @@ class CryptoApiService:
             return None
         except (json.JSONDecodeError, KeyError, ValueError, TypeError):
             return None
+
+    async def get_index_str(self, crypto_currency_input: str, vs_currency: str = "eur") -> str:
+        result = await self.get_index(crypto_currency_input, vs_currency)
+        if result is None:
+            return f'Could not find price for "{crypto_currency_input}". \nPlease enter correct id.'
+        currency_display = get_currency_display(vs_currency)
+        return f"{crypto_currency_input.capitalize()}: {result:.2f} {currency_display}"
+
+    # ❌ An error occurred: Command raised an exception:
+    # TypeError: app.models.dtos.CoinMarketData() argument after ** must be a mapping, not str
 
     async def get_supported_vs_currencies(self) -> list[str]:
         url = f"{self.BASE_URL}/simple/supported_vs_currencies"
