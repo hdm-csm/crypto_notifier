@@ -63,7 +63,6 @@ Mit MyPy nun pflicht:
 ### Testing
 
 ```
-docker-compose -f docker-compose.test.yml --env-file .env.test up -d --build
 docker compose -f docker-compose.test.yml --env-file .env.test up -d --build
 ```
 

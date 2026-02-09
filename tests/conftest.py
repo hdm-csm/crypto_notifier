@@ -4,7 +4,7 @@ import asyncio
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from app.db import Base
-from app.models.dtos import Coin
+from app.models.dtos import CoinMarketData
 
 
 # 1. Event Loop Fixture
@@ -20,7 +20,7 @@ def event_loop():
 # 2. Dummy Coin Fixture
 @pytest.fixture
 def sample_coin():
-    return Coin(
+    return CoinMarketData(
         id="bitcoin",
         symbol="btc",
         name="Bitcoin",
@@ -84,7 +84,7 @@ def db_session(db_engine):
     connection = db_engine.connect()
 
     # Session an die Connection binden
-    Session = sessionmaker(bind=connection)
+    Session = sessionmaker(bind=connection, expire_on_commit=False)
     session = Session()
 
     yield session
@@ -99,6 +99,7 @@ def db_session(db_engine):
             conn.execute(text("DELETE FROM favorites"))
             conn.execute(text("DELETE FROM accounts"))
             conn.execute(text("DELETE FROM cryptocurrencies"))
+            conn.execute(text("DELETE FROM vs_currencies"))
             conn.commit()
         except Exception as e:
             print(f"Fehler beim Bereinigen der DB: {e}")

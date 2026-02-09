@@ -2,14 +2,17 @@ import asyncio
 import logging
 import httpx
 from config import Config
-from app.bots.discord_bot import DiscordBot
-from app.bots.telegram_bot import TelegramBot
+from app.bots.discord.discord_bot import DiscordBot
+from app.bots.telegram.telegram_bot import TelegramBot
 from app.repository.account_repository import AccountRepository
-from app.repository.favorite_repository import FavoriteRepository
-from app.repository.cryptocurrency_repository import CryptocurrencyRepository
-from app.services.bot_service import BotService
+from app.repository.favorites_repository import FavoritesRepository
+from app.repository.crypto_currency_repository import CryptocurrencyRepository
+from app.repository.vs_currency_repository import VsCurrencyRepository
 from app.services.crypto_api_service import CryptoApiService
-from app.services.general_service import GeneralService
+from app.services.account_lookup_service import AccountLookupService
+from app.services.crypto_currency_service import CryptoCurrencyService
+from app.services.favorites_service import FavoritesService
+from app.services.vs_currency_service import VsCurrencyService
 from scripts.init_db import init_db
 
 DISCORD_BOT_TOKEN = Config.DISCORD_BOT_TOKEN
@@ -27,42 +30,59 @@ async def async_main():
     # TODO: Remove this in production; only for initial setup; Use Alembic for DB migrations
     init_db()
 
-    account_repository = AccountRepository()
-    favorite_repository = FavoriteRepository()
-    cryptocurrency_repository = CryptocurrencyRepository()
+    _account_repository = AccountRepository()
+    _favorite_repository = FavoritesRepository()
+    _cryptocurrency_repository = CryptocurrencyRepository()
+    _vs_currency_repository = VsCurrencyRepository()
 
-    http_client = httpx.AsyncClient()
-    crypto_api_service = CryptoApiService(http_client)
+    _http_client = httpx.AsyncClient()
+    _crypto_api_service = CryptoApiService(_http_client)
 
-    general_service = GeneralService(cryptocurrency_repository, crypto_api_service)
-    bot_service = BotService(
-        account_repository, favorite_repository, cryptocurrency_repository, crypto_api_service
+    _account_lookup_service = AccountLookupService(
+        account_repository=_account_repository, vs_currency_repository=_vs_currency_repository
+    )
+    _vs_currency_service = VsCurrencyService(
+        vs_currency_repository=_vs_currency_repository,
+        account_lookup_service=_account_lookup_service,
+        crypto_api_service=_crypto_api_service,
+    )
+    _crypto_currency_service = CryptoCurrencyService(
+        crypto_currency_repository=_cryptocurrency_repository,
+        crypto_api_service=_crypto_api_service,
+    )
+    _favorites_service = FavoritesService(
+        favorite_repository=_favorite_repository,
+        cryptocurrency_repository=_cryptocurrency_repository,
+        crypto_api_service=_crypto_api_service,
     )
 
-    await general_service.initialize_crypto_currencies()
+    await _vs_currency_service.init_vs_currencies()
+    await _crypto_currency_service.init_crypto_currencies()
 
-    discord_bot = DiscordBot(
-        DISCORD_BOT_TOKEN,
-        DISCORD_GUILD_ID,
-        bot_service,
-        crypto_api_service,
+    _discord_bot = DiscordBot(
+        token=DISCORD_BOT_TOKEN,
+        guild_id=DISCORD_GUILD_ID,
+        crypto_api_service=_crypto_api_service,
+        favorites_service=_favorites_service,
+        account_lookup_service=_account_lookup_service,
+        vs_currency_service=_vs_currency_service,
     )
     print("Telegram Bot Token:", TELEGRAM_BOT_TOKEN)
-    telegram_bot = TelegramBot(
-        TELEGRAM_BOT_TOKEN,
-        crypto_api_service,
-        account_repository,
-        favorite_repository,
-        bot_service,
+    _telegram_bot = TelegramBot(
+        token=TELEGRAM_BOT_TOKEN,
+        account_lookup_service=_account_lookup_service,
+        crypto_api_service=_crypto_api_service,
+        favorites_service=_favorites_service,
+        vs_currency_service=_vs_currency_service,
     )
     try:
-        await asyncio.gather(discord_bot.start(), telegram_bot.start())
+        await asyncio.gather(_discord_bot.start(), _telegram_bot.start())
     except KeyboardInterrupt:
         logging.info("Shutting down bots...")
     finally:
-        await discord_bot.stop()
-        await telegram_bot.stop()
-        await http_client.aclose()
+        await _discord_bot.stop()
+        await _telegram_bot.stop()
+        await _http_client.aclose()
 
 
 if __name__ == "__main__":

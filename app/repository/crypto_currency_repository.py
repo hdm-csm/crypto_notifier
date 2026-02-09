@@ -2,7 +2,7 @@ import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models.schemas import Cryptocurrency
-from app.models.dtos import Coin
+from app.models.dtos import CoinMarketData
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,9 +26,9 @@ class CryptocurrencyRepository:
             is not None
         )
 
-    def find_by_name_or_symbol(self, session: Session, identifier: str) -> Cryptocurrency | None:
+    def find_by_name_or_symbol(self, db_session: Session, identifier: str) -> Cryptocurrency | None:
         return (
-            session.query(Cryptocurrency)
+            db_session.query(Cryptocurrency)
             .filter(
                 (func.lower(Cryptocurrency.symbol) == func.lower(identifier))
                 | (func.lower(Cryptocurrency.full_name) == func.lower(identifier))
@@ -36,10 +36,10 @@ class CryptocurrencyRepository:
             .first()
         )
 
-    def get_all_cryptocurrencies(self, session: Session) -> list[Cryptocurrency]:
+    def get_all(self, session: Session) -> list[Cryptocurrency]:
         return session.query(Cryptocurrency).all()
 
-    def store_cryptocurrencies(self, session: Session, coins: list[Coin]):
+    def store_all(self, session: Session, coins: list[CoinMarketData]):
         new_cryptos = [
             Cryptocurrency(symbol=coin.symbol.upper(), full_name=coin.name) for coin in coins
         ]

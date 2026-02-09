@@ -3,7 +3,18 @@ from typing import Optional
 
 
 @dataclass
-class Coin:
+class SimpleCoinPrice:
+    """Simple price response from /simple/price endpoint"""
+
+    price: Optional[float] = None
+    market_cap: Optional[float] = None
+    volume_24h: Optional[float] = None
+    change_24h: Optional[float] = None
+    last_updated_at: Optional[int] = None
+
+
+@dataclass
+class CoinMarketData:
     id: str
     symbol: str
     name: str

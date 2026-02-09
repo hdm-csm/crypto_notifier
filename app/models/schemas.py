@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from app.db import Base
 from sqlalchemy import (
     Column,
@@ -9,9 +11,11 @@ from sqlalchemy import (
     Table,
     DateTime,
     func,
+    UniqueConstraint,
 )
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.models.enums import PlatformType, NotificationDirection
+
 
 favorites_table = Table(
     "favorites",
@@ -21,17 +25,48 @@ favorites_table = Table(
 )
 
 
+class VsCurrency(Base):
+    __tablename__ = "vs_currencies"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    short_name: Mapped[str] = mapped_column(String(10), unique=True, index=True)
+    full_name: Mapped[str] = mapped_column(String(255))
+
+
+class Notification(Base):
+    __tablename__ = "notifications"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    account_id: Mapped[int] = mapped_column(Integer, ForeignKey("accounts.id"))
+    cryptocurrency_id: Mapped[int] = mapped_column(Integer, ForeignKey("cryptocurrencies.id"))
+    target_price: Mapped[float] = mapped_column(Float)
+    direction: Mapped[NotificationDirection] = mapped_column(Enum(NotificationDirection))
+
+    account: Mapped[Account] = relationship("Account", back_populates="notifications")
+    cryptocurrency: Mapped[Cryptocurrency] = relationship(
+        "Cryptocurrency", back_populates="notifications"
+    )
+
+
 class Account(Base):
     __tablename__ = "accounts"
+    __table_args__ = (UniqueConstraint("platform", "platform_user_id", name="uq_platform_user"),)
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     platform: Mapped[PlatformType] = mapped_column(Enum(PlatformType), nullable=False)
-    platform_user_id = Column(String(255), nullable=False, unique=True)
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    platform_user_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    selected_vs_currency_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("vs_currencies.id"), nullable=False
+    )
+    created_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    notifications = relationship("Notification", back_populates="account")
-
-    favorite_cryptos = relationship(
+    notifications: Mapped[list[Notification]] = relationship(
+        "Notification", back_populates="account"
+    )
+    selected_vs_currency: Mapped[VsCurrency] = relationship(
+        "VsCurrency", foreign_keys=[selected_vs_currency_id]
+    )
+    favorite_cryptos: Mapped[list[Cryptocurrency]] = relationship(
         "Cryptocurrency", secondary=favorites_table, back_populates="favorited_by"
     )
 
@@ -39,25 +74,14 @@ class Account(Base):
 class Cryptocurrency(Base):
     __tablename__ = "cryptocurrencies"
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    symbol = Column(String(255), unique=True, index=True)
-    full_name = Column(String(255))
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    symbol: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    full_name: Mapped[str] = mapped_column(String(255))
 
-    notifications = relationship("Notification", back_populates="cryptocurrency")
-
-    favorited_by = relationship(
-        "Account", secondary=favorites_table, back_populates="favorite_cryptos"
+    notifications: Mapped[list[Notification]] = relationship(
+        "Notification", back_populates="cryptocurrency"
     )
 
-
-class Notification(Base):
-    __tablename__ = "notifications"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    account_id = Column(Integer, ForeignKey("accounts.id"))
-    cryptocurrency_id = Column(Integer, ForeignKey("cryptocurrencies.id"))
-    target_price = Column(Float)
-    direction: Mapped[NotificationDirection] = mapped_column(Enum(NotificationDirection))
-
-    account = relationship("Account", back_populates="notifications")
-    cryptocurrency = relationship("Cryptocurrency", back_populates="notifications")
+    favorited_by: Mapped[list[Account]] = relationship(
+        "Account", secondary=favorites_table, back_populates="favorite_cryptos"
+    )
