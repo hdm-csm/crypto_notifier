@@ -61,12 +61,9 @@ class AccountCog(commands.Cog):
                 ctx.db_session.rollback()
             finally:
                 ctx.db_session.close()
-
         logging.error(f"Command error in {ctx.command}: {error}")
-
         # if not getattr(ctx, "command_failed", False): CANNOT DO THIS BC IT IGNORES REAL ERRORS DURING COMMANDS
         await ctx.send(f"❌ An error occurred: {str(error)}")
-
         return await super().cog_command_error(ctx, error)
 
     def get_currency_display(self, vs_currency: str) -> str:

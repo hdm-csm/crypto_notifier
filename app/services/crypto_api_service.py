@@ -23,22 +23,11 @@ class CryptoApiService:
         coins = [CoinMarketData(**coin_data) for coin_data in json_obj]
         return coins
 
-    async def get_index(self, crypto_id: str, vs_currency: str = "eur") -> float | None:
-        """
-        Get the current price of a cryptocurrency using /simple/price endpoint.
-
-        Args:
-            crypto_id: The cryptocurrency ID (e.g., 'bitcoin', 'ethereum')
-            vs_currency: The target currency (default: 'usd')
-
-        Returns:
-            The price as a float or None if not found
-        """
-        crypto_id = crypto_id.lower().strip()
+    async def get_index(self, crypto_currency_input: str, vs_currency: str = "eur") -> float | None:
+        crypto_currency_input = crypto_currency_input.lower().strip()
         currency_key = f"{vs_currency.lower()}"
-
         params: dict[str, str] = {
-            "ids": crypto_id,
+            "ids": crypto_currency_input,
             "vs_currencies": vs_currency.lower(),
             "include_24hr_change": "true",
             "include_last_updated_at": "true",
@@ -47,14 +36,9 @@ class CryptoApiService:
         try:
             response = await self.client.get(url, params=params)
             json_obj = json.loads(response.text)
-
-            # Response structure: {"bitcoin": {"usd": 67187.33, "usd_24h_change": 3.63, ...}}
-            if crypto_id not in json_obj:
+            if crypto_currency_input not in json_obj:
                 return None
-
-            coin_data = json_obj[crypto_id]
-
-            # Cast to SimpleCoinPrice for type safety
+            coin_data = json_obj[crypto_currency_input]
             simple_price = SimpleCoinPrice(
                 price=coin_data.get(currency_key),
                 market_cap=coin_data.get(f"{currency_key}_market_cap"),
@@ -62,8 +46,6 @@ class CryptoApiService:
                 change_24h=coin_data.get(f"{currency_key}_24h_change"),
                 last_updated_at=coin_data.get("last_updated_at"),
             )
-
-            # Return the price from the SimpleCoinPrice object
             if simple_price.price is not None:
                 return float(simple_price.price)
             return None
