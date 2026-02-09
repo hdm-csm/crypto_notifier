@@ -4,6 +4,7 @@ from app.db import Session_Factory
 from app.bots.discord.custom_context import CustomContext
 from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
+from app.utils.exceptions import InvokeSetupError
 
 
 class AccountCog(commands.Cog):
@@ -26,11 +27,13 @@ class AccountCog(commands.Cog):
                 platform_type=self.PLATFORM_TYPE,
                 platform_user_id=str(ctx.author.id),
             )
-        except Exception:
+        except Exception as e:
             if hasattr(ctx, "db_session"):
                 ctx.db_session.rollback()
                 ctx.db_session.close()
-            raise
+            logging.error(f"Error in cog_before_invoke: {e}")
+            await ctx.send(f"❌ An error occurred: {str(e)}")
+            raise InvokeSetupError()  # Re-raise to stop execution --> ugly stacktrace sadly...
         return await super().cog_before_invoke(ctx)
 
     async def cog_after_invoke(self, ctx: commands.Context) -> None:
@@ -61,7 +64,7 @@ class AccountCog(commands.Cog):
 
         logging.error(f"Command error in {ctx.command}: {error}")
 
-        # Send error message to user
+        # if not getattr(ctx, "command_failed", False): CANNOT DO THIS BC IT IGNORES REAL ERRORS DURING COMMANDS
         await ctx.send(f"❌ An error occurred: {str(error)}")
 
         return await super().cog_command_error(ctx, error)
