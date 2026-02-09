@@ -50,22 +50,16 @@ class FavoritesService:
         favorites = account.favorite_cryptos
         if not favorites or len(favorites) == 0:
             return "ℹ️ You have no favorite cryptocurrencies yet."
+        vs_currency = "eur"
+        if account and account.selected_vs_currency:
+            vs_currency = account.selected_vs_currency.short_name.lower()
         message = "Your Favorite Cryptocurrencies:\n\n"
         for crypto_currency in favorites:
             try:
-                price: float | None = await self._crypto_api_service.get_index(
-                    crypto_currency.full_name
+                message += await self._crypto_api_service.get_index_str(
+                    crypto_currency_input=crypto_currency.full_name, vs_currency=vs_currency
                 )
-                if price is not None:
-                    message += (
-                        f"• {crypto_currency.full_name} " f"({crypto_currency.symbol.upper()})\n"
-                    )
-                    message += f"   Price: {price:.2f} €\n"
-                else:
-                    message += (
-                        f"• {crypto_currency.full_name} " f"({crypto_currency.symbol.upper()})\n"
-                    )
-                    message += "   Price: Unavailable\n\n"
+                message += "\n"
             except Exception as e:
                 logging.error(f"Error fetching price for {crypto_currency.symbol}: {e}")
                 message += f"• {crypto_currency.full_name} " f"({crypto_currency.symbol.upper()})\n"
