@@ -2,7 +2,6 @@ import logging
 from sqlalchemy.orm import Session
 from app.models.schemas import Account, FiatCurrency
 from sqlalchemy import select, or_
-import logging
 
 
 class FiatCurrencyRepository:

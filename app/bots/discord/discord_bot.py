@@ -4,11 +4,19 @@ from discord.ext import commands
 from app.bots.discord.cogs.settings_cog import SettingsCog
 from app.bots.discord.cogs.crypto_info_cog import CrpytoInfoCog
 from app.bots.discord.cogs.favorites_cog import FavoritesCog
+from app.bots.discord.custom_context import CustomContext
 from app.models.schemas import PlatformType
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
 from app.services.favorites_service import FavoritesService
 from app.services.fiat_currency_service import FiatCurrencyService
+
+
+class CustomDiscordBot(commands.Bot):
+    """Custom bot that uses CustomContext for all commands."""
+
+    async def get_context(self, message, *, cls=CustomContext):
+        return await super().get_context(message, cls=cls)
 
 
 class DiscordBot:
@@ -34,7 +42,8 @@ class DiscordBot:
 
         intents = discord.Intents.default()
         intents.message_content = True
-        self.bot = commands.Bot(command_prefix="/", intents=intents)
+        # self.bot = commands.Bot(command_prefix="/", intents=intents, context=CustomContext)
+        self.bot = CustomDiscordBot(command_prefix="/", intents=intents)
 
         @self.bot.event
         async def on_ready():

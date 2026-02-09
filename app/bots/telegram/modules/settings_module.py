@@ -2,7 +2,6 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from app.bots.telegram.decorators import with_session_and_account
 from app.bots.telegram.modules.base import TelegramModule
-from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
 from app.models.schemas import Account
 from sqlalchemy.orm import Session
@@ -11,7 +10,6 @@ from app.services.fiat_currency_service import FiatCurrencyService
 
 
 class SettingsModule(TelegramModule):
-    PLATFORM_TYPE = PlatformType.TELEGRAM
 
     def __init__(
         self,
@@ -34,6 +32,8 @@ class SettingsModule(TelegramModule):
         db_session: Session,
         account: Account,
     ) -> None:
+        if update.message is None:
+            return
         answer: str = self._fiat_currency_service.get_fiat_currency(account)
         await update.message.reply_text(answer)
 
@@ -45,6 +45,8 @@ class SettingsModule(TelegramModule):
         db_session: Session,
         account: Account,
     ) -> None:
+        if update.message is None:
+            return
         answer: str = self._fiat_currency_service.list_supported_fiat_currencies(db_session)
         await update.message.reply_text(answer)
 
@@ -57,13 +59,11 @@ class SettingsModule(TelegramModule):
         account: Account,
     ) -> None:
         """Set preferred fiat currency."""
-        # user_id: str = str(ctx.author.id)
-        # answer: str = self._fiat_currency_service.set_fiat_currency(
-        #     platform_type=self.PLATFORM_TYPE,
-        #     platform_user_id=user_id,
-        #     input=input,
-        # )
-        # await ctx.send(answer)
+        if update.message is None:
+            return
+        if context.args is None or not context.args:
+            await update.message.reply_text("Please provide a fiat currency name.")
+            return
         input = context.args[0].lower()
         answer: str = self._fiat_currency_service.set_fiat_currency(db_session, account, input)
         await update.message.reply_text(answer)

@@ -13,11 +13,12 @@ class AccountCog(commands.Cog):
     def __init__(self, _account_lookup_service: AccountLookupService):
         self._account_lookup_service = _account_lookup_service
 
-    async def cog_before_invoke(self, ctx: CustomContext) -> None:
+    async def cog_before_invoke(self, ctx: commands.Context) -> None:
         """
         Called before the command is invoked, after the command checks have been made.
         Loads the account from the database.
         """
+        assert isinstance(ctx, CustomContext)
         try:
             ctx.db_session = Session_Factory()
             ctx.account = self._account_lookup_service.find_or_create_account(
@@ -32,11 +33,12 @@ class AccountCog(commands.Cog):
             raise
         return await super().cog_before_invoke(ctx)
 
-    async def cog_after_invoke(self, ctx: CustomContext) -> None:
+    async def cog_after_invoke(self, ctx: commands.Context) -> None:
         """
         Called after the command is invoked, regardless of whether it succeeded or raised an exception.
         Called before cog_command_error.
         """
+        assert isinstance(ctx, CustomContext)
         if hasattr(ctx, "db_session") and not ctx.command_failed:
             try:
                 logging.info("Committing current db session.")
@@ -45,10 +47,11 @@ class AccountCog(commands.Cog):
                 ctx.db_session.close()
         return await super().cog_after_invoke(ctx)
 
-    async def cog_command_error(self, ctx: CustomContext, error: Exception) -> None:
+    async def cog_command_error(self, ctx: commands.Context, error: Exception) -> None:
         """
         Called after cog_after_invoke if an exception was raised in the command or in cog_after_invoke.
         """
+        assert isinstance(ctx, CustomContext)
         if hasattr(ctx, "db_session"):
             try:
                 logging.error("Rolling back current db session.")
