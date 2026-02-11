@@ -23,7 +23,7 @@ class VsCurrencyService:
         with session_scope() as session:
             if self._vs_currency_repository.is_empty(session):
                 supported_vs_currencies = (
-                    await self._crypto_api_service.get_supported_vs_currencies()
+                    await self._crypto_api_service.get_coingecko_supported_vs_currencies()
                 )
                 vs_currencies = [
                     VsCurrency(short_name=short_name, full_name=get_currency_full_name(short_name))

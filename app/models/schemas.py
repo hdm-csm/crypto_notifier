@@ -35,17 +35,26 @@ class VsCurrency(Base):
 
 class Notification(Base):
     __tablename__ = "notifications"
+    __table_args__ = (
+        UniqueConstraint(
+            "account_id",
+            "base_asset",
+            "quote_asset",
+            "direction",
+            "target_price",
+            name="uq_account_base_quote",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     account_id: Mapped[int] = mapped_column(Integer, ForeignKey("accounts.id"))
-    cryptocurrency_id: Mapped[int] = mapped_column(Integer, ForeignKey("cryptocurrencies.id"))
-    target_price: Mapped[float] = mapped_column(Float)
+    base_asset: Mapped[str] = mapped_column(String(255))
+    quote_asset: Mapped[str] = mapped_column(String(255))
     direction: Mapped[NotificationDirection] = mapped_column(Enum(NotificationDirection))
+    target_price: Mapped[float] = mapped_column(Float)
+    already_hit: Mapped[bool] = mapped_column(default=False)
 
     account: Mapped[Account] = relationship("Account", back_populates="notifications")
-    cryptocurrency: Mapped[Cryptocurrency] = relationship(
-        "Cryptocurrency", back_populates="notifications"
-    )
 
 
 class Account(Base):
@@ -77,10 +86,6 @@ class Cryptocurrency(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     symbol: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     full_name: Mapped[str] = mapped_column(String(255))
-
-    notifications: Mapped[list[Notification]] = relationship(
-        "Notification", back_populates="cryptocurrency"
-    )
 
     favorited_by: Mapped[list[Account]] = relationship(
         "Account", secondary=favorites_table, back_populates="favorite_cryptos"

@@ -8,10 +8,12 @@ from app.repository.account_repository import AccountRepository
 from app.repository.favorites_repository import FavoritesRepository
 from app.repository.crypto_currency_repository import CryptocurrencyRepository
 from app.repository.vs_currency_repository import VsCurrencyRepository
+from app.repository.notification_repository import NotificationRepository
 from app.services.crypto_api_service import CryptoApiService
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_currency_service import CryptoCurrencyService
 from app.services.favorites_service import FavoritesService
+from app.services.notification_service import NotificationService
 from app.services.vs_currency_service import VsCurrencyService
 from scripts.init_db import init_db
 
@@ -34,6 +36,7 @@ async def async_main():
     _favorite_repository = FavoritesRepository()
     _cryptocurrency_repository = CryptocurrencyRepository()
     _vs_currency_repository = VsCurrencyRepository()
+    _notification_repository = NotificationRepository()
 
     _http_client = httpx.AsyncClient()
     _crypto_api_service = CryptoApiService(_http_client)
@@ -55,6 +58,9 @@ async def async_main():
         cryptocurrency_repository=_cryptocurrency_repository,
         crypto_api_service=_crypto_api_service,
     )
+    _notification_service = NotificationService(
+        notification_repository=_notification_repository, crypto_api_service=_crypto_api_service
+    )
 
     await _vs_currency_service.init_vs_currencies()
     await _crypto_currency_service.init_crypto_currencies()
@@ -64,6 +70,7 @@ async def async_main():
         guild_id=DISCORD_GUILD_ID,
         crypto_api_service=_crypto_api_service,
         favorites_service=_favorites_service,
+        notification_service=_notification_service,
         account_lookup_service=_account_lookup_service,
         vs_currency_service=_vs_currency_service,
     )
@@ -73,6 +80,7 @@ async def async_main():
         account_lookup_service=_account_lookup_service,
         crypto_api_service=_crypto_api_service,
         favorites_service=_favorites_service,
+        notification_service=_notification_service,
         vs_currency_service=_vs_currency_service,
     )
     try:
