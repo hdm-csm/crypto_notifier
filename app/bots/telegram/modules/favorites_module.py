@@ -11,16 +11,19 @@ from sqlalchemy.orm import Session
 class FavoritesModule(AccountModule):
 
     def __init__(
-        self, account_lookup_service: AccountLookupService, favorites_service: FavoritesService
+        self,
+        app: Application,
+        account_lookup_service: AccountLookupService,
+        favorites_service: FavoritesService,
     ):
-        super().__init__(account_lookup_service)
+        super().__init__(app, account_lookup_service)
         self._favorites_service = favorites_service
 
-    def register(self, app: Application):
-        app.add_handler(CommandHandler("add_fav", self.add_fav_command))
-        app.add_handler(CommandHandler("list_favs", self.list_favs_command))
-        app.add_handler(CommandHandler("remove_fav", self.remove_fav_command))
-        app.add_handler(CommandHandler("drop_favs", self.drop_favs_command))
+    def register(self):
+        self._app.add_handler(CommandHandler("add_fav", self.add_fav_command))
+        self._app.add_handler(CommandHandler("list_favs", self.list_favs_command))
+        self._app.add_handler(CommandHandler("remove_fav", self.remove_fav_command))
+        self._app.add_handler(CommandHandler("drop_favs", self.drop_favs_command))
 
     @with_session_and_account
     async def add_fav_command(

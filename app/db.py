@@ -6,7 +6,7 @@ from contextlib import contextmanager
 
 DATABASE_URL = Config.DATABASE_URL
 
-engine = create_engine(DATABASE_URL, echo=True)
+engine = create_engine(DATABASE_URL, echo=False)
 Session_Factory = sessionmaker(bind=engine, expire_on_commit=False)
 
 

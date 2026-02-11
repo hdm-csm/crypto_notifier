@@ -14,26 +14,29 @@ class NotificationsModule(AccountModule):
 
     def __init__(
         self,
+        app: Application,
         account_lookup_service: AccountLookupService,
         notification_service: NotificationService,
     ):
-        super().__init__(account_lookup_service)
+        super().__init__(app, account_lookup_service)
         self._notification_service = notification_service
-        self._app: Application | None = None
 
-    def register(self, app: Application):
-        self._app = app
+    def register(self):
+        self._app.add_handler(CommandHandler("add_notif", self.add_notif_command))
         self._app.add_handler(CommandHandler("add_notif", self.add_notif_command))
         self._app.add_handler(CommandHandler("list_notifs", self.list_notifs_command))
         self._app.add_handler(CommandHandler("remove_notif", self.remove_notif_command))
         self._app.add_handler(CommandHandler("drop_notifs", self.drop_notifs_command))
 
-        # Schedule notification checking every minute
+    def register_jobs(self):
+        """Register background jobs. Called after app initialization."""
+        # Schedule notification checking every 5 seconds
         if self._app.job_queue:
-            self._app.job_queue.run_repeating(self.check_notifications, interval=60, first=10)
+            self._app.job_queue.run_repeating(self.check_notifications, interval=5, first=1)
 
     async def check_notifications(self, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Check all notifications and send messages to users."""
+        logging.info("[Telegram] - Checking notifications...")
         results: list[NotificationCheckResult] = (
             await self._notification_service.check_all_notifications()
         )
@@ -42,13 +45,16 @@ class NotificationsModule(AccountModule):
                 if self._app is None:
                     logging.error("Telegram app not available for sending notifications")
                     continue
-                await self._app.bot.send_message(
-                    chat_id=int(result.user_platform_id),
-                    text=result.message,
-                )
+                # await self._app.bot.send_message(
+                #     chat_id=int(result.user_platform_id),
+                #     text=result.message,
+                # )
+                await context.bot.send_message(chat_id=result.user_platform_id, text=result.message)
                 logging.info(f"Sent notification message to user {result.user_platform_id}")
             except Exception as e:
-                logging.error(f"Failed to send message to user {result.user_platform_id}: {e}")
+                logging.error(
+                    f"[Telegram - check_notifications()]:\n Failed to send message to user {result.user_platform_id}: {e}"
+                )
 
     @with_session_and_account
     async def add_notif_command(
@@ -63,7 +69,8 @@ class NotificationsModule(AccountModule):
 
         if context.args is None or len(context.args) < 4:
             await update.message.reply_text(
-                "Usage: /add_notif <base_asset> <quote_asset> <above|below> <price>"
+                "❌ Usage: `/add_notif <base_asset> <quote_asset> <above|below> <price>`\n"
+                "Example: `/add_notif BTC USD above 50000`"
             )
             return
 
@@ -74,7 +81,7 @@ class NotificationsModule(AccountModule):
         try:
             price = float(context.args[3])
         except ValueError:
-            await update.message.reply_text("Price must be a number.")
+            await update.message.reply_text("❌ Price must be a number.")
             return
 
         try:
@@ -84,7 +91,7 @@ class NotificationsModule(AccountModule):
                 else NotificationDirection.BELOW
             )
         except ValueError:
-            await update.message.reply_text("Direction must be 'above' or 'below'.")
+            await update.message.reply_text("❌ Direction must be 'above' or 'below'.")
             return
 
         notification = self._notification_service.add_notification(
@@ -146,7 +153,7 @@ class NotificationsModule(AccountModule):
         try:
             notif_id = int(context.args[0])
         except ValueError:
-            await update.message.reply_text("Notification ID must be a number.")
+            await update.message.reply_text("❌ Notification ID must be a number.")
             return
 
         removed = self._notification_service.remove_notification(

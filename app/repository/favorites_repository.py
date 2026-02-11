@@ -1,10 +1,7 @@
 import logging
 from app.models.schemas import Account, Cryptocurrency
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(threadName)s - %(levelname)s - %(message)s",
-)
+logger = logging.getLogger(__name__)
 
 
 class FavoritesRepository:

@@ -3,10 +3,7 @@ from sqlalchemy.orm import Session
 from app.models.schemas import Notification
 from app.models.enums import NotificationDirection
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(threadName)s - %(levelname)s - %(message)s",
-)
+logger = logging.getLogger(__name__)
 
 
 class NotificationRepository:

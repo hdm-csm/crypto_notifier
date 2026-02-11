@@ -17,6 +17,11 @@ from app.services.notification_service import NotificationService
 from app.services.vs_currency_service import VsCurrencyService
 from scripts.init_db import init_db
 
+# Suppress SQLAlchemy engine logging
+logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
+logging.getLogger("sqlalchemy.pool").setLevel(logging.WARNING)
+logging.getLogger("sqlalchemy.dialects").setLevel(logging.WARNING)
+
 DISCORD_BOT_TOKEN = Config.DISCORD_BOT_TOKEN
 TELEGRAM_BOT_TOKEN = Config.TELEGRAM_BOT_TOKEN
 DISCORD_GUILD_ID = Config.DISCORD_GUILD_ID

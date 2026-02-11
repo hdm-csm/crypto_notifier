@@ -11,14 +11,17 @@ from sqlalchemy.orm import Session
 class CryptoInfoModule(AccountModule):
 
     def __init__(
-        self, account_lookup_service: AccountLookupService, crypto_api_service: CryptoApiService
+        self,
+        app: Application,
+        account_lookup_service: AccountLookupService,
+        crypto_api_service: CryptoApiService,
     ):
-        super().__init__(account_lookup_service)
+        super().__init__(app, account_lookup_service)
         self._crypto_api_service = crypto_api_service
 
-    def register(self, app: Application):
-        app.add_handler(CommandHandler("index", self.index_command, block=False))
-        app.add_handler(CommandHandler("list", self.list_command, block=False))
+    def register(self):
+        self._app.add_handler(CommandHandler("index", self.index_command, block=False))
+        self._app.add_handler(CommandHandler("list", self.list_command, block=False))
 
     @with_session_and_account
     async def index_command(

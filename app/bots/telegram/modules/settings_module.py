@@ -13,16 +13,17 @@ class SettingsModule(AccountModule):
 
     def __init__(
         self,
+        app: Application,
         account_lookup_service: AccountLookupService,
         vs_currency_service: VsCurrencyService,
     ):
-        super().__init__(account_lookup_service)
+        super().__init__(app, account_lookup_service)
         self._vs_currency_service: VsCurrencyService = vs_currency_service
 
-    def register(self, app: Application):
-        app.add_handler(CommandHandler("get_vs", self._get_vs_currency_command))
-        app.add_handler(CommandHandler("list_vs", self._list_vs_currencies))
-        app.add_handler(CommandHandler("set_vs", self._set_vs_currency))
+    def register(self):
+        self._app.add_handler(CommandHandler("get_vs", self._get_vs_currency_command))
+        self._app.add_handler(CommandHandler("list_vs", self._list_vs_currencies))
+        self._app.add_handler(CommandHandler("set_vs", self._set_vs_currency))
 
     @with_session_and_account
     async def _get_vs_currency_command(

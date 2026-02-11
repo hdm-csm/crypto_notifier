@@ -8,10 +8,7 @@ from typing import NamedTuple
 
 from app.services.crypto_api_service import CryptoApiService
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(threadName)s - %(levelname)s - %(message)s",
-)
+logger = logging.getLogger(__name__)
 
 
 class NotificationCheckResult(NamedTuple):
@@ -108,11 +105,10 @@ class NotificationService:
                 f"{notif.direction.value} {notif.target_price} (current: {current_price})"
             )
             message = (
-                f"🔔 *Notification Alert*\n\n"
+                f"🔔 *Notification Alert (ID: {notif.id})*\n\n"
                 f"{notif.base_asset}/{notif.quote_asset} has gone {notif.direction.value}\n"
                 f"Target: {notif.target_price}\n"
-                f"Current Price: {current_price}\n"
-                f"ID: {notif.id}"
+                f"Current Price: *{current_price}*\n"
             )
 
         elif notif.already_hit and not criteria_met:

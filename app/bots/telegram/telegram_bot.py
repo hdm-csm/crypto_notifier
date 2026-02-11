@@ -30,19 +30,25 @@ class TelegramBot:
 
         self._app = ApplicationBuilder().token(token).build()
 
-        modules: list[AccountModule] = [
-            FavoritesModule(account_lookup_service, favorites_service),
-            NotificationsModule(account_lookup_service, notification_service),
-            CryptoInfoModule(account_lookup_service, crypto_api_service),
-            SettingsModule(account_lookup_service, vs_currency_service),
+        self._modules: list[AccountModule] = [
+            FavoritesModule(self._app, account_lookup_service, favorites_service),
+            NotificationsModule(self._app, account_lookup_service, notification_service),
+            CryptoInfoModule(self._app, account_lookup_service, crypto_api_service),
+            SettingsModule(self._app, account_lookup_service, vs_currency_service),
         ]
 
-        for module in modules:
-            module.register(self._app)
+        for module in self._modules:
+            module.register()
 
     async def start(self):
         """Start the Telegram bot."""
         await self._app.initialize()
+
+        # Register job queue handlers after initialization
+        for module in self._modules:
+            if hasattr(module, "register_jobs"):
+                module.register_jobs()
+
         await self._app.start()
         if self._app.updater is not None:
             await self._app.updater.start_polling(

@@ -7,6 +7,7 @@ from app.services.notification_service import NotificationCheckResult, Notificat
 from app.services.crypto_api_service import CryptoApiService
 from app.bots.discord.custom_context import CustomContext
 from discord.ext import tasks
+import discord
 import logging
 
 
@@ -43,6 +44,14 @@ class NotificationsCog(AccountCog):
                 user = await self._bot.fetch_user(int(result.user_platform_id))
                 await user.send(result.message)
                 logging.info(f"Sent notification message to user {result.user_platform_id}")
+            except discord.NotFound:
+                logging.warning(
+                    f"User {result.user_platform_id} not found or no longer has DM access"
+                )
+            except discord.Forbidden:
+                logging.warning(
+                    f"Cannot send DM to user {result.user_platform_id}: permission denied or DMs disabled"
+                )
             except Exception as e:
                 logging.error(f"Failed to send DM to user {result.user_platform_id}: {e}")
 
@@ -64,10 +73,9 @@ class NotificationsCog(AccountCog):
         base_asset = args[0].upper()
         quote_asset = args[1].upper()
         direction = args[2].lower()
-        price = args[3]
 
         try:
-            price_float = float(price)
+            price_float = float(args[3])
         except ValueError:
             await ctx.send("❌ Price must be a number.")
             return

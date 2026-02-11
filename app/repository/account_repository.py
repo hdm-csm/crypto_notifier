@@ -3,10 +3,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 from app.models.schemas import Account, PlatformType
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(threadName)s - %(levelname)s - %(message)s",
-)
+logger = logging.getLogger(__name__)
 
 
 class AccountRepository:
