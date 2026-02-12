@@ -4,19 +4,14 @@ from discord.ext import commands
 from app.bots.discord.cogs.settings_cog import SettingsCog
 from app.bots.discord.cogs.crypto_info_cog import CrpytoInfoCog
 from app.bots.discord.cogs.favorites_cog import FavoritesCog
-from app.bots.discord.custom_context import CustomContext
+from app.bots.discord.cogs.notifications_cog import NotificationsCog
 from app.models.schemas import PlatformType
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
 from app.services.favorites_service import FavoritesService
+from app.services.notification_service import NotificationService
 from app.services.vs_currency_service import VsCurrencyService
-
-
-class CustomDiscordBot(commands.Bot):
-    """Custom bot that uses CustomContext for all commands."""
-
-    async def get_context(self, message, *, cls=CustomContext):
-        return await super().get_context(message, cls=cls)
+from app.bots.discord.custom_bot import CustomDiscordBot
 
 
 class DiscordBot:
@@ -29,6 +24,7 @@ class DiscordBot:
         guild_id: int,
         crypto_api_service: CryptoApiService,
         favorites_service: FavoritesService,
+        notification_service: NotificationService,
         account_lookup_service: AccountLookupService,
         vs_currency_service: VsCurrencyService,
     ):
@@ -37,6 +33,7 @@ class DiscordBot:
         self.guild_id = guild_id  # guild = server
         self._crypto_api_service = crypto_api_service
         self._favorites_service = favorites_service
+        self._notification_service = notification_service
         self._account_lookup_service = account_lookup_service
         self._vs_currency_service = vs_currency_service
 
@@ -60,8 +57,8 @@ class DiscordBot:
         async def on_command_error(ctx, error):
             if isinstance(error, commands.CommandNotFound):
                 await ctx.send("Command not found.")
-            else:
-                logging.error(f"Command error: {error}")
+            # else:
+            #     logging.error(f"Command error: {error}")
 
     async def start(self):
         settings_cog = SettingsCog(
@@ -76,10 +73,17 @@ class DiscordBot:
             account_lookup_service=self._account_lookup_service,
             favorites_service=self._favorites_service,
         )
+        notifications_cog = NotificationsCog(
+            account_lookup_service=self._account_lookup_service,
+            notification_service=self._notification_service,
+            crypto_api_service=self._crypto_api_service,
+            bot=self.bot,
+        )
 
         await self.bot.add_cog(settings_cog)
         await self.bot.add_cog(crypto_info_cog)
         await self.bot.add_cog(favorites_cog)
+        await self.bot.add_cog(notifications_cog)
 
         # TODO: Make it work
         # Build choices from cryptocurrency repository

@@ -8,6 +8,10 @@ from app.bots.discord.custom_context import CustomContext
 from app.db import session_scope
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
+from app.utils.command_constants import (
+    COMMAND_INDEX,
+    COMMAND_LIST,
+)
 
 
 class CrpytoInfoCog(AccountCog):
@@ -21,7 +25,7 @@ class CrpytoInfoCog(AccountCog):
         self._account_lookup_service = account_lookup_service
         self._crypto_api_service = crypto_api_service
 
-    @app_commands.command(name="index", description="Get price/index of a cryptocurrency")
+    @app_commands.command(name=COMMAND_INDEX, description="Get price/index of a cryptocurrency")
     @app_commands.describe(crypto_currency_input="The type of cryptocurrency")
     async def _index(self, interaction: discord.Interaction, crypto_currency_input: str):
         await interaction.response.defer()
@@ -55,7 +59,7 @@ class CrpytoInfoCog(AccountCog):
             )
             return
 
-    @commands.command(name="list")
+    @commands.command(name=COMMAND_LIST)
     async def _list(self, ctx: CustomContext):
         vs_currency = "eur"
         if ctx.account and ctx.account.selected_vs_currency:

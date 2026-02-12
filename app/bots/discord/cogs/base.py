@@ -4,7 +4,11 @@ from app.db import Session_Factory
 from app.bots.discord.custom_context import CustomContext
 from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
-from app.utils.exceptions import InvokeSetupError
+from app.utils.exceptions import (
+    InvokeSetupError,
+    InvalidNotificationArguments,
+)
+from app.utils.functions import get_command_example
 
 
 class AccountCog(commands.Cog):
@@ -32,7 +36,7 @@ class AccountCog(commands.Cog):
                 ctx.db_session.rollback()
                 ctx.db_session.close()
             logging.error(f"Error in cog_before_invoke: {e}")
-            await ctx.send(f"❌ An error occurred: {str(e)}")
+            await ctx.send(f"❌ An error occurred (internally): {str(e)}")
             raise InvokeSetupError()  # Re-raise to stop execution --> ugly stacktrace sadly...
         return await super().cog_before_invoke(ctx)
 
@@ -61,7 +65,25 @@ class AccountCog(commands.Cog):
                 ctx.db_session.rollback()
             finally:
                 ctx.db_session.close()
-        logging.error(f"Command error in {ctx.command}: {error}")
+        # if isinstance(error, commands.CommandNotFound):
+        #     await ctx.send("Command not found.")
+        # else:
+        logging.error(f"Command error in {ctx.command}: {type(error).__name__} - {error}")
         # if not getattr(ctx, "command_failed", False): CANNOT DO THIS BC IT IGNORES REAL ERRORS DURING COMMANDS
-        await ctx.send(f"❌ An error occurred: {str(error)}")
+
+        # Build error message with command-specific hints
+        error_message = f"❌ An error occurred: {str(error)}"
+
+        if isinstance(error, commands.MissingRequiredArgument):
+            command_name: str | None = ctx.command.name if ctx.command else None
+            if command_name:
+                error_message += get_command_example(command_name)
+            else:
+                error_message += "\nMissing required arguments."
+        elif isinstance(error, InvalidNotificationArguments):
+            error_message = str(error)
+            if error.usage_hint:
+                error_message += f"\n{error.usage_hint}"
+
+        await ctx.send(error_message)
         return await super().cog_command_error(ctx, error)

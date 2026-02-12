@@ -5,22 +5,32 @@ from app.bots.telegram.modules.base import AccountModule
 from app.services.account_lookup_service import AccountLookupService
 from app.services.favorites_service import FavoritesService
 from app.models.schemas import Account
+from app.utils.command_constants import (
+    COMMAND_ADD_FAV,
+    COMMAND_LIST_FAVS,
+    COMMAND_REMOVE_FAV,
+    COMMAND_DROP_FAVS,
+)
+from app.utils.exceptions import MissingCommandArguments
 from sqlalchemy.orm import Session
 
 
 class FavoritesModule(AccountModule):
 
     def __init__(
-        self, account_lookup_service: AccountLookupService, favorites_service: FavoritesService
+        self,
+        app: Application,
+        account_lookup_service: AccountLookupService,
+        favorites_service: FavoritesService,
     ):
-        super().__init__(account_lookup_service)
+        super().__init__(app, account_lookup_service)
         self._favorites_service = favorites_service
 
-    def register(self, app: Application):
-        app.add_handler(CommandHandler("add_fav", self.add_fav_command))
-        app.add_handler(CommandHandler("list_favs", self.list_favs_command))
-        app.add_handler(CommandHandler("remove_fav", self.remove_fav_command))
-        app.add_handler(CommandHandler("drop_favs", self.drop_favs_command))
+    def register(self):
+        self._app.add_handler(CommandHandler(COMMAND_ADD_FAV, self.add_fav_command))
+        self._app.add_handler(CommandHandler(COMMAND_LIST_FAVS, self.list_favs_command))
+        self._app.add_handler(CommandHandler(COMMAND_REMOVE_FAV, self.remove_fav_command))
+        self._app.add_handler(CommandHandler(COMMAND_DROP_FAVS, self.drop_favs_command))
 
     @with_session_and_account
     async def add_fav_command(
@@ -30,16 +40,15 @@ class FavoritesModule(AccountModule):
         db_session: Session,
         account: Account,
     ) -> None:
-        if update.message is None:
-            return
-        if context.args is None or not context.args:
-            await update.message.reply_text("Please provide a cryptocurrency name.")
-            return
+        if not context.args:
+            raise MissingCommandArguments(COMMAND_ADD_FAV, "<cryptocurrency>")
+
         input_crypto = context.args[0].lower()
         answer = self._favorites_service.add_favorite(
             db_session=db_session, account=account, input_crypto=input_crypto
         )
-        await update.message.reply_text(answer)
+        if update.message:
+            await update.message.reply_text(answer)
 
     @with_session_and_account
     async def remove_fav_command(
@@ -49,16 +58,14 @@ class FavoritesModule(AccountModule):
         db_session: Session,
         account: Account,
     ) -> None:
-        if update.message is None:
-            return
-        if context.args is None or not context.args:
-            await update.message.reply_text("Please provide a cryptocurrency name.")
-            return
+        if not context.args:
+            raise MissingCommandArguments(COMMAND_REMOVE_FAV, "<cryptocurrency>")
         input_crypto = context.args[0].lower()
         answer = self._favorites_service.remove_favorite(
             db_session=db_session, account=account, input_crypto=input_crypto
         )
-        await update.message.reply_text(answer)
+        if update.message:
+            await update.message.reply_text(answer)
 
     @with_session_and_account
     async def list_favs_command(
@@ -71,7 +78,8 @@ class FavoritesModule(AccountModule):
         if update.message is None:
             return
         answer = await self._favorites_service.list_favorites(account=account)
-        await update.message.reply_text(answer)
+        if update.message:
+            await update.message.reply_text(answer)
 
     @with_session_and_account
     async def drop_favs_command(
@@ -84,4 +92,5 @@ class FavoritesModule(AccountModule):
         if update.message is None:
             return
         answer = self._favorites_service.drop_favorites(account=account)
-        await update.message.reply_text(answer)
+        if update.message:
+            await update.message.reply_text(answer)

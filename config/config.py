@@ -22,3 +22,4 @@ class Config:
     DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN", "")
     DISCORD_GUILD_ID = int(os.getenv("DISCORD_GUILD_ID", "0"))
     TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    COINGECKO_API_KEY = os.getenv("COINGECKO_API_KEY", "CG-JMHEubR44Qu2PangFyAhcJEt")

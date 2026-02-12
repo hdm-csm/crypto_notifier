@@ -33,11 +33,12 @@ def with_session_and_account(func: Callable) -> Callable:
                 await update.message.reply_text("⚠️ Account not found for user.")
                 return
 
-            try:
-                await func(self, update, context, db_session, account)
-            except Exception as e:
-                logging.error(f"Command error in {func.__name__}: {e}", exc_info=True)
-                # TODO: Return command in error message ?
-                await update.message.reply_text(f"❌ An error occurred: {str(e)}")
+            # try:
+            #     await func(self, update, context, db_session, account)
+            # except Exception as e:
+            #     logging.error(f"Command error in {func.__name__}: {e}", exc_info=True)
+            #     # TODO: Return command in error message ?
+            #     await update.message.reply_text(f"❌ An error occurred: {str(e)}")
+            await func(self, update, context, db_session, account)
 
     return wrapper
