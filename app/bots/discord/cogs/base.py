@@ -32,7 +32,7 @@ class AccountCog(commands.Cog):
                 ctx.db_session.rollback()
                 ctx.db_session.close()
             logging.error(f"Error in cog_before_invoke: {e}")
-            await ctx.send(f"❌ An error occurred: {str(e)}")
+            await ctx.send(f"❌ An error occurred (internally): {str(e)}")
             raise InvokeSetupError()  # Re-raise to stop execution --> ugly stacktrace sadly...
         return await super().cog_before_invoke(ctx)
 
@@ -61,7 +61,29 @@ class AccountCog(commands.Cog):
                 ctx.db_session.rollback()
             finally:
                 ctx.db_session.close()
-        logging.error(f"Command error in {ctx.command}: {error}")
+        # if isinstance(error, commands.CommandNotFound):
+        #     await ctx.send("Command not found.")
+        # else:
+        logging.error(f"Command error in {ctx.command}: {type(error).__name__} - {error}")
         # if not getattr(ctx, "command_failed", False): CANNOT DO THIS BC IT IGNORES REAL ERRORS DURING COMMANDS
-        await ctx.send(f"❌ An error occurred: {str(error)}")
+
+        # Build error message with command-specific hints
+        error_message = f"❌ An error occurred: {str(error)}"
+
+        if isinstance(error, commands.MissingRequiredArgument):
+            error_message += self._get_command_example(ctx)
+
+        await ctx.send(error_message)
         return await super().cog_command_error(ctx, error)
+
+    def _get_command_example(self, ctx: commands.Context) -> str:
+        """Generate command-specific usage examples based on the command name."""
+        examples = {
+            "add_fav": "\nFor example: `/add_fav Bitcoin`",
+            "remove_fav": "\nFor example: `/remove_fav Bitcoin`",
+            "add_notification": "\nFor example: `/add_notification Bitcoin 50000`",
+            "set_currency": "\nFor example: `/set_currency USD`",
+        }
+
+        command_name = ctx.command.name if ctx.command else ""
+        return examples.get(command_name, "")

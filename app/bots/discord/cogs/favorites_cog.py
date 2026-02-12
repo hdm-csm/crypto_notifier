@@ -33,7 +33,7 @@ class FavoritesCog(AccountCog):
         await ctx.send(answer)
 
     @commands.command(name="remove_fav")
-    async def _remove_fav(self, ctx: CustomContext, input_crypto: str):
+    async def _remove_fav(self, ctx: CustomContext, input_crypto: str) -> None:
         """Remove cryptocurrency from favorites."""
         answer = self._favorites_service.remove_favorite(
             db_session=ctx.db_session, account=ctx.account, input_crypto=input_crypto.lower()
@@ -41,7 +41,7 @@ class FavoritesCog(AccountCog):
         await ctx.send(answer)
 
     @commands.command(name="drop_favs")
-    async def _drop_favs(self, ctx: CustomContext):
+    async def _drop_favs(self, ctx: CustomContext) -> None:
         """Remove all favorite cryptocurrencies."""
         answer = self._favorites_service.drop_favorites(account=ctx.account)
         await ctx.send(answer)

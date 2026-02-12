@@ -30,9 +30,9 @@ class NotificationsModule(AccountModule):
 
     def register_jobs(self):
         """Register background jobs. Called after app initialization."""
-        # Schedule notification checking every 5 seconds
+        # Schedule notification checking every 60 seconds
         if self._app.job_queue:
-            self._app.job_queue.run_repeating(self.check_notifications, interval=5, first=1)
+            self._app.job_queue.run_repeating(self.check_notifications, interval=60, first=1)
 
     async def check_notifications(self, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Check all notifications and send messages to users."""
@@ -45,10 +45,6 @@ class NotificationsModule(AccountModule):
                 if self._app is None:
                     logging.error("Telegram app not available for sending notifications")
                     continue
-                # await self._app.bot.send_message(
-                #     chat_id=int(result.user_platform_id),
-                #     text=result.message,
-                # )
                 await context.bot.send_message(chat_id=result.user_platform_id, text=result.message)
                 logging.info(f"Sent notification message to user {result.user_platform_id}")
             except Exception as e:

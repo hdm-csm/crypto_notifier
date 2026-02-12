@@ -57,8 +57,8 @@ class DiscordBot:
         async def on_command_error(ctx, error):
             if isinstance(error, commands.CommandNotFound):
                 await ctx.send("Command not found.")
-            else:
-                logging.error(f"Command error: {error}")
+            # else:
+            #     logging.error(f"Command error: {error}")
 
     async def start(self):
         settings_cog = SettingsCog(
