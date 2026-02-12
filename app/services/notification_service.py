@@ -5,6 +5,7 @@ from app.repository.notification_repository import NotificationRepository
 from app.models.schemas import Notification
 from app.models.enums import NotificationDirection
 from typing import NamedTuple
+from app.utils.exceptions import InvalidNotificationArguments
 
 from app.services.crypto_api_service import CryptoApiService
 
@@ -26,6 +27,38 @@ class NotificationService:
     ):
         self._notification_repository = notification_repository
         self._crypto_api_service = crypto_api_service
+
+    def validate_and_parse_notification_args(
+        self, base_asset: str, quote_asset: str, direction: str, price: str
+    ) -> tuple[str, str, NotificationDirection, float]:
+        """
+        Validate and parse notification arguments.
+        Raises InvalidNotificationArguments if validation fails.
+        Returns tuple of (base_asset, quote_asset, direction_enum, price_float)
+        """
+        usage_hint = (
+            "Usage: `/add_notif <base_asset> <quote_asset> <above|below> <price>`\n"
+            "Example: `/add_notif BTC USD above 50000`"
+        )
+
+        try:
+            price_float = float(price)
+        except ValueError:
+            raise InvalidNotificationArguments("❌ Price must be a number.", usage_hint)
+
+        direction_lower = direction.lower()
+        if direction_lower not in ["above", "below"]:
+            raise InvalidNotificationArguments(
+                "❌ Direction must be 'above' or 'below'.", usage_hint
+            )
+
+        direction_enum = (
+            NotificationDirection.ABOVE
+            if direction_lower == "above"
+            else NotificationDirection.BELOW
+        )
+
+        return base_asset.upper(), quote_asset.upper(), direction_enum, price_float
 
     def add_notification(
         self,

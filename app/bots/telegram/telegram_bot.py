@@ -12,8 +12,8 @@ from app.services.crypto_api_service import CryptoApiService
 from app.services.favorites_service import FavoritesService
 from app.services.notification_service import NotificationService
 from app.services.vs_currency_service import VsCurrencyService
-from app.utils.command_constants import TELEGRAM_COMMAND_HELP
 from app.utils.exceptions import MissingCommandArguments
+from app.utils.functions import get_command_example
 
 
 class TelegramBot:
@@ -81,18 +81,12 @@ class TelegramBot:
             # Handle MissingCommandArguments with usage examples
             if isinstance(context.error, MissingCommandArguments):
                 command_name = context.error.command_name
-                error_message += self._get_command_example(command_name)
+                error_message += get_command_example(command_name)
             else:
                 # Try to extract command name from the message for other errors
                 if update.message.text and update.message.text.startswith("/"):
                     command_parts = update.message.text.split()
                     command_name = command_parts[0][1:]  # Remove the leading /
-                    error_message += self._get_command_example(command_name)
+                    error_message += get_command_example(command_name)
 
             await update.message.reply_text(error_message)
-
-    def _get_command_example(self, command_name: str) -> str:
-        """Generate command-specific usage examples based on the command name."""
-        if command_name and command_name in TELEGRAM_COMMAND_HELP:
-            return f"\nUsage example: {TELEGRAM_COMMAND_HELP[command_name]}"
-        return ""

@@ -23,3 +23,11 @@ class MissingCommandArguments(Exception):
         if missing_args:
             message += f": {missing_args}"
         super().__init__(message)
+
+
+class InvalidNotificationArguments(Exception):
+    """Exception raised when notification arguments are invalid."""
+
+    def __init__(self, message: str = "", usage_hint: str = ""):
+        self.usage_hint = usage_hint
+        super().__init__(message)

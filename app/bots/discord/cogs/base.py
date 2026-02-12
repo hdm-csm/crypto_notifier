@@ -4,8 +4,11 @@ from app.db import Session_Factory
 from app.bots.discord.custom_context import CustomContext
 from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
-from app.utils.exceptions import InvokeSetupError
-from app.utils.command_constants import COMMAND_EXAMPLES
+from app.utils.exceptions import (
+    InvokeSetupError,
+    InvalidNotificationArguments,
+)
+from app.utils.functions import get_command_example
 
 
 class AccountCog(commands.Cog):
@@ -72,14 +75,15 @@ class AccountCog(commands.Cog):
         error_message = f"❌ An error occurred: {str(error)}"
 
         if isinstance(error, commands.MissingRequiredArgument):
-            error_message += self._get_command_example(ctx)
+            command_name: str | None = ctx.command.name if ctx.command else None
+            if command_name:
+                error_message += get_command_example(command_name)
+            else:
+                error_message += "\nMissing required arguments."
+        elif isinstance(error, InvalidNotificationArguments):
+            error_message = str(error)
+            if error.usage_hint:
+                error_message += f"\n{error.usage_hint}"
 
         await ctx.send(error_message)
         return await super().cog_command_error(ctx, error)
-
-    def _get_command_example(self, ctx: commands.Context) -> str:
-        """Generate command-specific usage examples based on the command name."""
-        command_name = ctx.command.name if ctx.command else None
-        if command_name and command_name in COMMAND_EXAMPLES:
-            return f"\nUsage example: {COMMAND_EXAMPLES[command_name]}"
-        return ""

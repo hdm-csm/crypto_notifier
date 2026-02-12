@@ -1,7 +1,7 @@
 from discord.ext import commands
 from app.bots.discord.cogs.base import AccountCog
 from app.bots.discord.custom_bot import CustomDiscordBot
-from app.models.enums import PlatformType, NotificationDirection
+from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
 from app.services.notification_service import NotificationCheckResult, NotificationService
 from app.services.crypto_api_service import CryptoApiService
@@ -67,32 +67,23 @@ class NotificationsCog(AccountCog):
         await self._bot.wait_until_ready()
 
     @commands.command(name=COMMAND_ADD_NOTIF)
-    async def _add_notif(self, ctx: CustomContext, *args) -> None:
+    async def _add_notif(
+        self,
+        ctx: CustomContext,
+        base_asset: str,
+        quote_asset: str,
+        direction: str,
+        target_price: str,
+    ) -> None:
         """Add a notification: /add_notif BTC USD above 50000"""
-        if len(args) < 4:
-            await ctx.send(
-                "❌ Usage: `/add_notif <base_asset> <quote_asset> <above|below> <price>`\n"
-                "Example: `/add_notif BTC USD above 50000`"
+        base_asset, quote_asset, direction_enum, price_float = (
+            self._notification_service.validate_and_parse_notification_args(
+                base_asset=base_asset,
+                quote_asset=quote_asset,
+                direction=direction,
+                price=target_price,
             )
-            return
-
-        base_asset = args[0].upper()
-        quote_asset = args[1].upper()
-        direction = args[2].lower()
-
-        try:
-            price_float = float(args[3])
-        except ValueError:
-            await ctx.send("❌ Price must be a number.")
-            return
-
-        try:
-            direction_enum = (
-                NotificationDirection.ABOVE if direction == "above" else NotificationDirection.BELOW
-            )
-        except ValueError:
-            await ctx.send("❌ Direction must be 'above' or 'below'.")
-            return
+        )
 
         notification = self._notification_service.add_notification(
             session=ctx.db_session,
