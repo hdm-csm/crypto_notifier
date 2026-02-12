@@ -11,3 +11,15 @@ class InvokeSetupError(Exception):
 
     def __str__(self):
         return "Database setup failed"
+
+
+class MissingCommandArguments(Exception):
+    """Exception raised when a command is missing required arguments."""
+
+    def __init__(self, command_name: str, missing_args: str = ""):
+        self.command_name = command_name
+        self.missing_args = missing_args
+        message = f"Missing required arguments for /{command_name}"
+        if missing_args:
+            message += f": {missing_args}"
+        super().__init__(message)

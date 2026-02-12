@@ -1,5 +1,6 @@
 import logging
-from telegram.ext import ApplicationBuilder
+from telegram import Update
+from telegram.ext import ApplicationBuilder, ContextTypes
 from app.bots.telegram.modules.crypto_info_module import CryptoInfoModule
 from app.bots.telegram.modules.favorites_module import FavoritesModule
 from app.bots.telegram.modules.notifications_module import NotificationsModule
@@ -11,6 +12,8 @@ from app.services.crypto_api_service import CryptoApiService
 from app.services.favorites_service import FavoritesService
 from app.services.notification_service import NotificationService
 from app.services.vs_currency_service import VsCurrencyService
+from app.utils.command_constants import TELEGRAM_COMMAND_HELP
+from app.utils.exceptions import MissingCommandArguments
 
 
 class TelegramBot:
@@ -29,6 +32,7 @@ class TelegramBot:
         self._token = token
 
         self._app = ApplicationBuilder().token(token).build()
+        self._app.add_error_handler(self._error_handler)
 
         self._modules: list[AccountModule] = [
             FavoritesModule(self._app, account_lookup_service, favorites_service),
@@ -65,3 +69,30 @@ class TelegramBot:
             await self._app.updater.stop()
         await self._app.stop()
         await self._app.shutdown()
+
+    async def _error_handler(self, update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Global error handler for all Telegram commands."""
+        logging.error(f"Telegram error: {type(context.error).__name__} - {context.error}")
+
+        # Only respond to user if we have an update with a message
+        if isinstance(update, Update) and update.message:
+            error_message = f"❌ An error occurred: {str(context.error)}"
+
+            # Handle MissingCommandArguments with usage examples
+            if isinstance(context.error, MissingCommandArguments):
+                command_name = context.error.command_name
+                error_message += self._get_command_example(command_name)
+            else:
+                # Try to extract command name from the message for other errors
+                if update.message.text and update.message.text.startswith("/"):
+                    command_parts = update.message.text.split()
+                    command_name = command_parts[0][1:]  # Remove the leading /
+                    error_message += self._get_command_example(command_name)
+
+            await update.message.reply_text(error_message)
+
+    def _get_command_example(self, command_name: str) -> str:
+        """Generate command-specific usage examples based on the command name."""
+        if command_name and command_name in TELEGRAM_COMMAND_HELP:
+            return f"\nUsage example: {TELEGRAM_COMMAND_HELP[command_name]}"
+        return ""

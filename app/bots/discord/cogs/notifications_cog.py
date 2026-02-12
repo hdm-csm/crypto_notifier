@@ -6,6 +6,12 @@ from app.services.account_lookup_service import AccountLookupService
 from app.services.notification_service import NotificationCheckResult, NotificationService
 from app.services.crypto_api_service import CryptoApiService
 from app.bots.discord.custom_context import CustomContext
+from app.utils.command_constants import (
+    COMMAND_ADD_NOTIF,
+    COMMAND_LIST_NOTIFS,
+    COMMAND_REMOVE_NOTIF,
+    COMMAND_DROP_NOTIFS,
+)
 from discord.ext import tasks
 import discord
 import logging
@@ -60,7 +66,7 @@ class NotificationsCog(AccountCog):
         print("waiting...")
         await self._bot.wait_until_ready()
 
-    @commands.command(name="add_notif")
+    @commands.command(name=COMMAND_ADD_NOTIF)
     async def _add_notif(self, ctx: CustomContext, *args) -> None:
         """Add a notification: /add_notif BTC USD above 50000"""
         if len(args) < 4:
@@ -102,7 +108,7 @@ class NotificationsCog(AccountCog):
             f"✅ Notification added:\n{notification.base_asset}/{notification.quote_asset} {notification.direction.value} {notification.target_price}"
         )
 
-    @commands.command(name="list_notifs")
+    @commands.command(name=COMMAND_LIST_NOTIFS)
     async def _list_notifs(self, ctx: CustomContext) -> None:
         """List all your notifications."""
         notifications = self._notification_service.list_notifications_for_account(
@@ -121,7 +127,7 @@ class NotificationsCog(AccountCog):
 
         await ctx.send(message)
 
-    @commands.command(name="remove_notif")
+    @commands.command(name=COMMAND_REMOVE_NOTIF)
     async def _remove_notif(self, ctx: CustomContext, notification_id: str) -> None:
         """Remove a notification by ID: /remove_notif 5"""
         try:
@@ -139,7 +145,7 @@ class NotificationsCog(AccountCog):
         else:
             await ctx.send(f"❌ Notification {notif_id} not found.")
 
-    @commands.command(name="drop_notifs")
+    @commands.command(name=COMMAND_DROP_NOTIFS)
     async def _drop_notifs(self, ctx: CustomContext) -> None:
         """Remove all your notifications."""
         notifications = self._notification_service.list_notifications_for_account(

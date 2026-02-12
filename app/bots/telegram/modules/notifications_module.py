@@ -6,6 +6,13 @@ from app.services.account_lookup_service import AccountLookupService
 from app.services.notification_service import NotificationCheckResult, NotificationService
 from app.models.schemas import Account
 from app.models.enums import NotificationDirection
+from app.utils.command_constants import (
+    COMMAND_ADD_NOTIF,
+    COMMAND_LIST_NOTIFS,
+    COMMAND_REMOVE_NOTIF,
+    COMMAND_DROP_NOTIFS,
+)
+from app.utils.exceptions import MissingCommandArguments
 from sqlalchemy.orm import Session
 import logging
 
@@ -22,11 +29,11 @@ class NotificationsModule(AccountModule):
         self._notification_service = notification_service
 
     def register(self):
-        self._app.add_handler(CommandHandler("add_notif", self.add_notif_command))
-        self._app.add_handler(CommandHandler("add_notif", self.add_notif_command))
-        self._app.add_handler(CommandHandler("list_notifs", self.list_notifs_command))
-        self._app.add_handler(CommandHandler("remove_notif", self.remove_notif_command))
-        self._app.add_handler(CommandHandler("drop_notifs", self.drop_notifs_command))
+        self._app.add_handler(CommandHandler(COMMAND_ADD_NOTIF, self.add_notif_command))
+        self._app.add_handler(CommandHandler(COMMAND_ADD_NOTIF, self.add_notif_command))
+        self._app.add_handler(CommandHandler(COMMAND_LIST_NOTIFS, self.list_notifs_command))
+        self._app.add_handler(CommandHandler(COMMAND_REMOVE_NOTIF, self.remove_notif_command))
+        self._app.add_handler(CommandHandler(COMMAND_DROP_NOTIFS, self.drop_notifs_command))
 
     def register_jobs(self):
         """Register background jobs. Called after app initialization."""
@@ -63,12 +70,10 @@ class NotificationsModule(AccountModule):
         if update.message is None:
             return
 
-        if context.args is None or len(context.args) < 4:
-            await update.message.reply_text(
-                "❌ Usage: `/add_notif <base_asset> <quote_asset> <above|below> <price>`\n"
-                "Example: `/add_notif BTC USD above 50000`"
+        if not context.args or len(context.args) < 4:
+            raise MissingCommandArguments(
+                COMMAND_ADD_NOTIF, "<base_asset> <quote_asset> <above|below> <price>"
             )
-            return
 
         base_asset = context.args[0].upper()
         quote_asset = context.args[1].upper()
@@ -77,7 +82,8 @@ class NotificationsModule(AccountModule):
         try:
             price = float(context.args[3])
         except ValueError:
-            await update.message.reply_text("❌ Price must be a number.")
+            if update.message:
+                await update.message.reply_text("❌ Price must be a number.")
             return
 
         try:
@@ -87,7 +93,8 @@ class NotificationsModule(AccountModule):
                 else NotificationDirection.BELOW
             )
         except ValueError:
-            await update.message.reply_text("❌ Direction must be 'above' or 'below'.")
+            if update.message:
+                await update.message.reply_text("❌ Direction must be 'above' or 'below'.")
             return
 
         notification = self._notification_service.add_notification(
@@ -100,9 +107,10 @@ class NotificationsModule(AccountModule):
             already_hit=False,
         )
 
-        await update.message.reply_text(
-            f"✅ Notification added:\n{notification.base_asset}/{notification.quote_asset} {notification.direction.value} {notification.target_price}"
-        )
+        if update.message:
+            await update.message.reply_text(
+                f"✅ Notification added:\n{notification.base_asset}/{notification.quote_asset} {notification.direction.value} {notification.target_price}"
+            )
 
     @with_session_and_account
     async def list_notifs_command(
@@ -120,7 +128,8 @@ class NotificationsModule(AccountModule):
         )
 
         if not notifications:
-            await update.message.reply_text("No notifications set.")
+            if update.message:
+                await update.message.reply_text("No notifications set.")
             return
 
         message = "📢 Your notifications:\n\n"
@@ -129,7 +138,8 @@ class NotificationsModule(AccountModule):
             message += f"{hit_indicator} ID: {notif.id}\n"
             message += f"  {notif.base_asset}/{notif.quote_asset} {notif.direction.value} {notif.target_price}\n\n"
 
-        await update.message.reply_text(message)
+        if update.message:
+            await update.message.reply_text(message)
 
     @with_session_and_account
     async def remove_notif_command(
@@ -143,13 +153,15 @@ class NotificationsModule(AccountModule):
             return
 
         if context.args is None or not context.args:
-            await update.message.reply_text("Usage: /remove_notif <notification_id>")
+            if update.message:
+                await update.message.reply_text("Usage: /remove_notif <notification_id>")
             return
 
         try:
             notif_id = int(context.args[0])
         except ValueError:
-            await update.message.reply_text("❌ Notification ID must be a number.")
+            if update.message:
+                await update.message.reply_text("❌ Notification ID must be a number.")
             return
 
         removed = self._notification_service.remove_notification(
@@ -157,9 +169,11 @@ class NotificationsModule(AccountModule):
         )
 
         if removed:
-            await update.message.reply_text(f"✅ Notification {notif_id} removed.")
+            if update.message:
+                await update.message.reply_text(f"✅ Notification {notif_id} removed.")
         else:
-            await update.message.reply_text(f"❌ Notification {notif_id} not found.")
+            if update.message:
+                await update.message.reply_text(f"❌ Notification {notif_id} not found.")
 
     @with_session_and_account
     async def drop_notifs_command(
@@ -182,4 +196,5 @@ class NotificationsModule(AccountModule):
             )
 
         count = len(notifications)
-        await update.message.reply_text(f"✅ Dropped {count} notifications.")
+        if update.message:
+            await update.message.reply_text(f"✅ Dropped {count} notifications.")

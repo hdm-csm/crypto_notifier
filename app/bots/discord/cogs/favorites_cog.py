@@ -4,6 +4,12 @@ from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
 from app.services.favorites_service import FavoritesService
 from app.bots.discord.custom_context import CustomContext
+from app.utils.command_constants import (
+    COMMAND_ADD_FAV,
+    COMMAND_LIST_FAVS,
+    COMMAND_REMOVE_FAV,
+    COMMAND_DROP_FAVS,
+)
 
 
 class FavoritesCog(AccountCog):
@@ -18,7 +24,7 @@ class FavoritesCog(AccountCog):
         super().__init__(account_lookup_service)
         self._favorites_service = favorites_service
 
-    @commands.command(name="add_fav")
+    @commands.command(name=COMMAND_ADD_FAV)
     async def _add_fav(self, ctx: CustomContext, input_crypto: str) -> None:
         """Save cryptocurrency as favorite."""
         answer = self._favorites_service.add_favorite(
@@ -26,13 +32,13 @@ class FavoritesCog(AccountCog):
         )
         await ctx.send(answer)
 
-    @commands.command(name="list_favs")
+    @commands.command(name=COMMAND_LIST_FAVS)
     async def _list_favs(self, ctx: CustomContext) -> None:
         """List favorite cryptocurrencies."""
         answer = await self._favorites_service.list_favorites(account=ctx.account)
         await ctx.send(answer)
 
-    @commands.command(name="remove_fav")
+    @commands.command(name=COMMAND_REMOVE_FAV)
     async def _remove_fav(self, ctx: CustomContext, input_crypto: str) -> None:
         """Remove cryptocurrency from favorites."""
         answer = self._favorites_service.remove_favorite(
@@ -40,7 +46,7 @@ class FavoritesCog(AccountCog):
         )
         await ctx.send(answer)
 
-    @commands.command(name="drop_favs")
+    @commands.command(name=COMMAND_DROP_FAVS)
     async def _drop_favs(self, ctx: CustomContext) -> None:
         """Remove all favorite cryptocurrencies."""
         answer = self._favorites_service.drop_favorites(account=ctx.account)

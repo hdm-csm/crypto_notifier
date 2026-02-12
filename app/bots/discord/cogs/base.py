@@ -5,6 +5,7 @@ from app.bots.discord.custom_context import CustomContext
 from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
 from app.utils.exceptions import InvokeSetupError
+from app.utils.command_constants import COMMAND_EXAMPLES
 
 
 class AccountCog(commands.Cog):
@@ -78,12 +79,7 @@ class AccountCog(commands.Cog):
 
     def _get_command_example(self, ctx: commands.Context) -> str:
         """Generate command-specific usage examples based on the command name."""
-        examples = {
-            "add_fav": "\nFor example: `/add_fav Bitcoin`",
-            "remove_fav": "\nFor example: `/remove_fav Bitcoin`",
-            "add_notification": "\nFor example: `/add_notification Bitcoin 50000`",
-            "set_currency": "\nFor example: `/set_currency USD`",
-        }
-
-        command_name = ctx.command.name if ctx.command else ""
-        return examples.get(command_name, "")
+        command_name = ctx.command.name if ctx.command else None
+        if command_name and command_name in COMMAND_EXAMPLES:
+            return f"\nUsage example: {COMMAND_EXAMPLES[command_name]}"
+        return ""
