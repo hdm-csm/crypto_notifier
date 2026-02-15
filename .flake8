@@ -1,5 +1,6 @@
 [flake8]
 max-line-length = 100
+
 exclude =
     .git,
     __pycache__,
@@ -14,4 +15,6 @@ exclude =
     .mypy_cache,
     .vscode,
     .idea
-ignore = E203, W503, E501
+
+# Compatible with Black formatting
+extend-ignore = E203, W503
