@@ -1,32 +1,52 @@
 import logging
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, declarative_base
-from config import Config
 from contextlib import contextmanager
+from config import Config
 
 DATABASE_URL = Config.DATABASE_URL
 
-engine = create_engine(DATABASE_URL, echo=False)
-Session_Factory = sessionmaker(bind=engine, expire_on_commit=False)
+# Better engine settings for bot workloads
+engine = create_engine(
+    DATABASE_URL,
+    echo=False,
+    pool_pre_ping=True,      # prevents stale connections
+    pool_recycle=3600        # refresh connections periodically
+)
+
+SessionFactory = sessionmaker(
+    bind=engine,
+    autoflush=False,         # prevents unexpected flush
+    autocommit=False,
+    expire_on_commit=False
+)
+
+Base = declarative_base()
 
 
-# "with Session.begin() as session" would also commit the transaction + close the session
 @contextmanager
 def session_scope():
-    """Provide a transactional scope around a series of operations."""
-    session = Session_Factory()
+    """
+    Provides a transactional scope.
+    Safe for Telegram notification writes.
+    """
+    session = SessionFactory()
     try:
         yield session
         session.commit()
-    except Exception:
-        logging.error("Error in session_scope, rolling back transaction.", exc_info=True)
+    except Exception as e:
+        logging.error("DB session error, rolling back.", exc_info=True)
         session.rollback()
-        raise  # re-throw the exception
+        raise
     finally:
         session.close()
 
 
-Base = declarative_base()
+def get_session():
+    """
+    Use this when you need manual control (e.g., async bot handlers).
+    """
+    return SessionFactory()
 
 
 def test_connection():
@@ -41,3 +61,7 @@ def test_connection():
 
 if __name__ == "__main__":
     test_connection()
+## fixed the Prevents lost notifications due to stale DB connections
+#Ensures commits always happen
+#Avoids unexpected auto-flush errors
+#Gives you get_session() for bot handlers
