@@ -65,15 +65,9 @@ class AccountCog(commands.Cog):
                 ctx.db_session.rollback()
             finally:
                 ctx.db_session.close()
-        # if isinstance(error, commands.CommandNotFound):
-        #     await ctx.send("Command not found.")
-        # else:
         logging.error(f"Command error in {ctx.command}: {type(error).__name__} - {error}")
-        # if not getattr(ctx, "command_failed", False): CANNOT DO THIS BC IT IGNORES REAL ERRORS DURING COMMANDS
 
-        # Build error message with command-specific hints
         error_message = f"❌ An error occurred: {str(error)}"
-
         if isinstance(error, commands.MissingRequiredArgument):
             command_name: str | None = ctx.command.name if ctx.command else None
             if command_name:

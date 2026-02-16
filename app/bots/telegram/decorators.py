@@ -33,6 +33,7 @@ def with_session_and_account(func: Callable) -> Callable:
                 await update.message.reply_text("⚠️ Account not found for user.")
                 return
 
+            # TODO: Do we need additional error handling here ?
             # try:
             #     await func(self, update, context, db_session, account)
             # except Exception as e:
