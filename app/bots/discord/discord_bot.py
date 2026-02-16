@@ -1,6 +1,7 @@
 import logging
 import discord
 from discord.ext import commands
+from app.bots.discord.cogs.charts_cog import ChartsCog
 from app.bots.discord.cogs.settings_cog import SettingsCog
 from app.bots.discord.cogs.crypto_info_cog import CrpytoInfoCog
 from app.bots.discord.cogs.favorites_cog import FavoritesCog
@@ -77,11 +78,13 @@ class DiscordBot:
             crypto_api_service=self._crypto_api_service,
             bot=self.bot,
         )
+        charts_cog = ChartsCog(bot=self.bot)
 
         await self.bot.add_cog(settings_cog)
         await self.bot.add_cog(crypto_info_cog)
         await self.bot.add_cog(favorites_cog)
         await self.bot.add_cog(notifications_cog)
+        await self.bot.add_cog(charts_cog)
 
         # TODO: Make it work
         # Build choices from cryptocurrency repository
