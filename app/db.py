@@ -21,7 +21,6 @@ Session_Factory = sessionmaker(
     autoflush=False,  # change a user's setting in code but haven't committed yet, querying that user won't force a write.
     autocommit=False,
     expire_on_commit=False,  # After you commit, the Python objects remain valid and readable without reloading data from the DB
-    join_transaction_mode="create",
 )
 
 
