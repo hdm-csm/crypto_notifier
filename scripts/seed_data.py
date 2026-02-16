@@ -1,5 +1,5 @@
 # scripts/seed_data.py
-from app.db import Session_Factory, engine
+from app.db import engine, get_session
 from app.db import Base
 from app.models.schemas import Account, Cryptocurrency, Notification
 from app.models.enums import PlatformType, NotificationDirection
@@ -20,7 +20,7 @@ def create_tables_if_not_exist():
 
 
 def seed():
-    db = Session_Factory()
+    db = get_session()
 
     try:
 

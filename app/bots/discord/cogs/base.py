@@ -1,6 +1,6 @@
 import logging
 from discord.ext import commands
-from app.db import Session_Factory
+from app.db import get_session
 from app.bots.discord.custom_context import CustomContext
 from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
@@ -25,14 +25,14 @@ class AccountCog(commands.Cog):
         """
         assert isinstance(ctx, CustomContext)
         try:
-            ctx.db_session = Session_Factory()
+            ctx.db_session = get_session()
             ctx.account = self._account_lookup_service.find_or_create_account(
                 db_session=ctx.db_session,
                 platform_type=self.PLATFORM_TYPE,
                 platform_user_id=str(ctx.author.id),
             )
         except Exception as e:
-            if hasattr(ctx, "db_session"):
+            if ctx.db_session:
                 ctx.db_session.rollback()
                 ctx.db_session.close()
             logging.error(f"Error in cog_before_invoke: {e}")
@@ -46,7 +46,7 @@ class AccountCog(commands.Cog):
         Called before cog_command_error.
         """
         assert isinstance(ctx, CustomContext)
-        if hasattr(ctx, "db_session") and not ctx.command_failed:
+        if ctx.db_session and not ctx.command_failed:
             try:
                 logging.info("Committing current db session.")
                 ctx.db_session.commit()
@@ -59,7 +59,7 @@ class AccountCog(commands.Cog):
         Called after cog_after_invoke if an exception was raised in the command or in cog_after_invoke.
         """
         assert isinstance(ctx, CustomContext)
-        if hasattr(ctx, "db_session"):
+        if ctx.db_session:
             try:
                 logging.error("Rolling back current db session.")
                 ctx.db_session.rollback()
