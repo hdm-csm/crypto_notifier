@@ -6,6 +6,7 @@ from app.services.favorites_service import FavoritesService
 from app.bots.discord.custom_context import CustomContext
 from app.utils.command_constants import (
     COMMAND_ADD_FAV,
+    COMMAND_ADD_FAVS,
     COMMAND_LIST_FAVS,
     COMMAND_REMOVE_FAV,
     COMMAND_DROP_FAVS,
@@ -31,6 +32,22 @@ class FavoritesCog(AccountCog):
             db_session=ctx.db_session, account=ctx.account, input_crypto=input_crypto
         )
         await ctx.send(answer)
+
+    @commands.command(name=COMMAND_ADD_FAVS)
+    async def _add_favs(self, ctx: CustomContext, *input_cryptos: str) -> None:
+        """Save multiple cryptocurrencies as favorites."""
+        if not input_cryptos:
+            await ctx.send("⚠️ Please provide at least one cryptocurrency symbol or name.")
+            return
+
+        results = []
+        for crypto in input_cryptos:
+            result = self._favorites_service.add_favorite(
+                db_session=ctx.db_session, account=ctx.account, input_crypto=crypto
+            )
+            results.append(result)
+
+        await ctx.send("\n".join(results))
 
     @commands.command(name=COMMAND_LIST_FAVS)
     async def _list_favs(self, ctx: CustomContext) -> None:

@@ -70,7 +70,7 @@ async def test_list_top_crypto_currencies_success():
     service = CryptoApiService(mock_client)
 
     # --- EXECUTION ---
-    result = await service.list_top_crypto_currencies(amount=2)
+    result = await service.get_top_crypto_currencies(amount=2)
 
     # --- ASSERTION ---
     # 1. Wurde die URL mit den richtigen Parametern aufgerufen?

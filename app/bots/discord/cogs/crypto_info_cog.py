@@ -9,10 +9,7 @@ from app.db import session_scope
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
 from app.services.crypto_currency_service import CryptoCurrencyService
-from app.utils.command_constants import (
-    COMMAND_INDEX,
-    COMMAND_LIST,
-)
+from app.utils.command_constants import COMMAND_INDEX, COMMAND_TOP, COMMAND_LIST
 
 
 class CrpytoInfoCog(AccountCog):
@@ -71,12 +68,19 @@ class CrpytoInfoCog(AccountCog):
             )
             return
 
-    @commands.command(name=COMMAND_LIST)
-    async def _list(self, ctx: CustomContext):
+    @commands.command(name=COMMAND_TOP)
+    async def _top(self, ctx: CustomContext, amount: int = 10):
         vs_currency = "eur"
         if ctx.account and ctx.account.selected_vs_currency:
             vs_currency = ctx.account.selected_vs_currency.symbol.lower()
-        answer: str = await self._crypto_api_service.list_top_crypto_currencies_str(
-            amount=10, vs_currency=vs_currency
+        answer: str = await self._crypto_api_service.get_top_crypto_currencies_str(
+            amount=amount, vs_currency=vs_currency
         )
+        await ctx.send(answer)
+
+    @commands.command(name=COMMAND_LIST)
+    async def _list(self, ctx: CustomContext):
+        answer: str = self._crypto_currency_service.get_all(ctx.db_session)
+        if not answer:
+            answer = "❌ No cryptocurrencies found in the system.\n Please try again later."
         await ctx.send(answer)

@@ -4,6 +4,7 @@ from app.models.dtos import CoinMarketData, SimpleCoinPrice
 from app.utils.functions import get_currency_display
 from config.config import Config
 import yfinance as yf
+import pandas as pd
 
 COINGECKO_API_KEY = Config.COINGECKO_API_KEY
 
@@ -18,7 +19,7 @@ class CryptoApiService:
     def __init__(self, client: httpx.AsyncClient):
         self.client = client
 
-    async def list_top_crypto_currencies(
+    async def get_top_crypto_currencies(
         self, amount: int, vs_currency: str = "eur"
     ) -> list[CoinMarketData]:
         params: dict[str, str | int] = {
@@ -34,8 +35,8 @@ class CryptoApiService:
         coins = [CoinMarketData(**coin_data) for coin_data in json_obj]
         return coins
 
-    async def list_top_crypto_currencies_str(self, amount: int, vs_currency: str = "eur") -> str:
-        coins = await self.list_top_crypto_currencies(amount, vs_currency)
+    async def get_top_crypto_currencies_str(self, amount: int, vs_currency: str = "eur") -> str:
+        coins = await self.get_top_crypto_currencies(amount, vs_currency)
         currency_display = get_currency_display(vs_currency)
         message = "Top 10 Cryptocurrencies by Market Cap:\n\n"
         for coin in coins:
@@ -98,28 +99,51 @@ class CryptoApiService:
         if not crypto_symbols:
             return "No symbols provided."
         vs_currency = vs_currency_symbol.upper().strip()
+        # e.g., ["BTC-USD", "ETH-USD"]
         formatted_symbols = [f"{s.upper().strip()}-{vs_currency}" for s in crypto_symbols]
-        print(formatted_symbols)
         symbols_string = " ".join(formatted_symbols)
         data = yf.download(
-            symbols_string, period="1d", interval="1m", group_by="ticker", progress=False
+            symbols_string,
+            period="1d",
+            interval="1m",
+            group_by="ticker",
+            progress=False,
+            threads=True,
         )
         if data.empty:
             return "Could not find data for the requested symbols."
         results = []
         currency_display = get_currency_display(vs_currency)
+        is_multi_index = isinstance(data.columns, pd.MultiIndex)
         for symbol in formatted_symbols:
             try:
-                # Extract the last price from the multi-index dataframe
-                # We use .iloc[-1] to get the most recent 'Close' price
-                current_price = data[symbol]["Close"].iloc[-1]
-                if current_price is not None:
-                    display_name = symbol.split("-")[0]
-                    results.append(f"{display_name}: {current_price:.2f} {currency_display}")
+                price_series = None
+                if is_multi_index:
+                    if symbol in data.columns:
+                        # Access the specific ticker's DataFrame, then the Close column
+                        price_series = data[symbol]["Close"]
+                # CASE B: Flat Index (Edge case: User asked for 2, but only 1 was valid)
+                elif not is_multi_index:
+                    if "Close" in data.columns:
+                        price_series = data["Close"]
+                if price_series is not None:
+                    # find the last *actual* trade
+                    valid_prices = price_series.dropna()
+                    if not valid_prices.empty:
+                        last_price = valid_prices.iloc[-1]
+                        display_name = symbol.split("-")[0]
+                        results.append(
+                            f"{display_name}: {float(last_price):.2f} {currency_display}"
+                        )
+                    else:
+                        results.append(f"{symbol}: Price data is empty (all NaN)")
                 else:
-                    results.append(f"{symbol}: Price not found")
-            except KeyError:
-                results.append(f"{symbol}: Symbol not found")
+                    results.append(f"{symbol}: Symbol not found in response")
+
+            except Exception as e:
+                # Catch-all for unexpected dataframe shape changes
+                results.append(f"{symbol}: Error ({str(e)})")
+
         return "\n".join(results)
 
     async def get_coingecko_supported_vs_currencies(self) -> list[str]:

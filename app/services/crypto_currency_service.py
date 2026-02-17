@@ -17,7 +17,7 @@ class CryptoCurrencyService:
     async def init_crypto_currencies(self):
         with session_scope() as session:
             if self._crypto_currency_repository.is_empty(session):
-                coins = await self._crypto_api_service.list_top_crypto_currencies(amount=1000)
+                coins = await self._crypto_api_service.get_top_crypto_currencies(amount=1000)
 
                 # Filter out duplicates by symbol
                 seen_symbols = set()
@@ -31,3 +31,17 @@ class CryptoCurrencyService:
 
     def find_by_name_or_symbol(self, db_session: Session, input: str) -> Cryptocurrency | None:
         return self._crypto_currency_repository.find_by_name_or_symbol(db_session, input)
+
+    def get_all(self, db_session: Session) -> str:
+        crypto_currencies: list[Cryptocurrency] = self._crypto_currency_repository.get_all(
+            db_session
+        )
+        if not crypto_currencies:
+            return "No cryptocurrencies found."
+
+        title = "List of all supported cryptocurrencies:"
+        header = "Name (Symbol)"
+        separator = "-" * len(header)
+        rows = [title, "", header, separator]
+        rows.extend([f"{coin.name} ({coin.symbol})" for coin in crypto_currencies])
+        return "\n".join(rows)
