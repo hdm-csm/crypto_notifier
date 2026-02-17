@@ -7,6 +7,9 @@ from config.config import Config
 COINGECKO_API_KEY = Config.COINGECKO_API_KEY
 
 
+# if pair not supported + its weekend -> write (forex change from friday)
+
+
 class CryptoApiService:
     COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3"  # Rate Limit = 10K requests/month
     BINANCE_BASE_URL = "https://api.binance.com/api/v3"  # Unlimited requests
