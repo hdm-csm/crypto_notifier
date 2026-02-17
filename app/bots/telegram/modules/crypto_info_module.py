@@ -24,7 +24,7 @@ class CryptoInfoModule(AccountModule):
         crypto_api_service: CryptoApiService,
     ):
         super().__init__(app, account_lookup_service)
-        self._cryptocurrency_service = crypocurrency_service
+        self._crypto_currency_service = crypocurrency_service
         self._crypto_api_service = crypto_api_service
 
     def register(self):
@@ -44,19 +44,19 @@ class CryptoInfoModule(AccountModule):
         if not context.args:
             raise MissingCommandArguments(COMMAND_INDEX, "<cryptocurrency>")
         crypto_currency_input: str = context.args[0]
-        cryptocurrency = await self._cryptocurrency_service.find_by_name_or_symbol(
+        cryptocurrency = await self._crypto_currency_service.find_by_name_or_symbol(
             db_session, crypto_currency_input
         )
-        if not cryptocurrency:
+        if not cryptocurrency or not cryptocurrency.symbol:
             await update.message.reply_text(
                 f"❌ Cryptocurrency '{crypto_currency_input}' not found. Please check the name or symbol and try again."
             )
             return
-        vs_currency = "eur"
+        vs_currency_symbol = "eur"
         if account and account.selected_vs_currency:
-            vs_currency = account.selected_vs_currency.short_name.lower()
-        answer: str = await self._crypto_api_service.get_index_str(
-            crypto_currency_input=crypto_currency_input, vs_currency=vs_currency
+            vs_currency_symbol = account.selected_vs_currency.symbol.lower()
+        answer: str = await self._crypto_api_service.get_index_2(
+            crypto_symbol=cryptocurrency.symbol, vs_currency_symbol=vs_currency_symbol
         )
         if update.message:
             await update.message.reply_text(answer)
@@ -73,7 +73,7 @@ class CryptoInfoModule(AccountModule):
             return
         vs_currency = "eur"
         if account and account.selected_vs_currency:
-            vs_currency = account.selected_vs_currency.short_name.lower()
+            vs_currency = account.selected_vs_currency.symbol.lower()
         answer: str = await self._crypto_api_service.list_top_crypto_currencies_str(
             amount=10, vs_currency=vs_currency
         )

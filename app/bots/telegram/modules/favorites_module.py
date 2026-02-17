@@ -42,8 +42,7 @@ class FavoritesModule(AccountModule):
     ) -> None:
         if not context.args:
             raise MissingCommandArguments(COMMAND_ADD_FAV, "<cryptocurrency>")
-
-        input_crypto = context.args[0].lower()
+        input_crypto = context.args[0]
         answer = self._favorites_service.add_favorite(
             db_session=db_session, account=account, input_crypto=input_crypto
         )

@@ -84,12 +84,43 @@ class CryptoApiService:
 
     # lowercase works
     # "bitcoin" doesnt work --> get short
-    async def get_index_2(self, crypto: str, vs_currency: str = "eur") -> float | None:
-        crypto = crypto.upper().strip()
-        vs_currency = vs_currency.upper().strip()
-        ticker = yf.Ticker(f"{crypto}-{vs_currency}")
+    async def get_index_2(self, crypto_symbol: str, vs_currency_symbol: str = "eur") -> str:
+        crypto_symbol = crypto_symbol.upper().strip()
+        vs_currency_symbol = vs_currency_symbol.upper().strip()
+        ticker = yf.Ticker(f"{crypto_symbol}-{vs_currency_symbol}")
         current_price = ticker.fast_info["last_price"]
-        print(f"----- Current {crypto} Price: ${current_price:.2f} -----")
+        if current_price is None:
+            return f'Could not find price for "{crypto_symbol}". \nPlease enter correct id.'
+        currency_display = get_currency_display(vs_currency_symbol)
+        return f"{crypto_symbol.upper()}: {current_price:.2f} {currency_display}"
+
+    async def get_indexes(self, crypto_symbols: list[str], vs_currency_symbol: str = "eur") -> str:
+        if not crypto_symbols:
+            return "No symbols provided."
+        vs_currency = vs_currency_symbol.upper().strip()
+        formatted_symbols = [f"{s.upper().strip()}-{vs_currency}" for s in crypto_symbols]
+        print(formatted_symbols)
+        symbols_string = " ".join(formatted_symbols)
+        data = yf.download(
+            symbols_string, period="1d", interval="1m", group_by="ticker", progress=False
+        )
+        if data.empty:
+            return f"Could not find data for the requested symbols."
+        results = []
+        currency_display = get_currency_display(vs_currency)
+        for symbol in formatted_symbols:
+            try:
+                # Extract the last price from the multi-index dataframe
+                # We use .iloc[-1] to get the most recent 'Close' price
+                current_price = data[symbol]["Close"].iloc[-1]
+                if current_price is not None:
+                    display_name = symbol.split("-")[0]
+                    results.append(f"{display_name}: {current_price:.2f} {currency_display}")
+                else:
+                    results.append(f"{symbol}: Price not found")
+            except KeyError:
+                results.append(f"{symbol}: Symbol not found")
+        return "\n".join(results)
 
     async def get_coingecko_supported_vs_currencies(self) -> list[str]:
         url = f"{self.COINGECKO_BASE_URL}/simple/supported_vs_currencies"

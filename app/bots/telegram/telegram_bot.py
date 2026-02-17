@@ -7,6 +7,7 @@ from app.bots.telegram.modules.notifications_module import NotificationsModule
 from app.bots.telegram.modules.base import AccountModule
 from app.bots.telegram.modules.settings_module import SettingsModule
 from app.models.enums import PlatformType
+from app.services.crypto_currency_service import CryptoCurrencyService
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
 from app.services.favorites_service import FavoritesService
@@ -28,6 +29,7 @@ class TelegramBot:
         favorites_service: FavoritesService,
         notification_service: NotificationService,
         vs_currency_service: VsCurrencyService,
+        crypto_currency_service: CryptoCurrencyService,
     ):
         self._token = token
 
@@ -37,7 +39,9 @@ class TelegramBot:
         self._modules: list[AccountModule] = [
             FavoritesModule(self._app, account_lookup_service, favorites_service),
             NotificationsModule(self._app, account_lookup_service, notification_service),
-            CryptoInfoModule(self._app, account_lookup_service, crypto_api_service),
+            CryptoInfoModule(
+                self._app, account_lookup_service, crypto_currency_service, crypto_api_service
+            ),
             SettingsModule(self._app, account_lookup_service, vs_currency_service),
         ]
 

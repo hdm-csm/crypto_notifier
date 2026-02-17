@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock
+from app.services.crypto_currency_service import CryptoCurrencyService
 from app.services.crypto_api_service import CryptoApiService
 from app.repository.favorites_repository import FavoritesRepository
 from app.repository.crypto_currency_repository import CryptocurrencyRepository
@@ -16,11 +17,12 @@ async def test_full_favorite_lifecycle(db_session, mocker):
     # API Mocken
     mock_http_client = AsyncMock()
     api_service = CryptoApiService(mock_http_client)
+    crypto_currency_service = CryptoCurrencyService(crypto_repo, api_service)
 
     # Mock get_index method
     mocker.patch.object(api_service, "get_index", new_callable=AsyncMock, return_value=999.99)
 
-    favorites_service = FavoritesService(fav_repo, crypto_repo, api_service)
+    favorites_service = FavoritesService(fav_repo, crypto_currency_service, api_service)
 
     # DATEN VORBEREITEN
     # Create VsCurrency first

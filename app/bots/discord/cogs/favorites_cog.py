@@ -28,7 +28,7 @@ class FavoritesCog(AccountCog):
     async def _add_fav(self, ctx: CustomContext, input_crypto: str) -> None:
         """Save cryptocurrency as favorite."""
         answer = self._favorites_service.add_favorite(
-            db_session=ctx.db_session, account=ctx.account, input_crypto=input_crypto.lower()
+            db_session=ctx.db_session, account=ctx.account, input_crypto=input_crypto
         )
         await ctx.send(answer)
 

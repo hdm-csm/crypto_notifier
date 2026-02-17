@@ -29,8 +29,8 @@ class VsCurrency(Base):
     __tablename__ = "vs_currencies"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    short_name: Mapped[str] = mapped_column(String(10), unique=True, index=True)
-    full_name: Mapped[str] = mapped_column(String(255))
+    symbol: Mapped[str] = mapped_column(String(10), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(255))
 
 
 class Notification(Base):
@@ -84,7 +84,7 @@ class Cryptocurrency(Base):
     __tablename__ = "cryptocurrencies"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    symbol: Mapped[str] = mapped_column(String(255), unique=True, index=True)
+    symbol: Mapped[str] = mapped_column(String(10), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(255))
 
     favorited_by: Mapped[list[Account]] = relationship(

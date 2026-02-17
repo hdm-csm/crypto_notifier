@@ -29,5 +29,5 @@ class CryptoCurrencyService:
 
                 self._crypto_currency_repository.store_all(session, unique_coins)
 
-    async def find_by_name_or_symbol(self, db_session: Session, input: str) -> Cryptocurrency | None:
+    def find_by_name_or_symbol(self, db_session: Session, input: str) -> Cryptocurrency | None:
         return self._crypto_currency_repository.find_by_name_or_symbol(db_session, input)

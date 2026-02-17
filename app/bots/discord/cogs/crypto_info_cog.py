@@ -8,6 +8,7 @@ from app.bots.discord.custom_context import CustomContext
 from app.db import session_scope
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
+from app.services.crypto_currency_service import CryptoCurrencyService
 from app.utils.command_constants import (
     COMMAND_INDEX,
     COMMAND_LIST,
@@ -20,10 +21,12 @@ class CrpytoInfoCog(AccountCog):
         self,
         account_lookup_service: AccountLookupService,
         crypto_api_service: CryptoApiService,
+        crypto_currency_service: CryptoCurrencyService,
     ):
         super().__init__(account_lookup_service)
         self._account_lookup_service = account_lookup_service
         self._crypto_api_service = crypto_api_service
+        self._crypto_currency_service = crypto_currency_service
 
     @app_commands.command(name=COMMAND_INDEX, description="Get price/index of a cryptocurrency")
     @app_commands.describe(crypto_currency_input="The type of cryptocurrency")
@@ -36,14 +39,23 @@ class CrpytoInfoCog(AccountCog):
                     platform_type=self.PLATFORM_TYPE,
                     platform_user_id=str(interaction.user.id),
                 )
-                vs_currency = "eur"
+                cryptocurrency = await self._crypto_currency_service.find_by_name_or_symbol(
+                    db_session, crypto_currency_input
+                )
+                if not cryptocurrency or not cryptocurrency.symbol:
+                    await interaction.followup.send(
+                        f"❌ Cryptocurrency '{crypto_currency_input}' not found. Please check the name or symbol and try again."
+                    )
+                    return
+                vs_currency_symbol = "eur"
                 if account and account.selected_vs_currency:
-                    vs_currency = account.selected_vs_currency.short_name.lower()
+                    vs_currency_symbol = account.selected_vs_currency.symbol.lower()
                 try:
                     # Wait maximum 3 seconds for the API call
                     answer = await asyncio.wait_for(
-                        self._crypto_api_service.get_index_str(
-                            crypto_currency_input=crypto_currency_input, vs_currency=vs_currency
+                        self._crypto_api_service.get_index_2(
+                            crypto_symbol=cryptocurrency.symbol,
+                            vs_currency_symbol=vs_currency_symbol,
                         ),
                         timeout=3.0,
                     )
@@ -63,7 +75,7 @@ class CrpytoInfoCog(AccountCog):
     async def _list(self, ctx: CustomContext):
         vs_currency = "eur"
         if ctx.account and ctx.account.selected_vs_currency:
-            vs_currency = ctx.account.selected_vs_currency.short_name.lower()
+            vs_currency = ctx.account.selected_vs_currency.symbol.lower()
         answer: str = await self._crypto_api_service.list_top_crypto_currencies_str(
             amount=10, vs_currency=vs_currency
         )

@@ -37,7 +37,5 @@ class CryptocurrencyRepository:
         return session.query(Cryptocurrency).all()
 
     def store_all(self, session: Session, coins: list[CoinMarketData]):
-        new_cryptos = [
-            Cryptocurrency(symbol=coin.symbol.upper(), full_name=coin.name) for coin in coins
-        ]
+        new_cryptos = [Cryptocurrency(symbol=coin.symbol.upper(), name=coin.name) for coin in coins]
         session.add_all(new_cryptos)

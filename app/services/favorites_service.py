@@ -12,17 +12,15 @@ class FavoritesService:
     def __init__(
         self,
         favorite_repository: FavoritesRepository,
-        # cryptocurrency_repository: CryptocurrencyRepository,
-        cryptocurrency_service: CryptoCurrencyService,
+        crypto_currency_service: CryptoCurrencyService,
         crypto_api_service: CryptoApiService,
     ):
         self._favorite_repository = favorite_repository
-        # self._cryptocurrency_repository = cryptocurrency_repository
-        self._cryptocurrency_service = cryptocurrency_service
+        self._crypto_currency_service = crypto_currency_service
         self._crypto_api_service = crypto_api_service
 
     def add_favorite(self, db_session: Session, account: Account, input_crypto: str) -> str:
-        cryptocurrency = self._cryptocurrency_service.find_by_name_or_symbol(
+        cryptocurrency = self._crypto_currency_service.find_by_name_or_symbol(
             db_session, input_crypto
         )
         if not cryptocurrency:
@@ -55,18 +53,15 @@ class FavoritesService:
             return "ℹ️ You have no favorite cryptocurrencies yet."
         vs_currency = "eur"
         if account and account.selected_vs_currency:
-            vs_currency = account.selected_vs_currency.short_name.lower()
+            vs_currency = account.selected_vs_currency.symbol.lower()
+
+        crypto_symbols = [crypto.symbol for crypto in favorites]
+        prices_str = await self._crypto_api_service.get_indexes(
+            crypto_symbols=crypto_symbols, vs_currency_symbol=vs_currency
+        )
+
         message = "Your Favorite Cryptocurrencies:\n\n"
-        for crypto_currency in favorites:
-            try:
-                message += await self._crypto_api_service.get_index_str(
-                    crypto_currency_input=crypto_currency.name, vs_currency=vs_currency
-                )
-                message += "\n"
-            except Exception as e:
-                logging.error(f"Error fetching price for {crypto_currency.symbol}: {e}")
-                message += f"• {crypto_currency.name} " f"({crypto_currency.symbol.upper()})\n"
-                message += "   Price: Unavailable\n\n"
+        message += prices_str
         return message
 
     def drop_favorites(self, account: Account) -> str:
