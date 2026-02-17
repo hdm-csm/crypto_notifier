@@ -3,6 +3,7 @@ import json
 from app.models.dtos import CoinMarketData, SimpleCoinPrice
 from app.utils.functions import get_currency_display
 from config.config import Config
+import yfinance as yf
 
 COINGECKO_API_KEY = Config.COINGECKO_API_KEY
 
@@ -80,6 +81,15 @@ class CryptoApiService:
             return f'Could not find price for "{crypto_currency_input}". \nPlease enter correct id.'
         currency_display = get_currency_display(vs_currency)
         return f"{crypto_currency_input.capitalize()}: {result:.2f} {currency_display}"
+
+    # lowercase works
+    # "bitcoin" doesnt work --> get short
+    async def get_index_2(self, crypto: str, vs_currency: str = "eur") -> float | None:
+        crypto = crypto.upper().strip()
+        vs_currency = vs_currency.upper().strip()
+        ticker = yf.Ticker(f"{crypto}-{vs_currency}")
+        current_price = ticker.fast_info["last_price"]
+        print(f"----- Current {crypto} Price: ${current_price:.2f} -----")
 
     async def get_coingecko_supported_vs_currencies(self) -> list[str]:
         url = f"{self.COINGECKO_BASE_URL}/simple/supported_vs_currencies"

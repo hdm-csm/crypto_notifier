@@ -3,6 +3,7 @@ from app.bots.telegram.modules.base import AccountModule
 from app.models.schemas import Account
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
+from app.services.crypto_currency_service import CryptoCurrencyService
 from app.utils.command_constants import (
     COMMAND_INDEX,
     COMMAND_LIST,
@@ -19,9 +20,11 @@ class CryptoInfoModule(AccountModule):
         self,
         app: Application,
         account_lookup_service: AccountLookupService,
+        crypocurrency_service: CryptoCurrencyService,
         crypto_api_service: CryptoApiService,
     ):
         super().__init__(app, account_lookup_service)
+        self._cryptocurrency_service = crypocurrency_service
         self._crypto_api_service = crypto_api_service
 
     def register(self):
@@ -41,6 +44,14 @@ class CryptoInfoModule(AccountModule):
         if not context.args:
             raise MissingCommandArguments(COMMAND_INDEX, "<cryptocurrency>")
         crypto_currency_input: str = context.args[0]
+        cryptocurrency = await self._cryptocurrency_service.find_by_name_or_symbol(
+            db_session, crypto_currency_input
+        )
+        if not cryptocurrency:
+            await update.message.reply_text(
+                f"❌ Cryptocurrency '{crypto_currency_input}' not found. Please check the name or symbol and try again."
+            )
+            return
         vs_currency = "eur"
         if account and account.selected_vs_currency:
             vs_currency = account.selected_vs_currency.short_name.lower()

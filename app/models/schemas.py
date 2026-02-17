@@ -85,7 +85,7 @@ class Cryptocurrency(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     symbol: Mapped[str] = mapped_column(String(255), unique=True, index=True)
-    full_name: Mapped[str] = mapped_column(String(255))
+    name: Mapped[str] = mapped_column(String(255))
 
     favorited_by: Mapped[list[Account]] = relationship(
         "Account", secondary=favorites_table, back_populates="favorite_cryptos"

@@ -4,6 +4,7 @@ from app.repository.crypto_currency_repository import CryptocurrencyRepository
 from app.repository.favorites_repository import FavoritesRepository
 from app.services.crypto_api_service import CryptoApiService
 from app.models.schemas import Account
+from app.services.crypto_currency_service import CryptoCurrencyService
 
 
 class FavoritesService:
@@ -11,15 +12,17 @@ class FavoritesService:
     def __init__(
         self,
         favorite_repository: FavoritesRepository,
-        cryptocurrency_repository: CryptocurrencyRepository,
+        # cryptocurrency_repository: CryptocurrencyRepository,
+        cryptocurrency_service: CryptoCurrencyService,
         crypto_api_service: CryptoApiService,
     ):
         self._favorite_repository = favorite_repository
-        self._cryptocurrency_repository = cryptocurrency_repository
+        # self._cryptocurrency_repository = cryptocurrency_repository
+        self._cryptocurrency_service = cryptocurrency_service
         self._crypto_api_service = crypto_api_service
 
     def add_favorite(self, db_session: Session, account: Account, input_crypto: str) -> str:
-        cryptocurrency = self._cryptocurrency_repository.find_by_name_or_symbol(
+        cryptocurrency = self._cryptocurrency_service.find_by_name_or_symbol(
             db_session, input_crypto
         )
         if not cryptocurrency:
@@ -57,12 +60,12 @@ class FavoritesService:
         for crypto_currency in favorites:
             try:
                 message += await self._crypto_api_service.get_index_str(
-                    crypto_currency_input=crypto_currency.full_name, vs_currency=vs_currency
+                    crypto_currency_input=crypto_currency.name, vs_currency=vs_currency
                 )
                 message += "\n"
             except Exception as e:
                 logging.error(f"Error fetching price for {crypto_currency.symbol}: {e}")
-                message += f"• {crypto_currency.full_name} " f"({crypto_currency.symbol.upper()})\n"
+                message += f"• {crypto_currency.name} " f"({crypto_currency.symbol.upper()})\n"
                 message += "   Price: Unavailable\n\n"
         return message
 

@@ -1,6 +1,8 @@
 from app.db import session_scope
+from app.models.schemas import Cryptocurrency
 from app.repository.crypto_currency_repository import CryptocurrencyRepository
 from app.services.crypto_api_service import CryptoApiService
+from sqlalchemy.orm import Session
 
 
 class CryptoCurrencyService:
@@ -15,7 +17,7 @@ class CryptoCurrencyService:
     async def init_crypto_currencies(self):
         with session_scope() as session:
             if self._crypto_currency_repository.is_empty(session):
-                coins = await self._crypto_api_service.list_top_crypto_currencies(amount=100)
+                coins = await self._crypto_api_service.list_top_crypto_currencies(amount=1000)
 
                 # Filter out duplicates by symbol
                 seen_symbols = set()
@@ -26,3 +28,6 @@ class CryptoCurrencyService:
                         unique_coins.append(coin)
 
                 self._crypto_currency_repository.store_all(session, unique_coins)
+
+    async def find_by_name_or_symbol(self, db_session: Session, input: str) -> Cryptocurrency | None:
+        return self._crypto_currency_repository.find_by_name_or_symbol(db_session, input)

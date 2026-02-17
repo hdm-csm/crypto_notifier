@@ -17,7 +17,7 @@ class CryptocurrencyRepository:
             session.query(Cryptocurrency)
             .filter(
                 (func.lower(Cryptocurrency.symbol) == func.lower(identifier))
-                | (func.lower(Cryptocurrency.full_name) == func.lower(identifier))
+                | (func.lower(Cryptocurrency.name) == func.lower(identifier))
             )
             .first()
             is not None
@@ -28,7 +28,7 @@ class CryptocurrencyRepository:
             db_session.query(Cryptocurrency)
             .filter(
                 (func.lower(Cryptocurrency.symbol) == func.lower(identifier))
-                | (func.lower(Cryptocurrency.full_name) == func.lower(identifier))
+                | (func.lower(Cryptocurrency.name) == func.lower(identifier))
             )
             .first()
         )
