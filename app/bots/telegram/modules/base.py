@@ -15,3 +15,7 @@ class AccountModule(ABC):
     @abstractmethod
     def register(self) -> None:
         raise NotImplementedError
+
+    def register_jobs(self) -> None:
+        """Optional: override to register background jobs."""
+        pass

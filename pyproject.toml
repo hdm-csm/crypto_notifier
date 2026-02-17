@@ -9,6 +9,12 @@ warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
 check_untyped_defs = true
+disallow_untyped_defs = false
+# Performance optimizations
+incremental = true
+cache_dir = ".mypy_cache"
+sqlite_cache = true
+# Exclude directories to speed up checks
 exclude = [
     '^venv/',
     '^\.venv/',
@@ -17,4 +23,9 @@ exclude = [
     '^env/',
     '^\.git/',
     '^\.mypy_cache/',
+    '^tests/',
+    '^scripts/',
+    '^__pycache__/',
 ]
+# Reduce type inference overhead
+no_implicit_optional = true

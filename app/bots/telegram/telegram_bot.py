@@ -50,7 +50,7 @@ class TelegramBot:
 
         # Register job queue handlers after initialization
         for module in self._modules:
-            if hasattr(module, "register_jobs"):
+            if module.register_jobs is not None:
                 module.register_jobs()
 
         await self._app.start()

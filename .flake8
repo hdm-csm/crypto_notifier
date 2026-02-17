@@ -14,4 +14,5 @@ exclude =
     .mypy_cache,
     .vscode,
     .idea
-ignore = E203, W503, E501
+
+extend-ignore = E203, E501, W503
