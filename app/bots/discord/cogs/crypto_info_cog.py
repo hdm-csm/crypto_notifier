@@ -39,7 +39,7 @@ class CrpytoInfoCog(AccountCog):
                     platform_type=self.PLATFORM_TYPE,
                     platform_user_id=str(interaction.user.id),
                 )
-                cryptocurrency = await self._crypto_currency_service.find_by_name_or_symbol(
+                cryptocurrency = self._crypto_currency_service.find_by_name_or_symbol(
                     db_session, crypto_currency_input
                 )
                 if not cryptocurrency or not cryptocurrency.symbol:

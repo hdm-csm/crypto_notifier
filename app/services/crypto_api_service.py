@@ -105,7 +105,7 @@ class CryptoApiService:
             symbols_string, period="1d", interval="1m", group_by="ticker", progress=False
         )
         if data.empty:
-            return f"Could not find data for the requested symbols."
+            return "Could not find data for the requested symbols."
         results = []
         currency_display = get_currency_display(vs_currency)
         for symbol in formatted_symbols:

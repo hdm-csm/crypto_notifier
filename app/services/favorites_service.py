@@ -1,6 +1,4 @@
-import logging
 from sqlalchemy.orm import Session
-from app.repository.crypto_currency_repository import CryptocurrencyRepository
 from app.repository.favorites_repository import FavoritesRepository
 from app.services.crypto_api_service import CryptoApiService
 from app.models.schemas import Account
@@ -34,8 +32,8 @@ class FavoritesService:
         return f"✅ Saved {input_crypto} as your favorite cryptocurrency!"
 
     def remove_favorite(self, db_session: Session, account: Account, input_crypto: str) -> str:
-        cryptocurrency = self._cryptocurrency_repository.find_by_name_or_symbol(
-            db_session=db_session, identifier=input_crypto
+        cryptocurrency = self._crypto_currency_service.find_by_name_or_symbol(
+            db_session=db_session, input=input_crypto
         )
         if not cryptocurrency:
             return (

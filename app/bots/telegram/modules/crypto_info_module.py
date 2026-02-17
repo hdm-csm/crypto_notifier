@@ -44,7 +44,7 @@ class CryptoInfoModule(AccountModule):
         if not context.args:
             raise MissingCommandArguments(COMMAND_INDEX, "<cryptocurrency>")
         crypto_currency_input: str = context.args[0]
-        cryptocurrency = await self._crypto_currency_service.find_by_name_or_symbol(
+        cryptocurrency = self._crypto_currency_service.find_by_name_or_symbol(
             db_session, crypto_currency_input
         )
         if not cryptocurrency or not cryptocurrency.symbol:
