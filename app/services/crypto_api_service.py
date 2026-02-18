@@ -1,9 +1,9 @@
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Optional
 import httpx
 import json
 
 from yahooquery import Screener
-from app.models.dtos import CoinMarketData, SimpleCoinPrice, TickerResult
+from app.models.dtos import CoinMarketData, TickerResult
 from app.models.schemas import Cryptocurrency
 from app.utils.functions import get_currency_display
 from config.config import Config

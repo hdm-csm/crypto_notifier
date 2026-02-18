@@ -2,7 +2,6 @@ import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models.schemas import Cryptocurrency
-from app.models.dtos import CoinMarketData
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +35,6 @@ class CryptocurrencyRepository:
     def get_all(self, session: Session) -> list[Cryptocurrency]:
         return session.query(Cryptocurrency).all()
 
-    def store_all(self, session: Session, coins: list[CoinMarketData]):
+    def store_all(self, session: Session, coins: list[Cryptocurrency]):
         new_cryptos = [Cryptocurrency(symbol=coin.symbol.upper(), name=coin.name) for coin in coins]
         session.add_all(new_cryptos)

@@ -62,7 +62,6 @@ class VsCurrencyService:
         )
 
         return f"✅ Saved {input} as your preferred currency!"
-    
+
     def find_by_symbol_or_name(self, session: Session, input: str) -> VsCurrency | None:
         return self._vs_currency_repository.find_by_symbol_or_name(session=session, input=input)
-
