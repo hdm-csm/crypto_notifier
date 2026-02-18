@@ -10,7 +10,12 @@ from app.services.favorites_service import FavoritesService
 
 @pytest.mark.asyncio
 async def test_full_favorite_lifecycle(db_session, mocker):
-    # SETUP
+    # SETUP - Mock Variables
+    mock_symbol = "BTC"
+    mock_currency = "EUR"
+    mock_price = 42000.00
+    mock_price_message = f"{mock_symbol}-{mock_currency}: {mock_price:.2f} €"
+
     fav_repo = FavoritesRepository()
     crypto_repo = CryptocurrencyRepository()
 
@@ -19,18 +24,21 @@ async def test_full_favorite_lifecycle(db_session, mocker):
     api_service = CryptoApiService(mock_http_client)
     crypto_currency_service = CryptoCurrencyService(crypto_repo, api_service)
 
-    # Mock get_index method
+    # Mock API methods
     mocker.patch.object(api_service, "get_index", new_callable=AsyncMock, return_value=999.99)
+    mocker.patch.object(
+        api_service, "get_prices", new_callable=AsyncMock, return_value=mock_price_message
+    )
 
     favorites_service = FavoritesService(fav_repo, crypto_currency_service, api_service)
 
     # DATEN VORBEREITEN
     # Create VsCurrency first
-    vs_currency = VsCurrency(short_name="EUR", full_name="Euro")
+    vs_currency = VsCurrency(symbol=mock_currency, name="Euro")
     db_session.add(vs_currency)
     db_session.flush()
 
-    btc = Cryptocurrency(symbol="BTC", full_name="Bitcoin")
+    btc = Cryptocurrency(symbol=mock_symbol, name="Bitcoin")
     db_session.add(btc)
     db_session.commit()
 
@@ -48,7 +56,7 @@ async def test_full_favorite_lifecycle(db_session, mocker):
 
     # Favorit hinzufügen
     response_add = favorites_service.add_favorite(db_session, account, "bitcoin")
-    assert "Saved bitcoin" in response_add
+    assert "Saved bitcoin as your favorite cryptocurrency!" in response_add
 
     # Prüfen in der DB
     db_session.refresh(account)
@@ -57,8 +65,8 @@ async def test_full_favorite_lifecycle(db_session, mocker):
 
     # Auflisten
     response_list = await favorites_service.list_favorites(account)
-    assert "Bitcoin" in response_list
-    assert "999.99" in response_list
+    assert mock_symbol in response_list
+    assert str(mock_price) in response_list
 
     # Entfernen
     response_remove = favorites_service.remove_favorite(db_session, account, "bitcoin")
