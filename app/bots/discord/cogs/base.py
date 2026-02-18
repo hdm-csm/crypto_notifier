@@ -38,7 +38,7 @@ class AccountCog(commands.Cog):
             logging.error(f"Error in cog_before_invoke: {e}")
             await ctx.send(f"❌ An error occurred (internally): {str(e)}")
             raise InvokeSetupError()  # Re-raise to stop execution --> ugly stacktrace sadly...
-        return await super().cog_before_invoke(ctx)
+        return await super().cog_before_invoke(ctx)  # no return ?
 
     async def cog_after_invoke(self, ctx: commands.Context) -> None:
         """
@@ -48,8 +48,8 @@ class AccountCog(commands.Cog):
         assert isinstance(ctx, CustomContext)
         if ctx.db_session and not ctx.command_failed:
             try:
-                logging.info("Committing current db session.")
                 ctx.db_session.commit()
+                logging.info("Committed current db session.")
             finally:
                 ctx.db_session.close()
         return await super().cog_after_invoke(ctx)

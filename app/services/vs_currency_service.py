@@ -22,18 +22,18 @@ class VsCurrencyService:
     async def init_vs_currencies(self):
         with session_scope() as session:
             if self._vs_currency_repository.is_empty(session):
-                supported_vs_currencies = (
+                supported_vs_currencies_symbols = (
                     await self._crypto_api_service.get_coingecko_supported_vs_currencies()
                 )
                 vs_currencies = [
-                    VsCurrency(short_name=short_name, full_name=get_currency_full_name(short_name))
-                    for short_name in supported_vs_currencies
+                    VsCurrency(symbol=symbol, name=get_currency_full_name(symbol))
+                    for symbol in supported_vs_currencies_symbols
                 ]
                 self._vs_currency_repository.store_all(session, vs_currencies)
 
     def get_vs_currency(self, account: Account) -> str:
         message: str = "Your current vs currency: "
-        message += f"`{account.selected_vs_currency.short_name.upper()}` - {account.selected_vs_currency.full_name}\n"
+        message += f"`{account.selected_vs_currency.symbol.upper()}` - {account.selected_vs_currency.name}\n"
         message += (
             "\nTo change your preferred currency, use the command:\n`/set_vs <CURRENCY_CODE>`"
         )
@@ -43,14 +43,14 @@ class VsCurrencyService:
         vs_currencies: list[VsCurrency] = self._vs_currency_repository.list_all(session=db_session)
         message: str = "List of the supported currencies:\n"
         for currency in vs_currencies:
-            message += f"`{currency.short_name.upper()}` - {currency.full_name}\n"
+            message += f"`{currency.symbol.upper()}` - {currency.name}\n"
         message += (
             "\nTo change your preferred currency, use the command:\n`/set_vs <CURRENCY_CODE>`"
         )
         return message
 
     def set_vs_currency(self, db_session: Session, account: Account, input: str) -> str:
-        vs_currency: VsCurrency | None = self._vs_currency_repository.find_by_full_or_short_name_2(
+        vs_currency: VsCurrency | None = self._vs_currency_repository.find_by_symbol_or_name(
             session=db_session, input=input
         )
 
@@ -62,3 +62,6 @@ class VsCurrencyService:
         )
 
         return f"✅ Saved {input} as your preferred currency!"
+
+    def find_by_symbol_or_name(self, session: Session, input: str) -> VsCurrency | None:
+        return self._vs_currency_repository.find_by_symbol_or_name(session=session, input=input)

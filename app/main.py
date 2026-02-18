@@ -60,7 +60,7 @@ async def async_main():
     )
     _favorites_service = FavoritesService(
         favorite_repository=_favorite_repository,
-        cryptocurrency_repository=_cryptocurrency_repository,
+        crypto_currency_service=_crypto_currency_service,
         crypto_api_service=_crypto_api_service,
     )
     _notification_service = NotificationService(
@@ -78,6 +78,7 @@ async def async_main():
         notification_service=_notification_service,
         account_lookup_service=_account_lookup_service,
         vs_currency_service=_vs_currency_service,
+        crypto_currency_service=_crypto_currency_service,
     )
     print("Telegram Bot Token:", TELEGRAM_BOT_TOKEN)
     _telegram_bot = TelegramBot(
@@ -87,6 +88,7 @@ async def async_main():
         favorites_service=_favorites_service,
         notification_service=_notification_service,
         vs_currency_service=_vs_currency_service,
+        crypto_currency_service=_crypto_currency_service,
     )
     try:
         await asyncio.gather(_discord_bot.start(), _telegram_bot.start())

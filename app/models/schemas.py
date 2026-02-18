@@ -29,8 +29,8 @@ class VsCurrency(Base):
     __tablename__ = "vs_currencies"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    short_name: Mapped[str] = mapped_column(String(10), unique=True, index=True)
-    full_name: Mapped[str] = mapped_column(String(255))
+    symbol: Mapped[str] = mapped_column(String(10), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(255))
 
 
 class Notification(Base):
@@ -38,18 +38,18 @@ class Notification(Base):
     __table_args__ = (
         UniqueConstraint(
             "account_id",
-            "base_asset",
-            "quote_asset",
+            "crypto_symbol",
+            "vs_symbol",
             "direction",
             "target_price",
-            name="uq_account_base_quote",
+            name="uq_account_crypto_vs_direction_target",
         ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     account_id: Mapped[int] = mapped_column(Integer, ForeignKey("accounts.id"))
-    base_asset: Mapped[str] = mapped_column(String(255))
-    quote_asset: Mapped[str] = mapped_column(String(255))
+    crypto_symbol: Mapped[str] = mapped_column(String(255))
+    vs_symbol: Mapped[str] = mapped_column(String(255))
     direction: Mapped[NotificationDirection] = mapped_column(Enum(NotificationDirection))
     target_price: Mapped[float] = mapped_column(Float)
     already_hit: Mapped[bool] = mapped_column(default=False)
@@ -84,8 +84,8 @@ class Cryptocurrency(Base):
     __tablename__ = "cryptocurrencies"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    symbol: Mapped[str] = mapped_column(String(255), unique=True, index=True)
-    full_name: Mapped[str] = mapped_column(String(255))
+    symbol: Mapped[str] = mapped_column(String(25), unique=True, index=True)
+    name: Mapped[str] = mapped_column(String(255))
 
     favorited_by: Mapped[list[Account]] = relationship(
         "Account", secondary=favorites_table, back_populates="favorite_cryptos"

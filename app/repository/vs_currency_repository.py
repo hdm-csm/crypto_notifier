@@ -13,18 +13,11 @@ class VsCurrencyRepository:
         session.add_all(vs_currencies)
 
     def find_by_short_name(self, session: Session, short_name: str) -> VsCurrency | None:
-        return session.query(VsCurrency).filter(VsCurrency.short_name.ilike(short_name)).first()
+        return session.query(VsCurrency).filter(VsCurrency.symbol.ilike(short_name)).first()
 
-    def find_by_full_or_short_name(self, session: Session, name: str) -> VsCurrency | None:
-        return (
-            session.query(VsCurrency)
-            .filter(or_(VsCurrency.full_name.ilike(name), VsCurrency.short_name.ilike(name)))
-            .first()
-        )
-
-    def find_by_full_or_short_name_2(self, session: Session, input: str) -> VsCurrency | None:
+    def find_by_symbol_or_name(self, session: Session, input: str) -> VsCurrency | None:
         stmt = select(VsCurrency).where(
-            or_(VsCurrency.full_name.ilike(input), VsCurrency.short_name.ilike(input))
+            or_(VsCurrency.name.ilike(input), VsCurrency.symbol.ilike(input))
         )
         return session.execute(stmt).scalar_one_or_none()
 

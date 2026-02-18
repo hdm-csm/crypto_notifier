@@ -2,6 +2,7 @@
 
 # Favorites Commands
 COMMAND_ADD_FAV = "add_fav"
+COMMAND_ADD_FAVS = "add_favs"
 COMMAND_LIST_FAVS = "list_favs"
 COMMAND_REMOVE_FAV = "remove_fav"
 COMMAND_DROP_FAVS = "drop_favs"
@@ -19,11 +20,14 @@ COMMAND_SET_VS = "set_vs"
 
 # Crypto Info Commands
 COMMAND_INDEX = "index"
+COMMAND_TOP = "top"
 COMMAND_LIST = "list"
+
 
 # Command examples for error messages
 COMMAND_EXAMPLES = {
     COMMAND_ADD_FAV: f"\n`/{COMMAND_ADD_FAV} Bitcoin`",
+    COMMAND_ADD_FAVS: f"\n`/{COMMAND_ADD_FAVS} Bitcoin Ethereum`",
     COMMAND_REMOVE_FAV: f"\n`/{COMMAND_REMOVE_FAV} Bitcoin`",
     COMMAND_LIST_FAVS: f"\n`/{COMMAND_LIST_FAVS}`",
     COMMAND_DROP_FAVS: f"\n`/{COMMAND_DROP_FAVS}`",

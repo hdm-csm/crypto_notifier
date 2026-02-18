@@ -6,7 +6,7 @@ from app.models.enums import PlatformType
 
 @pytest.fixture
 def mock_vs_currency_usd(db_session):
-    vs_currency = VsCurrency(short_name="USD", full_name="US Dollar")
+    vs_currency = VsCurrency(symbol="USD", name="US Dollar")
     db_session.add(vs_currency)
     db_session.commit()
     return vs_currency
@@ -14,7 +14,7 @@ def mock_vs_currency_usd(db_session):
 
 @pytest.fixture
 def mock_vs_currency_eur(db_session):
-    vs_currency = VsCurrency(short_name="EUR", full_name="Euro")
+    vs_currency = VsCurrency(symbol="EUR", name="Euro")
     db_session.add(vs_currency)
     db_session.commit()
     return vs_currency
@@ -46,7 +46,7 @@ def mock_account_telegram(db_session, mock_vs_currency_eur):
 
 @pytest.fixture
 def mock_crypto_doge(db_session):
-    crypto = Cryptocurrency(symbol="DOGE", full_name="Dogecoin")
+    crypto = Cryptocurrency(symbol="DOGE", name="Dogecoin")
     db_session.add(crypto)
     db_session.commit()
     return crypto
@@ -54,7 +54,7 @@ def mock_crypto_doge(db_session):
 
 @pytest.fixture
 def mock_crypto_a(db_session):
-    crypto = Cryptocurrency(symbol="A", full_name="A-Coin")
+    crypto = Cryptocurrency(symbol="A", name="A-Coin")
     db_session.add(crypto)
     db_session.commit()
     return crypto
@@ -62,7 +62,7 @@ def mock_crypto_a(db_session):
 
 @pytest.fixture
 def mock_crypto_b(db_session):
-    crypto = Cryptocurrency(symbol="B", full_name="B-Coin")
+    crypto = Cryptocurrency(symbol="B", name="B-Coin")
     db_session.add(crypto)
     db_session.commit()
     return crypto

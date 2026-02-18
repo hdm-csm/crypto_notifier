@@ -3,9 +3,11 @@ from telegram.ext import Application, CommandHandler, ContextTypes
 from app.bots.telegram.decorators import with_session_and_account
 from app.bots.telegram.modules.base import AccountModule
 from app.services.account_lookup_service import AccountLookupService
+from app.services.crypto_currency_service import CryptoCurrencyService
 from app.services.notification_service import NotificationCheckResult, NotificationService
-from app.models.schemas import Account
-from app.models.enums import NotificationDirection
+from app.models.schemas import Account, Notification
+from app.models.enums import NotificationDirection, PlatformType
+from app.services.vs_currency_service import VsCurrencyService
 from app.utils.command_constants import (
     COMMAND_ADD_NOTIF,
     COMMAND_LIST_NOTIFS,
@@ -24,9 +26,13 @@ class NotificationsModule(AccountModule):
         app: Application,
         account_lookup_service: AccountLookupService,
         notification_service: NotificationService,
+        crypto_currency_service: CryptoCurrencyService,
+        vs_currency_service: VsCurrencyService,
     ):
         super().__init__(app, account_lookup_service)
         self._notification_service = notification_service
+        self._crypto_currency_service = crypto_currency_service
+        self._vs_currency_service = vs_currency_service
 
     def register(self):
         self._app.add_handler(CommandHandler(COMMAND_ADD_NOTIF, self.add_notif_command))
@@ -45,7 +51,7 @@ class NotificationsModule(AccountModule):
         """Check all notifications and send messages to users."""
         logging.info("[Telegram] - Checking notifications...")
         results: list[NotificationCheckResult] = (
-            await self._notification_service.check_all_notifications()
+            await self._notification_service.check_all_notifications(PlatformType.TELEGRAM)
         )
         for result in results:
             try:
@@ -58,6 +64,7 @@ class NotificationsModule(AccountModule):
                 logging.error(
                     f"[Telegram - check_notifications()]:\n Failed to send message to user {result.user_platform_id}: {e}"
                 )
+        logging.info("[Telegram] - Finished checking notifications.")
 
     @with_session_and_account
     async def add_notif_command(
@@ -72,12 +79,28 @@ class NotificationsModule(AccountModule):
 
         if not context.args or len(context.args) < 4:
             raise MissingCommandArguments(
-                COMMAND_ADD_NOTIF, "<base_asset> <quote_asset> <above|below> <price>"
+                COMMAND_ADD_NOTIF, "<crypto_symbol> <vs_symbol> <above|below> <price>"
             )
 
-        base_asset = context.args[0].upper()
-        quote_asset = context.args[1].upper()
+        crypto_symbol = context.args[0].upper()  # check if cur -> get symbol
+        vs_symbol = context.args[1].upper()  # check if vs -> get symbol
         direction_str = context.args[2].lower()
+
+        crypto_currency = self._crypto_currency_service.find_by_name_or_symbol(
+            db_session, crypto_symbol
+        )
+        if not crypto_currency or not crypto_currency.symbol:
+            await update.message.reply_text(
+                f"❌ Cryptocurrency '{crypto_symbol}' not found. Please check the name or symbol and try again."
+            )
+            return
+
+        vs_currency = self._vs_currency_service.find_by_symbol_or_name(db_session, vs_symbol)
+        if not vs_currency or not vs_currency.symbol:
+            await update.message.reply_text(
+                f"❌ Quote currency '{vs_symbol}' not found. Please check the name or symbol and try again."
+            )
+            return
 
         try:
             price = float(context.args[3])
@@ -97,11 +120,11 @@ class NotificationsModule(AccountModule):
                 await update.message.reply_text("❌ Direction must be 'above' or 'below'.")
             return
 
-        notification = self._notification_service.add_notification(
+        notification: Notification = self._notification_service.add_notification(
             session=db_session,
             account_id=account.id,
-            base_asset=base_asset,
-            quote_asset=quote_asset,
+            crypto_symbol=crypto_currency.symbol.upper(),
+            vs_symbol=vs_currency.symbol.upper(),
             direction=direction,
             target_price=price,
             already_hit=False,
@@ -109,7 +132,7 @@ class NotificationsModule(AccountModule):
 
         if update.message:
             await update.message.reply_text(
-                f"✅ Notification added:\n{notification.base_asset}/{notification.quote_asset} {notification.direction.value} {notification.target_price}"
+                f"✅ Notification added:\n{notification.crypto_symbol}-{notification.vs_symbol} {notification.direction.value} {notification.target_price}"
             )
 
     @with_session_and_account
@@ -136,7 +159,7 @@ class NotificationsModule(AccountModule):
         for notif in notifications:
             hit_indicator = "🔔" if notif.already_hit else "⏳"
             message += f"{hit_indicator} ID: {notif.id}\n"
-            message += f"  {notif.base_asset}/{notif.quote_asset} {notif.direction.value} {notif.target_price}\n\n"
+            message += f"  {notif.crypto_symbol}/{notif.vs_symbol} {notif.direction.value} {notif.target_price}\n\n"
 
         if update.message:
             await update.message.reply_text(message)

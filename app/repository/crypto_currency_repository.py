@@ -2,7 +2,6 @@ import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models.schemas import Cryptocurrency
-from app.models.dtos import CoinMarketData
 
 logger = logging.getLogger(__name__)
 
@@ -17,7 +16,7 @@ class CryptocurrencyRepository:
             session.query(Cryptocurrency)
             .filter(
                 (func.lower(Cryptocurrency.symbol) == func.lower(identifier))
-                | (func.lower(Cryptocurrency.full_name) == func.lower(identifier))
+                | (func.lower(Cryptocurrency.name) == func.lower(identifier))
             )
             .first()
             is not None
@@ -28,7 +27,7 @@ class CryptocurrencyRepository:
             db_session.query(Cryptocurrency)
             .filter(
                 (func.lower(Cryptocurrency.symbol) == func.lower(identifier))
-                | (func.lower(Cryptocurrency.full_name) == func.lower(identifier))
+                | (func.lower(Cryptocurrency.name) == func.lower(identifier))
             )
             .first()
         )
@@ -36,8 +35,6 @@ class CryptocurrencyRepository:
     def get_all(self, session: Session) -> list[Cryptocurrency]:
         return session.query(Cryptocurrency).all()
 
-    def store_all(self, session: Session, coins: list[CoinMarketData]):
-        new_cryptos = [
-            Cryptocurrency(symbol=coin.symbol.upper(), full_name=coin.name) for coin in coins
-        ]
+    def store_all(self, session: Session, coins: list[Cryptocurrency]):
+        new_cryptos = [Cryptocurrency(symbol=coin.symbol.upper(), name=coin.name) for coin in coins]
         session.add_all(new_cryptos)

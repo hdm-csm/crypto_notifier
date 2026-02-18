@@ -41,3 +41,17 @@ class CoinMarketData:
     atl_date: str
     roi: Optional[str]
     last_updated: str
+
+
+@dataclass
+class TickerResult:
+    symbol: str  # The requested symbol (e.g. "BTC-EUR")
+    price: Optional[float]  # The price (None if not found)
+    currency: str  # The quote currency (e.g. "EUR")
+    found: bool = False  # True if data was successfully retrieved
+    is_calculated: bool = False  # True if we derived this via USD conversion fallback
+
+    def __repr__(self):
+        # Makes debugging easier: print(result) will show this
+        status = f"{self.price:.2f}" if self.price else "No Data"
+        return f"<TickerResult {self.symbol}: {status} {self.currency}>"
