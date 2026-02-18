@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict, Any
 import httpx
 import json
 
@@ -98,21 +98,23 @@ class CryptoApiService:
         currency_display = get_currency_display(vs_currency_symbol)
         return f"{crypto_symbol.upper()}: {current_price:.2f} {currency_display}"
 
-    async def get_indexes(self, crypto_symbols: list[str], vs_currency_symbol: str = "eur") -> str:
-        if not crypto_symbols:
-            return "No symbols provided."
+    async def fetch_ticker_prices(self, tickers: List[str]) -> Dict[str, Dict[str, Any]]:
+        """
+        Fetches prices for a specific list of tickers (e.g. ['BTC-EUR', 'ETH-USD']).
+        If a non-USD pair fails, it attempts to calculate it via USD conversion.
+        """
+        if not tickers:
+            return {}
 
-        vs_currency = vs_currency_symbol.upper().strip()
+        # Normalize inputs (uppercase, strip)
+        clean_tickers = [t.upper().strip() for t in tickers]
         results = {}
-        failed_symbols = []
+        failed_tickers = []
 
-        # --- PHASE 1: Try Direct Tickers (e.g. BTC-EUR) ---
-        direct_map = {s: f"{s.upper().strip()}-{vs_currency}" for s in crypto_symbols}
-        direct_tickers = list(direct_map.values())
-
-        # We use period="5d" to be safe, but "1d" is usually enough for direct crypto pairs (24/7 market)
+        # --- PHASE 1: Direct Download ---
+        # We download exactly what was asked for.
         data_direct = yf.download(
-            " ".join(direct_tickers),
+            " ".join(clean_tickers),
             period="5d",
             interval="1m",
             group_by="ticker",
@@ -120,122 +122,137 @@ class CryptoApiService:
             threads=True,
         )
 
-        currency_display = get_currency_display(vs_currency)
         is_multi_direct = isinstance(data_direct.columns, pd.MultiIndex)
 
-        for symbol_raw, ticker_direct in direct_map.items():
-            price_found = False
-            try:
-                # Extract the Series for this specific ticker
-                price_series = None
-                if is_multi_direct:
-                    if ticker_direct in data_direct.columns:
-                        price_series = data_direct[ticker_direct]["Close"]
-                else:
-                    # Handle case where only 1 ticker was requested/returned
-                    # If the user asked for 1 symbol, yfinance returns flat columns
-                    if "Close" in data_direct.columns:
-                        # Double check if the single result matches what we wanted
-                        # (If we asked for BTC-EUR and got it, good. If we asked for multiple and got 1, tricky)
-                        price_series = data_direct["Close"]
+        # Helper to extract price safely
+        def extract_price(df, tick, is_multi):
+            series = None
+            if is_multi:
+                if tick in df.columns:
+                    series = df[tick]["Close"]
+            elif "Close" in df.columns:
+                # If only 1 ticker was requested, yfinance returns flattened columns
+                # Verify this is the data we want (simple check)
+                series = df["Close"]
 
-                # Check if we have valid data (not all NaNs)
-                if price_series is not None:
-                    valid_prices = price_series.dropna()
-                    if not valid_prices.empty:
-                        last_price = valid_prices.iloc[-1]
-                        results[symbol_raw] = (
-                            f"{symbol_raw.upper()}: {float(last_price):.2f} {currency_display}"
-                        )
-                        price_found = True
-            except Exception:
-                pass  # Fail silently here, add to failed list below
+            if series is not None:
+                valid = series.dropna()
+                if not valid.empty:
+                    return float(valid.iloc[-1])
+            return None
 
-            if not price_found:
-                failed_symbols.append(symbol_raw)
+        for tick in clean_tickers:
+            price = extract_price(data_direct, tick, is_multi_direct)
 
-        # --- PHASE 2: Fallback Calculation (Only for failed symbols) ---
-        if failed_symbols and vs_currency != "USD":
-            # 1. Prepare Fallback Tickers
-            usd_map = {s: f"{s.upper().strip()}-USD" for s in failed_symbols}
-            usd_tickers = list(usd_map.values())
+            if price is not None:
+                # Parse currency from ticker (e.g. "BTC-EUR" -> "EUR")
+                parts = tick.split("-")
+                currency = parts[1] if len(parts) > 1 else "USD"
 
-            # Currency conversion tickers
-            forex_ticker_std = f"{vs_currency}=X"  # e.g., EUR=X (USD -> EUR)
-            forex_ticker_inv = f"{vs_currency}USD=X"  # e.g., XAUUSD=X (Gold -> USD)
+                results[tick] = {
+                    "price": price,
+                    "currency": currency,
+                    "is_calculated": False,
+                    "found": True,
+                }
+            else:
+                failed_tickers.append(tick)
+                results[tick] = {"found": False}
 
-            # Download batch: Crypto-USD + Forex rates
-            # We MUST use period="5d" here. If it's Sunday, Forex is closed.
-            # We need Friday's close for currency, but Sunday's close for Crypto.
-            fallback_tickers = usd_tickers + [forex_ticker_std, forex_ticker_inv]
+        # --- PHASE 2: Fallback Logic (Per Ticker) ---
+        # If BTC-EUR failed, we need to fetch BTC-USD and EUR=X
+        fallback_map = {}  # Maps original_ticker -> { 'base_usd': 'BTC-USD', 'forex': 'EUR=X' }
+        needed_fallback_tickers = set()
+
+        for fail_tick in failed_tickers:
+            if "-" in fail_tick:
+                base, quote = fail_tick.split("-")
+                if quote != "USD":
+                    # Construct fallback requirements
+                    base_usd = f"{base}-USD"
+                    forex = f"{quote}=X"  # USD -> Quote rate (e.g. EUR=X is 0.95)
+
+                    fallback_map[fail_tick] = {"base_usd": base_usd, "forex": forex}
+                    needed_fallback_tickers.add(base_usd)
+                    needed_fallback_tickers.add(forex)
+
+        if needed_fallback_tickers:
             data_fallback = yf.download(
-                " ".join(fallback_tickers),
-                period="5d",
+                " ".join(needed_fallback_tickers),
+                period="5d",  # 5d to catch Friday close if it's Sunday
                 interval="1m",
                 group_by="ticker",
                 progress=False,
                 threads=True,
             )
-
             is_multi_fallback = isinstance(data_fallback.columns, pd.MultiIndex)
 
-            # Helper to get last price from fallback data
-            def get_price_from_data(df, ticker, is_multi):
-                series = None
-                if is_multi:
-                    if ticker in df.columns:
-                        series = df[ticker]["Close"]
-                elif "Close" in df.columns:
-                    series = df["Close"]
+            for original_tick, reqs in fallback_map.items():
+                price_base_usd = extract_price(data_fallback, reqs["base_usd"], is_multi_fallback)
+                rate_forex = extract_price(data_fallback, reqs["forex"], is_multi_fallback)
 
-                if series is not None:
-                    valid = series.dropna()
-                    if not valid.empty:
-                        return float(valid.iloc[-1])
-                return None
+                if price_base_usd and rate_forex:
+                    # Calc: BTC(USD) * EUR=X (rate)
+                    final_price = price_base_usd * rate_forex
+                    currency = original_tick.split("-")[1]
 
-            # Get Forex Rates
-            rate_std = get_price_from_data(data_fallback, forex_ticker_std, is_multi_fallback)
-            rate_inv = get_price_from_data(data_fallback, forex_ticker_inv, is_multi_fallback)
+                    results[original_tick] = {
+                        "price": final_price,
+                        "currency": currency,
+                        "is_calculated": True,
+                        "found": True,
+                    }
 
-            for symbol_raw in failed_symbols:
-                ticker_usd = usd_map[symbol_raw]
-                price_usd = get_price_from_data(data_fallback, ticker_usd, is_multi_fallback)
+        return results
 
-                final_price = None
+    def format_ticker_message(self, data: Dict[str, Dict[str, Any]], ordered_tickers: List[str]) -> str:
+        """
+        Formats the output. Handles the fact that currencies might differ line-by-line.
+        """
+        if not data:
+            return "No tickers provided."
 
-                if price_usd is not None:
-                    # Strategy A: Multiply (USD -> Target) e.g. BTC(90k) * EUR=X(0.95)
-                    if rate_std is not None:
-                        final_price = price_usd * rate_std
-
-                    # Strategy B: Divide (Target -> USD) e.g. BTC(90k) / XAU(2600)
-                    elif rate_inv is not None and rate_inv != 0:
-                        final_price = price_usd / rate_inv
-
-                if final_price is not None:
-                    results[symbol_raw] = (
-                        f"{symbol_raw.upper()}: {final_price:.2f} {currency_display} (calc)"
-                    )
-                else:
-                    results[symbol_raw] = f"{symbol_raw.upper()}: data not found"
-
-        elif failed_symbols and vs_currency == "USD":
-            # If target is USD and it failed Phase 1, we can't calculate anything better.
-            for s in failed_symbols:
-                results[s] = f"{s.upper()}: data not found"
-
-        # Construct final output string in original order
         final_output = []
-        for s in crypto_symbols:
-            # We key by the raw symbol name
-            if s in results:
-                final_output.append(results[s])
-            else:
-                # Should theoretically not happen given logic above
-                final_output.append(f"{s}: Error processing")
+
+        for tick in ordered_tickers:
+            # Normalize key to match what's in 'data'
+            key = tick.upper().strip()
+            item = data.get(key)
+
+            if not item or not item.get("found"):
+                final_output.append(f"{key}: data not found")
+                continue
+
+            price = item["price"]
+            currency = item["currency"]
+            is_calc = item["is_calculated"]
+
+            # Try to use your helper for symbols (€, £), otherwise fallback to text (EUR)
+            try:
+                # Assuming self.get_currency_display exists or imported
+                curr_symbol = get_currency_display(currency)
+            except NameError:
+                curr_symbol = currency
+
+            price_str = f"{float(price):.2f}"
+            calc_note = " (calc)" if is_calc else ""
+
+            # Format: BTC-EUR: 95000.00 €
+            final_output.append(f"{key}: {price_str} {curr_symbol}{calc_note}")
 
         return "\n".join(final_output)
+
+    async def get_prices(self, tickers: list[str]) -> str:
+        """
+        Input: ["BTC-EUR", "ETH-USD", "SOL-GBP"]
+        """
+        # 1. Fetch Data
+        price_data = await self.fetch_ticker_prices(tickers)
+
+        # 2. Format Message
+        message = self.format_ticker_message(price_data, tickers)
+
+        return message
 
     async def get_coingecko_supported_vs_currencies(self) -> list[str]:
         url = f"{self.COINGECKO_BASE_URL}/simple/supported_vs_currencies"
