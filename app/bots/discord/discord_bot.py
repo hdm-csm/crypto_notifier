@@ -43,7 +43,12 @@ class DiscordBot:
 
         intents = discord.Intents.default()
         intents.message_content = True
-        self.bot = CustomDiscordBot(command_prefix="/", intents=intents)
+
+        self.bot = CustomDiscordBot(
+            account_lookup_service=account_lookup_service,
+            command_prefix="/",
+            intents=intents,
+        )
 
         @self.bot.event
         async def on_ready():

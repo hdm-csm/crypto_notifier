@@ -37,11 +37,8 @@ class CryptoCurrencyService:
             db_session
         )
         if not crypto_currencies:
-            return "No cryptocurrencies found."
-
-        title = "List of all supported cryptocurrencies:"
-        header = "Name (Symbol)"
-        separator = "-" * len(header)
-        rows = [title, "", header, separator]
-        rows.extend([f"{coin.name} ({coin.symbol})" for coin in crypto_currencies])
-        return "\n".join(rows)
+            return "❌ No cryptocurrencies found in the system.\n Please try again later."
+        message = "📋 **All Supported Cryptocurrencies**\n"
+        message += "━" * 50 + "\n\n"
+        message += "\n".join([f"{coin.name} ({coin.symbol})" for coin in crypto_currencies])
+        return message

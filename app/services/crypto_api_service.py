@@ -39,12 +39,28 @@ class CryptoApiService:
     async def get_top_crypto_currencies_str(self, amount: int, vs_currency: str = "eur") -> str:
         coins = await self.get_top_crypto_currencies(amount, vs_currency)
         currency_display = get_currency_display(vs_currency)
-        message = "Top 10 Cryptocurrencies by Market Cap:\n\n"
+        message = f"📊 **Top {amount} Cryptocurrencies by Market Cap**\n"
+        message += "━" * 50 + "\n\n"
         for coin in coins:
-            message += f"{coin.market_cap_rank}. {coin.name} ({coin.symbol.upper()})\n"
-            message += f"   Price: {coin.current_price:.2f} {currency_display}\n"
-            message += f"   Market Cap: {coin.market_cap:,} {currency_display}\n"
-            message += f"   Index ID: {coin.id}\n\n"
+            medal = (
+                "🥇"
+                if coin.market_cap_rank == 1
+                else (
+                    "🥈"
+                    if coin.market_cap_rank == 2
+                    else "🥉" if coin.market_cap_rank == 3 else "  "
+                )
+            )
+            message += f"{medal} **#{coin.market_cap_rank}. {coin.name}** ({coin.symbol.upper()})\n"
+            message += f"   💰 {coin.current_price:,.2f} {currency_display}\n"
+            market_cap = coin.market_cap
+            if market_cap >= 1_000_000_000:
+                market_cap_str = f"{market_cap / 1_000_000_000:.1f}B"
+            elif market_cap >= 1_000_000:
+                market_cap_str = f"{market_cap / 1_000_000:.1f}M"
+            else:
+                market_cap_str = f"{market_cap:,.0f}"
+            message += f"   📈 Market Cap: {market_cap_str} {currency_display}\n\n"
         return message
 
     async def get_index(self, crypto_symbol: str, vs_currency_symbol: str = "eur") -> str:
