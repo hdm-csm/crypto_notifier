@@ -67,7 +67,7 @@ docker compose -f docker-compose.test.yml --env-file .env.test up -d --build
 ```
 
 ```
-docker exec crypto_notifier_app_test pytest -v
+   docker exec crypto_notifier_app_test pytest -v
 ```
 
 # Branching and deployment Strategy

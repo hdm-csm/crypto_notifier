@@ -105,7 +105,7 @@ def test_is_empty(db_session):
     assert repo.is_empty(db_session) is True
 
     # Dummy Crypto einfügen
-    crypto = Cryptocurrency(symbol="ETH", full_name="Ethereum")
+    crypto = Cryptocurrency(symbol="ETH", name="Ethereum")
     db_session.add(crypto)
     db_session.commit()
 

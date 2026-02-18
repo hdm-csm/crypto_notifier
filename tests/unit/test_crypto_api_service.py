@@ -89,63 +89,16 @@ async def test_list_top_crypto_currencies_success():
     assert result[1].id == "ethereum"
 
 
-# Simuliert die Detail-API
+# Simuliert die get_index Methode mit yfinance
 @pytest.mark.asyncio
-async def test_get_index_success():
+async def test_get_index_success(mocker):
     # --- SETUP ---
     mock_client = AsyncMock()
-
-    api_response_data = {
-        "bitcoin": {
-            "eur": 45000.50,
-            "usd": 50000.00,
-            "eur_market_cap": 900000000000,
-            "eur_24h_vol": 30000000000,
-            "eur_24h_change": 2.5,
-            "last_updated_at": 1234567890,
-        }
-    }
-
-    mock_response = MagicMock()
-    mock_response.text = json.dumps(api_response_data)
-    mock_client.get.return_value = mock_response
-
+    mock_ticker = MagicMock()
+    mock_ticker.fast_info = {"last_price": 42500.50}
+    mock_yf = mocker.patch("app.services.crypto_api_service.yf.Ticker", return_value=mock_ticker)
     service = CryptoApiService(mock_client)
-
-    # --- EXECUTION ---
-    price = await service.get_index(" Bitcoin ")
-
-    # --- ASSERTION ---
-    # Prüfen ob die URL korrekt gebaut wurde (lowercase und stripped)
-    mock_client.get.assert_called_once()
-    args, kwargs = mock_client.get.call_args
-    assert "https://api.coingecko.com/api/v3/simple/price" in args[0]
-    assert kwargs["params"]["ids"] == "bitcoin"
-    assert kwargs["params"]["vs_currencies"] == "eur"
-
-    # Prüfen ob der Preis korrekt extrahiert wurde
-    assert price == 45000.50
-    assert isinstance(price, float)
-
-
-# Simuliert den Fall, dass ein Coin nicht existiert
-@pytest.mark.asyncio
-async def test_get_index_not_found_or_invalid_structure():
-    # --- SETUP ---
-    mock_client = AsyncMock()
-
-    # Szenario 1: API liefert leeres JSON oder Fehler (Coin nicht gefunden)
-    api_response_data = {"error": "Could not find coin with the given id"}
-
-    mock_response = MagicMock()
-    mock_response.text = json.dumps(api_response_data)
-    mock_client.get.return_value = mock_response
-
-    service = CryptoApiService(mock_client)
-
-    # --- EXECUTION ---
-    result = await service.get_index("unknown-coin")
-
-    # --- ASSERTION ---
-    # Der Service sollte None zurückgeben, wenn er den Pfad market_data -> current_price -> eur nicht findet
-    assert result is None
+    result = await service.get_index("btc", "eur")
+    mock_yf.assert_called_once_with("BTC-EUR")
+    assert "BTC: 42500.50 €" in result
+    assert isinstance(result, str)
