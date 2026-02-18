@@ -1,11 +1,13 @@
 import asyncio
 import logging
+from typing import List
 import discord
 from discord.ext import commands
 from discord import app_commands
 from app.bots.discord.cogs.base import AccountCog
 from app.bots.discord.custom_context import CustomContext
 from app.db import session_scope
+from app.models.schemas import Cryptocurrency
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
 from app.services.crypto_currency_service import CryptoCurrencyService
@@ -68,6 +70,19 @@ class CrpytoInfoCog(AccountCog):
             )
             return
 
+    @_index.autocomplete("crypto_currency_input")
+    async def _index_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> List[app_commands.Choice[str]]:
+        with session_scope() as db_session:
+            all_cryptos: list[Cryptocurrency] = self._crypto_currency_service.get_all(db_session)
+            filtered = [
+                c
+                for c in all_cryptos
+                if current.lower() in c.symbol.lower() or current.lower() in c.name.lower()
+            ]
+            return [app_commands.Choice(name=c.name, value=c.symbol) for c in filtered][:25]
+
     @commands.command(name=COMMAND_TOP)
     async def _top(self, ctx: CustomContext, amount: int = 10):
         vs_currency = "eur"
@@ -80,7 +95,7 @@ class CrpytoInfoCog(AccountCog):
 
     @commands.command(name=COMMAND_LIST)
     async def _list(self, ctx: CustomContext):
-        answer: str = self._crypto_currency_service.get_all(ctx.db_session)
+        answer: str = self._crypto_currency_service.get_list(ctx.db_session)
         if not answer:
             answer = "❌ No cryptocurrencies found in the system.\n Please try again later."
         await ctx.send(answer)

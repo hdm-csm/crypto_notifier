@@ -89,7 +89,7 @@ class CryptoInfoModule(AccountModule):
     ) -> None:
         if update.message is None:
             return
-        answer: str = self._crypto_currency_service.get_all(db_session)
+        answer: str = self._crypto_currency_service.get_list(db_session)
         if not answer:
             answer = "❌ No cryptocurrencies found in the system.\n Please try again later."
         await update.message.reply_text(answer)

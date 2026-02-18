@@ -29,7 +29,10 @@ class CryptoCurrencyService:
     def find_by_name_or_symbol(self, db_session: Session, input: str) -> Cryptocurrency | None:
         return self._crypto_currency_repository.find_by_name_or_symbol(db_session, input)
 
-    def get_all(self, db_session: Session) -> str:
+    def get_all(self, db_session: Session) -> list[Cryptocurrency]:
+        return self._crypto_currency_repository.get_all(db_session)
+
+    def get_list(self, db_session: Session) -> str:
         crypto_currencies: list[Cryptocurrency] = self._crypto_currency_repository.get_all(
             db_session
         )
