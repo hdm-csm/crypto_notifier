@@ -38,18 +38,18 @@ class Notification(Base):
     __table_args__ = (
         UniqueConstraint(
             "account_id",
-            "base_asset",
-            "quote_asset",
+            "crypto_symbol",
+            "vs_symbol",
             "direction",
             "target_price",
-            name="uq_account_base_quote",
+            name="uq_account_crypto_vs_direction_target",
         ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     account_id: Mapped[int] = mapped_column(Integer, ForeignKey("accounts.id"))
-    base_asset: Mapped[str] = mapped_column(String(255))
-    quote_asset: Mapped[str] = mapped_column(String(255))
+    crypto_symbol: Mapped[str] = mapped_column(String(255))
+    vs_symbol: Mapped[str] = mapped_column(String(255))
     direction: Mapped[NotificationDirection] = mapped_column(Enum(NotificationDirection))
     target_price: Mapped[float] = mapped_column(Float)
     already_hit: Mapped[bool] = mapped_column(default=False)

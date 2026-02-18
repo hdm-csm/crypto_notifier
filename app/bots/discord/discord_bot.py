@@ -80,6 +80,8 @@ class DiscordBot:
             account_lookup_service=self._account_lookup_service,
             notification_service=self._notification_service,
             crypto_api_service=self._crypto_api_service,
+            crypto_currency_service=self._crypto_currency_service,
+            vs_currency_service=self._vs_currency_service,
             bot=self.bot,
         )
         charts_cog = ChartsCog(bot=self.bot)

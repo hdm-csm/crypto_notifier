@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.db import session_scope
 from app.repository.notification_repository import NotificationRepository
 from app.models.schemas import Notification
-from app.models.enums import NotificationDirection
+from app.models.enums import NotificationDirection, PlatformType
 from typing import NamedTuple
 from app.utils.exceptions import InvalidNotificationArguments
 
@@ -29,15 +29,15 @@ class NotificationService:
         self._crypto_api_service = crypto_api_service
 
     def validate_and_parse_notification_args(
-        self, base_asset: str, quote_asset: str, direction: str, price: str
+        self, crypto_symbol: str, vs_symbol: str, direction: str, price: str
     ) -> tuple[str, str, NotificationDirection, float]:
         """
         Validate and parse notification arguments.
         Raises InvalidNotificationArguments if validation fails.
-        Returns tuple of (base_asset, quote_asset, direction_enum, price_float)
+        Returns tuple of (crypto_symbol, vs_symbol, direction_enum, price_float)
         """
         usage_hint = (
-            "Usage: `/add_notif <base_asset> <quote_asset> <above|below> <price>`\n"
+            "Usage: `/add_notif <crypto_symbol> <vs_symbol> <above|below> <price>`\n"
             "Example: `/add_notif BTC USD above 50000`"
         )
 
@@ -58,24 +58,25 @@ class NotificationService:
             else NotificationDirection.BELOW
         )
 
-        return base_asset.upper(), quote_asset.upper(), direction_enum, price_float
+        return crypto_symbol.upper(), vs_symbol.upper(), direction_enum, price_float
 
     def add_notification(
         self,
         session: Session,
         account_id: int,
-        base_asset: str,
-        quote_asset: str,
+        crypto_symbol: str,
+        vs_symbol: str,
         direction: NotificationDirection,
         target_price: float,
         already_hit: bool = False,
     ) -> Notification:
         """Add a new notification for an account"""
+
         return self._notification_repository.add(
             session=session,
             account_id=account_id,
-            base_asset=base_asset,
-            quote_asset=quote_asset,
+            crypto_symbol=crypto_symbol,
+            vs_symbol=vs_symbol,
             direction=direction,
             target_price=target_price,
             already_hit=already_hit,
@@ -96,6 +97,12 @@ class NotificationService:
     def list_all_notifications(self, session: Session) -> list[Notification]:
         """List all notifications in the system"""
         return self._notification_repository.list_all(session=session)
+
+    def list_notifications_by_platform(
+        self, session: Session, platform: PlatformType
+    ) -> list[Notification]:
+        """List all notifications for a specific platform"""
+        return self._notification_repository.list_by_platform(session=session, platform=platform)
 
     def get_notification(self, session: Session, notification_id: int) -> Notification | None:
         """Get a specific notification by ID"""
@@ -134,12 +141,12 @@ class NotificationService:
                 session=session, notification_id=notif.id, already_hit=True
             )
             logging.info(
-                f"Notification triggered for {notif.base_asset}/{notif.quote_asset} "
+                f"Notification triggered for {notif.crypto_symbol}/{notif.vs_symbol} "
                 f"{notif.direction.value} {notif.target_price} (current: {current_price})"
             )
             message = (
                 f"🔔 *Notification Alert (ID: {notif.id})*\n\n"
-                f"{notif.base_asset}/{notif.quote_asset} has gone {notif.direction.value}\n"
+                f"{notif.crypto_symbol}/{notif.vs_symbol} has gone {notif.direction.value}\n"
                 f"Target: {notif.target_price}\n"
                 f"Current Price: *{current_price}*\n"
             )
@@ -150,7 +157,7 @@ class NotificationService:
                 session=session, notification_id=notif.id, already_hit=False
             )
             logging.info(
-                f"Notification reset for {notif.base_asset}/{notif.quote_asset} "
+                f"Notification reset for {notif.crypto_symbol}/{notif.vs_symbol} "
                 f"(current: {current_price})"
             )
 
@@ -160,9 +167,12 @@ class NotificationService:
             message=message,
         )
 
-    async def check_all_notifications(self) -> list[NotificationCheckResult]:
+    async def check_all_notifications(
+        self, platform: PlatformType
+    ) -> list[NotificationCheckResult]:
         """
-        Check all notifications and process state changes.
+        Check all notifications for a specific platform and process state changes.
+        Fetches all prices in a single batch call for efficiency.
         Returns a list of results for notifications that were triggered or reset.
         """
         results = []
@@ -170,17 +180,31 @@ class NotificationService:
             if self._crypto_api_service is None:
                 logging.error("Crypto API service not set for notification checking")
                 return []
-            notifications = self.list_all_notifications(session=db_session)
+
+            notifications = self.list_notifications_by_platform(
+                session=db_session, platform=platform
+            )
+            if not notifications:
+                return []
+
+            # Build tickers list from all notifications (format: "BASE-QUOTE")
+            tickers = [f"{notif.crypto_symbol}-{notif.vs_symbol}" for notif in notifications]
+
+            # Fetch all prices in a single call
+            ticker_results = await self._crypto_api_service.fetch_ticker_prices(tickers)
+
+            # Process each notification with its corresponding price
             for notif in notifications:
                 try:
-                    current_price = await self._crypto_api_service.get_notification_index(
-                        base_asset=notif.base_asset, quote_asset=notif.quote_asset
-                    )
-                    if current_price is None:
-                        logging.warning(
-                            f"Could not fetch price for {notif.base_asset}/{notif.quote_asset}"
-                        )
+                    ticker_key = f"{notif.crypto_symbol}-{notif.vs_symbol}"
+                    ticker_result = ticker_results.get(ticker_key)
+
+                    # Skip if price data not found
+                    if not ticker_result or not ticker_result.found or ticker_result.price is None:
+                        logging.warning(f"Could not fetch price for {ticker_key}")
                         continue
+
+                    current_price = ticker_result.price
                     result = self.check_and_process_notification(
                         session=db_session, notif=notif, current_price=current_price
                     )
@@ -188,4 +212,5 @@ class NotificationService:
                         results.append(result)
                 except Exception as e:
                     logging.error(f"Error checking notification {notif.id}: {e}")
+
         return results

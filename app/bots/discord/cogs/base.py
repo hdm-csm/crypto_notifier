@@ -48,8 +48,8 @@ class AccountCog(commands.Cog):
         assert isinstance(ctx, CustomContext)
         if hasattr(ctx, "db_session") and not ctx.command_failed:
             try:
-                logging.info("Committing current db session.")
                 ctx.db_session.commit()
+                logging.info("Committed current db session.")
             finally:
                 ctx.db_session.close()
         return await super().cog_after_invoke(ctx)

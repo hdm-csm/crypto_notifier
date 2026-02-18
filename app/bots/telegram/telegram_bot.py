@@ -38,7 +38,13 @@ class TelegramBot:
 
         self._modules: list[AccountModule] = [
             FavoritesModule(self._app, account_lookup_service, favorites_service),
-            NotificationsModule(self._app, account_lookup_service, notification_service),
+            NotificationsModule(
+                self._app,
+                account_lookup_service=account_lookup_service,
+                notification_service=notification_service,
+                crypto_currency_service=crypto_currency_service,
+                vs_currency_service=vs_currency_service,
+            ),
             CryptoInfoModule(
                 self._app, account_lookup_service, crypto_currency_service, crypto_api_service
             ),

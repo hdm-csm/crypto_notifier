@@ -1,7 +1,7 @@
 import logging
 from sqlalchemy.orm import Session
-from app.models.schemas import Notification
-from app.models.enums import NotificationDirection
+from app.models.schemas import Notification, Account
+from app.models.enums import NotificationDirection, PlatformType
 
 logger = logging.getLogger(__name__)
 
@@ -12,8 +12,8 @@ class NotificationRepository:
         self,
         session: Session,
         account_id: int,
-        base_asset: str,
-        quote_asset: str,
+        crypto_symbol: str,
+        vs_symbol: str,
         direction: NotificationDirection,
         target_price: float,
         already_hit: bool = False,
@@ -21,8 +21,8 @@ class NotificationRepository:
         """Create and add a new notification"""
         new_notification = Notification(
             account_id=account_id,
-            base_asset=base_asset,
-            quote_asset=quote_asset,
+            crypto_symbol=crypto_symbol,
+            vs_symbol=vs_symbol,
             direction=direction,
             target_price=target_price,
             already_hit=already_hit,
@@ -31,7 +31,7 @@ class NotificationRepository:
         session.flush()
         session.refresh(new_notification)
         logging.info(
-            f"Created notification for account {account_id}: {base_asset}/{quote_asset} {direction.value} {target_price}"
+            f"Created notification for account {account_id}: {crypto_symbol}/{vs_symbol} {direction.value} {target_price}"
         )
         return new_notification
 
@@ -55,6 +55,10 @@ class NotificationRepository:
     def list_all(self, session: Session) -> list[Notification]:
         """List all notifications"""
         return session.query(Notification).all()
+
+    def list_by_platform(self, session: Session, platform: PlatformType) -> list[Notification]:
+        """List all notifications for a specific platform"""
+        return session.query(Notification).join(Account).filter(Account.platform == platform).all()
 
     def get_by_id(self, session: Session, notification_id: int) -> Notification | None:
         """Get a notification by ID"""

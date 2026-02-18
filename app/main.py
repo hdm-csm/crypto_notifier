@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import httpx
+from app.services import vs_currency_service
 from config import Config
 from app.bots.discord.discord_bot import DiscordBot
 from app.bots.telegram.telegram_bot import TelegramBot

@@ -52,15 +52,10 @@ class FavoritesService:
         vs_currency = "eur"
         if account and account.selected_vs_currency:
             vs_currency = account.selected_vs_currency.symbol.lower()
-
         crypto_symbols = [crypto.symbol for crypto in favorites]
-        # prices_str = await self._crypto_api_service.get_indexes(
-        #     crypto_symbols=crypto_symbols, vs_currency_symbol=vs_currency
-        # )
         prices_str = await self._crypto_api_service.get_prices(
             tickers=[f"{symbol}-{vs_currency}" for symbol in crypto_symbols]
         )
-
         message = "Your Favorite Cryptocurrencies:\n\n"
         message += prices_str
         return message
