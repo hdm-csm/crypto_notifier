@@ -3,7 +3,6 @@ from discord.ui import View, Button
 from typing import Dict, Any, Callable
 
 
-# 1. Create a Type-Safe Button Subclass
 class TimeButton(Button["ChartView"]):
     def __init__(self, label: str, config: Dict[str, Any], is_selected: bool):
         style = discord.ButtonStyle.primary if is_selected else discord.ButtonStyle.secondary
@@ -59,18 +58,8 @@ class ChartView(View):
             "All": {"period": "max", "interval": "3mo"},
         }
 
-        # Create button instances and add them
-        # for label, config in self.time_map.items():
-        #     is_selected = label == initial_label
-        #     button = TimeButton(label=label, config=config, is_selected=is_selected)
-        #     self.add_item(button)
         for i, (label, config) in enumerate(self.time_map.items()):
             is_selected = label == initial_label
-
             button = TimeButton(label=label, config=config, is_selected=is_selected)
-
-            # Integer division: 0//4 = 0, 1//4 = 0 ... 4//4 = 1
-            # Indices 0-3 go to Row 0, Indices 4-7 go to Row 1
             button.row = i // 4
-
             self.add_item(button)
