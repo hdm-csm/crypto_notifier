@@ -53,7 +53,7 @@ class CryptoInfoModule(AccountModule):
         vs_currency_symbol = "eur"
         if account and account.selected_vs_currency:
             vs_currency_symbol = account.selected_vs_currency.symbol.lower()
-        answer: str = await self._crypto_api_service.get_index_2(
+        answer: str = await self._crypto_api_service.get_index(
             crypto_symbol=cryptocurrency.symbol, vs_currency_symbol=vs_currency_symbol
         )
         if update.message:

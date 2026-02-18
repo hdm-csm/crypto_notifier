@@ -50,7 +50,7 @@ class CrpytoInfoCog(AccountCog):
                 try:
                     # Wait maximum 3 seconds for the API call
                     answer = await asyncio.wait_for(
-                        self._crypto_api_service.get_index_2(
+                        self._crypto_api_service.get_index(
                             crypto_symbol=cryptocurrency.symbol,
                             vs_currency_symbol=vs_currency_symbol,
                         ),

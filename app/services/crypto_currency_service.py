@@ -17,16 +17,13 @@ class CryptoCurrencyService:
     async def init_crypto_currencies(self):
         with session_scope() as session:
             if self._crypto_currency_repository.is_empty(session):
-                coins = await self._crypto_api_service.get_top_crypto_currencies(amount=1000)
-
-                # Filter out duplicates by symbol
+                coins = await self._crypto_api_service.get_yfinance_supported_crypto_currencies()
                 seen_symbols = set()
                 unique_coins = []
                 for coin in coins:
                     if coin.symbol not in seen_symbols:
                         seen_symbols.add(coin.symbol)
                         unique_coins.append(coin)
-
                 self._crypto_currency_repository.store_all(session, unique_coins)
 
     def find_by_name_or_symbol(self, db_session: Session, input: str) -> Cryptocurrency | None:

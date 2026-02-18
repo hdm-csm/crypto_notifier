@@ -46,8 +46,6 @@ async def async_main():
     _http_client = httpx.AsyncClient()
     _crypto_api_service = CryptoApiService(_http_client)
 
-    await _crypto_api_service.get_index_2("bitcoin", "usd")
-
     _account_lookup_service = AccountLookupService(
         account_repository=_account_repository, vs_currency_repository=_vs_currency_repository
     )
