@@ -56,7 +56,7 @@ async def test_full_favorite_lifecycle(db_session, mocker):
 
     # Favorit hinzufügen
     response_add = favorites_service.add_favorite(db_session, account, "bitcoin")
-    assert "Saved bitcoin as your favorite cryptocurrency!" in response_add
+    assert "Added Bitcoin (BTC) to favorites." in response_add
 
     # Prüfen in der DB
     db_session.refresh(account)
@@ -66,11 +66,11 @@ async def test_full_favorite_lifecycle(db_session, mocker):
     # Auflisten
     response_list = await favorites_service.list_favorites(account)
     assert mock_symbol in response_list
-    assert str(mock_price) in response_list
+    assert mock_price_message in response_list
 
     # Entfernen
     response_remove = favorites_service.remove_favorite(db_session, account, "bitcoin")
-    assert "Removed bitcoin" in response_remove
+    assert "Removed Bitcoin (BTC) from favorites." in response_remove
 
     # Prüfen in der DB
     db_session.refresh(account)
@@ -78,4 +78,4 @@ async def test_full_favorite_lifecycle(db_session, mocker):
 
     # Leere Liste anzeigen
     response_empty = await favorites_service.list_favorites(account)
-    assert "no favorite cryptocurrencies" in response_empty
+    assert "No favorites set yet." in response_empty
