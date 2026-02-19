@@ -145,10 +145,8 @@ class NotificationService:
                 f"{notif.direction.value} {notif.target_price} (current: {current_price})"
             )
             message = (
-                f"🔔 *Notification Alert (ID: {notif.id})*\n\n"
-                f"{notif.crypto_symbol}/{notif.vs_symbol} has gone {notif.direction.value}\n"
-                f"Target: {notif.target_price}\n"
-                f"Current Price: *{current_price}*\n"
+                f"🔔 Alert — {notif.crypto_symbol}/{notif.vs_symbol}\n"
+                f"{notif.direction.value.capitalize()} {notif.target_price} · Now: {current_price}  (ID: {notif.id})"
             )
 
         elif notif.already_hit and not criteria_met:

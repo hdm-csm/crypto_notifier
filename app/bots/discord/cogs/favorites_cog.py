@@ -1,9 +1,10 @@
-from discord.ext import commands
+import discord
+from discord import app_commands
 from app.bots.discord.cogs.base import AccountCog
 from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
 from app.services.favorites_service import FavoritesService
-from app.bots.discord.custom_context import CustomContext
+from app.bots.discord.custom_interaction import get_db_session, get_account
 from app.utils.command_constants import (
     COMMAND_ADD_FAV,
     COMMAND_ADD_FAVS,
@@ -25,46 +26,68 @@ class FavoritesCog(AccountCog):
         super().__init__(account_lookup_service)
         self._favorites_service = favorites_service
 
-    @commands.command(name=COMMAND_ADD_FAV)
-    async def _add_fav(self, ctx: CustomContext, input_crypto: str) -> None:
+    @app_commands.command(
+        name=COMMAND_ADD_FAV, description="Add a cryptocurrency to your favorites"
+    )
+    @app_commands.describe(input_crypto="The cryptocurrency symbol or name")
+    async def _add_fav(self, interaction: discord.Interaction, input_crypto: str) -> None:
         """Save cryptocurrency as favorite."""
+        db_session = get_db_session(interaction)
+        account = get_account(interaction)
         answer = self._favorites_service.add_favorite(
-            db_session=ctx.db_session, account=ctx.account, input_crypto=input_crypto
+            db_session=db_session, account=account, input_crypto=input_crypto
         )
-        await ctx.send(answer)
+        await interaction.response.send_message(answer)
 
-    @commands.command(name=COMMAND_ADD_FAVS)
-    async def _add_favs(self, ctx: CustomContext, *input_cryptos: str) -> None:
+    @app_commands.command(
+        name=COMMAND_ADD_FAVS, description="Add multiple cryptocurrencies to favorites"
+    )
+    @app_commands.describe(input_cryptos="Space-separated cryptocurrency symbols or names")
+    async def _add_favs(self, interaction: discord.Interaction, input_cryptos: str) -> None:
         """Save multiple cryptocurrencies as favorites."""
-        if not input_cryptos:
-            await ctx.send("⚠️ Please provide at least one cryptocurrency symbol or name.")
+        cryptos = input_cryptos.split()
+        if not cryptos:
+            await interaction.response.send_message(
+                "⚠️ Please provide at least one cryptocurrency symbol or name."
+            )
             return
 
+        db_session = get_db_session(interaction)
+        account = get_account(interaction)
         results = []
-        for crypto in input_cryptos:
+        for crypto in cryptos:
             result = self._favorites_service.add_favorite(
-                db_session=ctx.db_session, account=ctx.account, input_crypto=crypto
+                db_session=db_session, account=account, input_crypto=crypto
             )
             results.append(result)
 
-        await ctx.send("\n".join(results))
+        await interaction.response.send_message("\n".join(results))
 
-    @commands.command(name=COMMAND_LIST_FAVS)
-    async def _list_favs(self, ctx: CustomContext) -> None:
+    @app_commands.command(name=COMMAND_LIST_FAVS, description="List your favorite cryptocurrencies")
+    async def _list_favs(self, interaction: discord.Interaction) -> None:
         """List favorite cryptocurrencies."""
-        answer = await self._favorites_service.list_favorites(account=ctx.account)
-        await ctx.send(answer)
+        account = get_account(interaction)
+        answer = await self._favorites_service.list_favorites(account=account)
+        await interaction.response.send_message(answer)
 
-    @commands.command(name=COMMAND_REMOVE_FAV)
-    async def _remove_fav(self, ctx: CustomContext, input_crypto: str) -> None:
+    @app_commands.command(
+        name=COMMAND_REMOVE_FAV, description="Remove a cryptocurrency from your favorites"
+    )
+    @app_commands.describe(input_crypto="The cryptocurrency symbol or name")
+    async def _remove_fav(self, interaction: discord.Interaction, input_crypto: str) -> None:
         """Remove cryptocurrency from favorites."""
+        db_session = get_db_session(interaction)
+        account = get_account(interaction)
         answer = self._favorites_service.remove_favorite(
-            db_session=ctx.db_session, account=ctx.account, input_crypto=input_crypto.lower()
+            db_session=db_session, account=account, input_crypto=input_crypto.lower()
         )
-        await ctx.send(answer)
+        await interaction.response.send_message(answer)
 
-    @commands.command(name=COMMAND_DROP_FAVS)
-    async def _drop_favs(self, ctx: CustomContext) -> None:
+    @app_commands.command(
+        name=COMMAND_DROP_FAVS, description="Remove all your favorite cryptocurrencies"
+    )
+    async def _drop_favs(self, interaction: discord.Interaction) -> None:
         """Remove all favorite cryptocurrencies."""
-        answer = self._favorites_service.drop_favorites(account=ctx.account)
-        await ctx.send(answer)
+        account = get_account(interaction)
+        answer = self._favorites_service.drop_favorites(account=account)
+        await interaction.response.send_message(answer)

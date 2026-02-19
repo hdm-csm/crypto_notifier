@@ -39,8 +39,7 @@ class CryptoApiService:
     async def get_top_crypto_currencies_str(self, amount: int, vs_currency: str = "eur") -> str:
         coins = await self.get_top_crypto_currencies(amount, vs_currency)
         currency_display = get_currency_display(vs_currency)
-        message = f"📊 **Top {amount} Cryptocurrencies by Market Cap**\n"
-        message += "━" * 50 + "\n\n"
+        message = f"Top {amount} by market cap ({currency_display})\n\n"
         for coin in coins:
             medal = (
                 "🥇"
@@ -48,11 +47,9 @@ class CryptoApiService:
                 else (
                     "🥈"
                     if coin.market_cap_rank == 2
-                    else "🥉" if coin.market_cap_rank == 3 else "  "
+                    else ("🥉" if coin.market_cap_rank == 3 else f"#{coin.market_cap_rank}")
                 )
             )
-            message += f"{medal} **#{coin.market_cap_rank}. {coin.name}** ({coin.symbol.upper()})\n"
-            message += f"   💰 {coin.current_price:,.2f} {currency_display}\n"
             market_cap = coin.market_cap
             if market_cap >= 1_000_000_000:
                 market_cap_str = f"{market_cap / 1_000_000_000:.1f}B"
@@ -60,7 +57,8 @@ class CryptoApiService:
                 market_cap_str = f"{market_cap / 1_000_000:.1f}M"
             else:
                 market_cap_str = f"{market_cap:,.0f}"
-            message += f"   📈 Market Cap: {market_cap_str} {currency_display}\n\n"
+            message += f"{medal}  {coin.name} ({coin.symbol.upper()})\n"
+            message += f"     Price: {coin.current_price:,.2f} · Cap: {market_cap_str}\n\n"
         return message
 
     async def get_index(self, crypto_symbol: str, vs_currency_symbol: str = "eur") -> str:
@@ -69,7 +67,7 @@ class CryptoApiService:
         ticker = yf.Ticker(f"{crypto_symbol}-{vs_currency_symbol}")
         current_price = ticker.fast_info["last_price"]
         if current_price is None:
-            return f'Could not find price for "{crypto_symbol}". \nPlease enter correct id.'
+            return f"❌ No price data found for {crypto_symbol}."
         currency_display = get_currency_display(vs_currency_symbol)
         return f"{crypto_symbol.upper()}: {current_price:.2f} {currency_display}"
 
@@ -187,7 +185,7 @@ class CryptoApiService:
 
             # 1. Check if result exists and was found
             if not res or not res.found or res.price is None:
-                final_output.append(f"{key}: data not found")
+                final_output.append(f"{key}: —")
                 continue
 
             # 2. Handle Currency Display (Symbol vs Code)
@@ -198,8 +196,7 @@ class CryptoApiService:
                 curr_symbol = res.currency
 
             # 3. Format Price
-            calc_note = " (calc)" if res.is_calculated else ""
-            final_output.append(f"{key}: {res.price:.2f} {curr_symbol}{calc_note}")
+            final_output.append(f"{key}: {res.price:.2f} {curr_symbol}")
 
         return "\n".join(final_output)
 

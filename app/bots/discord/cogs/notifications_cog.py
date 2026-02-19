@@ -1,4 +1,4 @@
-from discord.ext import commands
+from discord import app_commands
 from app.bots.discord.cogs.base import AccountCog
 from app.bots.discord.custom_bot import CustomDiscordBot
 from app.models.enums import PlatformType
@@ -6,7 +6,7 @@ from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_currency_service import CryptoCurrencyService
 from app.services.notification_service import NotificationCheckResult, NotificationService
 from app.services.crypto_api_service import CryptoApiService
-from app.bots.discord.custom_context import CustomContext
+from app.bots.discord.custom_interaction import get_db_session, get_account
 from app.services.vs_currency_service import VsCurrencyService
 from app.utils.command_constants import (
     COMMAND_ADD_NOTIF,
@@ -44,7 +44,8 @@ class NotificationsCog(AccountCog):
         self.check_notifications_task.cancel()
 
     # @tasks.loop(seconds=10.0)
-    @tasks.loop(minutes=1.0)
+    # @tasks.loop(minutes=1.0)
+    @tasks.loop(seconds=10.0)
     async def check_notifications_task(self):
         await self.check_notifications()
 
@@ -78,16 +79,26 @@ class NotificationsCog(AccountCog):
         print("waiting...")
         await self._bot.wait_until_ready()
 
-    @commands.command(name=COMMAND_ADD_NOTIF)
+    @app_commands.command(name=COMMAND_ADD_NOTIF, description="Add a price notification")
+    @app_commands.describe(
+        crypto_symbol="Cryptocurrency symbol",
+        vs_symbol="Quote currency symbol",
+        direction="Direction: 'above' or 'below'",
+        target_price="Target price",
+    )
     async def _add_notif(
         self,
-        ctx: CustomContext,
+        interaction: discord.Interaction,
         crypto_symbol: str,
         vs_symbol: str,
         direction: str,
         target_price: str,
     ) -> None:
-        """Add a notification: /add_notif BTC USD above 50000"""
+        """Add a notification for price changes."""
+        await interaction.response.defer()
+        db_session = get_db_session(interaction)
+        account = get_account(interaction)
+
         crypto_symbol, vs_symbol, direction_enum, price_float = (
             self._notification_service.validate_and_parse_notification_args(
                 crypto_symbol=crypto_symbol,
@@ -98,23 +109,23 @@ class NotificationsCog(AccountCog):
         )
 
         crypto_currency = self._crypto_currency_service.find_by_name_or_symbol(
-            ctx.db_session, crypto_symbol
+            db_session, crypto_symbol
         )
         if not crypto_currency or not crypto_currency.symbol:
-            await ctx.send(
+            await interaction.followup.send(
                 f"❌ Cryptocurrency '{crypto_symbol}' not found. Please check the name or symbol and try again."
             )
             return
-        vs_currency = self._vs_currency_service.find_by_symbol_or_name(ctx.db_session, vs_symbol)
+        vs_currency = self._vs_currency_service.find_by_symbol_or_name(db_session, vs_symbol)
         if not vs_currency or not vs_currency.symbol:
-            await ctx.send(
+            await interaction.followup.send(
                 f"❌ Quote currency '{vs_symbol}' not found. Please check the name or symbol and try again."
             )
             return
 
         notification = self._notification_service.add_notification(
-            session=ctx.db_session,
-            account_id=ctx.account.id,
+            session=db_session,
+            account_id=account.id,
             crypto_symbol=crypto_currency.symbol.upper(),
             vs_symbol=vs_currency.symbol.upper(),
             direction=direction_enum,
@@ -122,58 +133,63 @@ class NotificationsCog(AccountCog):
             already_hit=False,
         )
 
-        await ctx.send(
-            f"✅ Notification added:\n{notification.crypto_symbol}-{notification.vs_symbol} {notification.direction.value} {notification.target_price}"
+        await interaction.followup.send(
+            f"✅ Notification set: {notification.crypto_symbol}/{notification.vs_symbol} {notification.direction.value} {notification.target_price}  (ID: {notification.id})"
         )
 
-    @commands.command(name=COMMAND_LIST_NOTIFS)
-    async def _list_notifs(self, ctx: CustomContext) -> None:
+    @app_commands.command(name=COMMAND_LIST_NOTIFS, description="List all your notifications")
+    async def _list_notifs(self, interaction: discord.Interaction) -> None:
         """List all your notifications."""
+        db_session = get_db_session(interaction)
+        account = get_account(interaction)
         notifications = self._notification_service.list_notifications_for_account(
-            session=ctx.db_session, account_id=ctx.account.id
+            session=db_session, account_id=account.id
         )
 
         if not notifications:
-            await ctx.send("No notifications set.")
+            await interaction.response.send_message("ℹ️ No notifications set.")
             return
 
-        message = "📢 Your notifications:\n\n"
+        message = f"Notifications ({len(notifications)})\n\n"
         for notif in notifications:
-            hit_indicator = "🔔" if notif.already_hit else "⏳"
-            message += f"{hit_indicator} ID: {notif.id}\n"
-            message += f"  {notif.crypto_symbol}/{notif.vs_symbol} {notif.direction.value} {notif.target_price}\n\n"
+            status = "🔔" if notif.already_hit else "⏳"
+            message += f"{status} {notif.crypto_symbol}/{notif.vs_symbol} {notif.direction.value} {notif.target_price}  (ID: {notif.id})\n"
 
-        await ctx.send(message)
+        await interaction.response.send_message(message)
 
-    @commands.command(name=COMMAND_REMOVE_NOTIF)
-    async def _remove_notif(self, ctx: CustomContext, notification_id: str) -> None:
-        """Remove a notification by ID: /remove_notif 5"""
+    @app_commands.command(name=COMMAND_REMOVE_NOTIF, description="Remove a notification by ID")
+    @app_commands.describe(notification_id="The notification ID to remove")
+    async def _remove_notif(self, interaction: discord.Interaction, notification_id: str) -> None:
+        """Remove a notification by ID."""
+        db_session = get_db_session(interaction)
         try:
             notif_id = int(notification_id)
         except ValueError:
-            await ctx.send("❌ Notification ID must be a number.")
+            await interaction.response.send_message("❌ Notification ID must be a number.")
             return
 
         removed = self._notification_service.remove_notification(
-            session=ctx.db_session, notification_id=notif_id
+            session=db_session, notification_id=notif_id
         )
 
         if removed:
-            await ctx.send(f"✅ Notification {notif_id} removed.")
+            await interaction.response.send_message(f"✅ Notification {notif_id} removed.")
         else:
-            await ctx.send(f"❌ Notification {notif_id} not found.")
+            await interaction.response.send_message(f"❌ No notification with ID {notif_id}.")
 
-    @commands.command(name=COMMAND_DROP_NOTIFS)
-    async def _drop_notifs(self, ctx: CustomContext) -> None:
+    @app_commands.command(name=COMMAND_DROP_NOTIFS, description="Remove all your notifications")
+    async def _drop_notifs(self, interaction: discord.Interaction) -> None:
         """Remove all your notifications."""
+        db_session = get_db_session(interaction)
+        account = get_account(interaction)
         notifications = self._notification_service.list_notifications_for_account(
-            session=ctx.db_session, account_id=ctx.account.id
+            session=db_session, account_id=account.id
         )
 
         for notif in notifications:
             self._notification_service.remove_notification(
-                session=ctx.db_session, notification_id=notif.id
+                session=db_session, notification_id=notif.id
             )
 
         count = len(notifications)
-        await ctx.send(f"✅ Dropped {count} notifications.")
+        await interaction.response.send_message(f"✅ Removed {count} notification(s).")

@@ -37,8 +37,7 @@ class CryptoCurrencyService:
             db_session
         )
         if not crypto_currencies:
-            return "❌ No cryptocurrencies found in the system.\n Please try again later."
-        message = "📋 **All Supported Cryptocurrencies**\n"
-        message += "━" * 50 + "\n\n"
+            return "❌ No cryptocurrencies available. Please try again later."
+        message = f"Supported cryptocurrencies ({len(crypto_currencies)})\n\n"
         message += "\n".join([f"{coin.name} ({coin.symbol})" for coin in crypto_currencies])
         return message
