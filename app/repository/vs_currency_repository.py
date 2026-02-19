@@ -21,7 +21,7 @@ class VsCurrencyRepository:
         )
         return session.execute(stmt).scalar_one_or_none()
 
-    def list_all(self, session: Session) -> list[VsCurrency]:
+    def get_all(self, session: Session) -> list[VsCurrency]:
         return session.query(VsCurrency).all()
 
     def set_vs_currency(self, session: Session, account: Account, vs_currency_id: int) -> Account:

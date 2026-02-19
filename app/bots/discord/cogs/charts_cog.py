@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 import yfinance as yf
 import mplfinance as mpf
 import pandas as pd
@@ -64,25 +65,32 @@ class ChartsCog(commands.Cog):
             logging.error(f"Error generating chart for {symbol}: {e}", exc_info=True)
             return None
 
-    @commands.command(name="chart")
-    async def chart(self, ctx: commands.Context, symbol: str, time_option: str = "1D"):
+    @app_commands.command(name="chart", description="Display a cryptocurrency price chart")
+    @app_commands.describe(
+        symbol="Cryptocurrency symbol (e.g., BTC, ETH)",
+        time_option="optional Time period (1D, 5D, 1MO, 3MO, 1Y)",
+    )
+    async def chart(self, interaction: discord.Interaction, symbol: str, time_option: str = "1D"):
         """
         Display a cryptocurrency price chart with interactive buttons.
-        Usage: /chart btc
         """
+        await interaction.response.defer()
+
         if not symbol:
-            await ctx.send("⚠️ Please provide at least one cryptocurrency symbol or name.")
+            await interaction.followup.send(
+                "⚠️ Please provide at least one cryptocurrency symbol or name."
+            )
             return
         symbol = symbol.upper()
         time_option = time_option.upper()
         view = ChartView(self.bot, symbol, self.get_chart_buffer, initial_label=time_option)
         config = view.time_map.get(time_option, view.time_map["1D"])
-        await ctx.send(f"Fetching **{symbol}** data...", delete_after=1.0)
+        await interaction.followup.send(f"Fetching **{symbol}** data...")
         buffer = await self.bot.loop.run_in_executor(
             None, self.get_chart_buffer, symbol, config["period"], config["interval"]
         )
         if buffer:
             file = discord.File(fp=buffer, filename=f"{symbol}_chart.png")
-            await ctx.send(file=file, view=view)
+            await interaction.followup.send(file=file, view=view)
         else:
-            await ctx.send(f"❌ Could not find data for symbol: {symbol}")
+            await interaction.followup.send(f"❌ Could not find data for symbol: {symbol}")

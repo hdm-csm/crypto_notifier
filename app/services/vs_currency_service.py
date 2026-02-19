@@ -32,21 +32,19 @@ class VsCurrencyService:
                 self._vs_currency_repository.store_all(session, vs_currencies)
 
     def get_vs_currency(self, account: Account) -> str:
-        message: str = "Your current vs currency: "
-        message += f"`{account.selected_vs_currency.symbol.upper()}` - {account.selected_vs_currency.name}\n"
-        message += (
-            "\nTo change your preferred currency, use the command:\n`/set_vs <CURRENCY_CODE>`"
-        )
-        return message
+        symbol = account.selected_vs_currency.symbol.upper()
+        name = account.selected_vs_currency.name
+        return f"Currency: {symbol} — {name}\n\nChange with `/set_vs <code>`"
+
+    def get_all(self, db_session: Session) -> list[VsCurrency]:
+        return self._vs_currency_repository.get_all(db_session)
 
     def list_supported_vs_currencies(self, db_session: Session) -> str:
-        vs_currencies: list[VsCurrency] = self._vs_currency_repository.list_all(session=db_session)
-        message: str = "List of the supported currencies:\n"
-        for currency in vs_currencies:
-            message += f"`{currency.symbol.upper()}` - {currency.name}\n"
-        message += (
-            "\nTo change your preferred currency, use the command:\n`/set_vs <CURRENCY_CODE>`"
-        )
+        vs_currencies: list[VsCurrency] = self._vs_currency_repository.get_all(session=db_session)
+        lines = [f"{c.symbol.upper()} — {c.name}" for c in vs_currencies]
+        message = f"Supported currencies ({len(vs_currencies)})\n\n"
+        message += "\n".join(lines)
+        message += "\n\nChange with `/set_vs <code>`"
         return message
 
     def set_vs_currency(self, db_session: Session, account: Account, input: str) -> str:
@@ -55,13 +53,13 @@ class VsCurrencyService:
         )
 
         if vs_currency is None:
-            return f"⚠️ Currency '{input}' not found. " "Please check the name/symbol and try again."
+            return f"❌ Currency '{input}' not found."
 
         self._vs_currency_repository.set_vs_currency(
             session=db_session, account=account, vs_currency_id=int(vs_currency.id)
         )
 
-        return f"✅ Saved {input} as your preferred currency!"
+        return f"✅ Currency set to {vs_currency.symbol.upper()} — {vs_currency.name}."
 
     def find_by_symbol_or_name(self, session: Session, input: str) -> VsCurrency | None:
         return self._vs_currency_repository.find_by_symbol_or_name(session=session, input=input)

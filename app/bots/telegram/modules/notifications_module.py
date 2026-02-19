@@ -43,9 +43,9 @@ class NotificationsModule(AccountModule):
 
     def register_jobs(self):
         """Register background jobs. Called after app initialization."""
-        # Schedule notification checking every 60 seconds
+        # Schedule notification checking every 10 seconds
         if self._app.job_queue:
-            self._app.job_queue.run_repeating(self.check_notifications, interval=60, first=1)
+            self._app.job_queue.run_repeating(self.check_notifications, interval=10, first=1)
 
     async def check_notifications(self, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Check all notifications and send messages to users."""
@@ -132,7 +132,7 @@ class NotificationsModule(AccountModule):
 
         if update.message:
             await update.message.reply_text(
-                f"✅ Notification added:\n{notification.crypto_symbol}-{notification.vs_symbol} {notification.direction.value} {notification.target_price}"
+                f"✅ Notification set: {notification.crypto_symbol}/{notification.vs_symbol} {notification.direction.value} {notification.target_price}  (ID: {notification.id})"
             )
 
     @with_session_and_account
@@ -152,14 +152,13 @@ class NotificationsModule(AccountModule):
 
         if not notifications:
             if update.message:
-                await update.message.reply_text("No notifications set.")
+                await update.message.reply_text("ℹ️ No notifications set.")
             return
 
-        message = "📢 Your notifications:\n\n"
+        message = f"Notifications ({len(notifications)})\n\n"
         for notif in notifications:
-            hit_indicator = "🔔" if notif.already_hit else "⏳"
-            message += f"{hit_indicator} ID: {notif.id}\n"
-            message += f"  {notif.crypto_symbol}/{notif.vs_symbol} {notif.direction.value} {notif.target_price}\n\n"
+            status = "🔔" if notif.already_hit else "⏳"
+            message += f"{status} {notif.crypto_symbol}/{notif.vs_symbol} {notif.direction.value} {notif.target_price}  (ID: {notif.id})\n"
 
         if update.message:
             await update.message.reply_text(message)
@@ -196,7 +195,7 @@ class NotificationsModule(AccountModule):
                 await update.message.reply_text(f"✅ Notification {notif_id} removed.")
         else:
             if update.message:
-                await update.message.reply_text(f"❌ Notification {notif_id} not found.")
+                await update.message.reply_text(f"❌ No notification with ID {notif_id}.")
 
     @with_session_and_account
     async def drop_notifs_command(
@@ -220,4 +219,4 @@ class NotificationsModule(AccountModule):
 
         count = len(notifications)
         if update.message:
-            await update.message.reply_text(f"✅ Dropped {count} notifications.")
+            await update.message.reply_text(f"✅ Removed {count} notification(s).")

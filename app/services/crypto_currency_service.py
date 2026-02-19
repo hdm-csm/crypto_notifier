@@ -29,16 +29,15 @@ class CryptoCurrencyService:
     def find_by_name_or_symbol(self, db_session: Session, input: str) -> Cryptocurrency | None:
         return self._crypto_currency_repository.find_by_name_or_symbol(db_session, input)
 
-    def get_all(self, db_session: Session) -> str:
+    def get_all(self, db_session: Session) -> list[Cryptocurrency]:
+        return self._crypto_currency_repository.get_all(db_session)
+
+    def get_list(self, db_session: Session) -> str:
         crypto_currencies: list[Cryptocurrency] = self._crypto_currency_repository.get_all(
             db_session
         )
         if not crypto_currencies:
-            return "No cryptocurrencies found."
-
-        title = "List of all supported cryptocurrencies:"
-        header = "Name (Symbol)"
-        separator = "-" * len(header)
-        rows = [title, "", header, separator]
-        rows.extend([f"{coin.name} ({coin.symbol})" for coin in crypto_currencies])
-        return "\n".join(rows)
+            return "❌ No cryptocurrencies available. Please try again later."
+        message = f"Supported cryptocurrencies ({len(crypto_currencies)})\n\n"
+        message += "\n".join([f"{coin.name} ({coin.symbol})" for coin in crypto_currencies])
+        return message
