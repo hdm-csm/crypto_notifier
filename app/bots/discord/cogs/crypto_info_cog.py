@@ -1,5 +1,5 @@
 import asyncio
-from typing import List
+from typing import Dict, List
 import discord
 from discord import app_commands
 from app.bots.discord.cogs.base import AccountCog
@@ -43,19 +43,29 @@ class CrpytoInfoCog(AccountCog):
                 f"❌ Cryptocurrency '{crypto_currency_input}' not found. Please check the name or symbol and try again."
             )
             return
-        vs_currency_symbol = "eur"
+        vs_currency_symbol = "EUR"
         if account and account.selected_vs_currency:
             vs_currency_symbol = account.selected_vs_currency.symbol.lower()
         try:
             # Wait maximum 3 seconds for the API call
-            answer = await asyncio.wait_for(
-                self._crypto_api_service.get_index(
-                    crypto_symbol=cryptocurrency.symbol,
-                    vs_currency_symbol=vs_currency_symbol,
+            # ticker = f"{cryptocurrency.symbol.upper()}-{vs_currency_symbol.upper()}"
+            price: str = await asyncio.wait_for(
+                # self._crypto_api_service.get_index(
+                #     crypto_symbol=cryptocurrency.symbol,
+                #     vs_currency_symbol=vs_currency_symbol,
+                # ),
+                self._crypto_api_service.fetch_formatted_ticker_price(
+                    cryptocurrency.symbol, vs_currency_symbol
                 ),
                 timeout=3.0,
             )
-            await interaction.followup.send(answer)
+            if not price:
+                await interaction.followup.send(
+                    f"❌ No price data found for {cryptocurrency.symbol.upper()} in {vs_currency_symbol.upper()}."
+                )
+                return
+            else:
+                await interaction.followup.send(price)
         except asyncio.TimeoutError:
             await interaction.followup.send(
                 "⏱️ Request timed out. The API took too long to respond. Please try again later."
@@ -76,9 +86,9 @@ class CrpytoInfoCog(AccountCog):
 
     @app_commands.command(name=COMMAND_TOP, description="Get top cryptocurrencies by market cap")
     @app_commands.describe(amount="The number of top cryptocurrencies to display (default: 10)")
-    async def _top(self, interaction: discord.Interaction, amount: int = 10):
+    async def _top(self, interaction: discord.Interaction, amount: int):
         await interaction.response.defer()
-        vs_currency = "eur"
+        vs_currency = "EUR"
         account = get_account(interaction)
         if account and account.selected_vs_currency:
             vs_currency = account.selected_vs_currency.symbol.lower()

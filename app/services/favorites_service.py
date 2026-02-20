@@ -43,7 +43,7 @@ class FavoritesService:
         favorites = account.favorite_cryptos
         if not favorites or len(favorites) == 0:
             return "ℹ️ No favorites set yet."
-        vs_currency = "eur"
+        vs_currency = "EUR"
         if account and account.selected_vs_currency:
             vs_currency = account.selected_vs_currency.symbol.lower()
         crypto_symbols = [crypto.symbol for crypto in favorites]

@@ -185,8 +185,10 @@ class NotificationService:
             if not notifications:
                 return []
 
-            # Build tickers list from all notifications (format: "BASE-QUOTE")
-            tickers = [f"{notif.crypto_symbol}-{notif.vs_symbol}" for notif in notifications]
+            # Build tickers dict from all notifications (format: {"BTC-EUR": "EUR", ...})
+            tickers: dict[str, str] = {
+                notif.crypto_symbol: notif.vs_symbol for notif in notifications
+            }
 
             # Fetch all prices in a single call
             ticker_results = await self._crypto_api_service.fetch_ticker_prices(tickers)
@@ -195,14 +197,11 @@ class NotificationService:
             for notif in notifications:
                 try:
                     ticker_key = f"{notif.crypto_symbol}-{notif.vs_symbol}"
-                    ticker_result = ticker_results.get(ticker_key)
-
-                    # Skip if price data not found
-                    if not ticker_result or not ticker_result.found or ticker_result.price is None:
+                    value = ticker_results.get(ticker_key)
+                    if not value:
                         logging.warning(f"Could not fetch price for {ticker_key}")
                         continue
-
-                    current_price = ticker_result.price
+                    current_price = float(value)
                     result = self.check_and_process_notification(
                         session=db_session, notif=notif, current_price=current_price
                     )

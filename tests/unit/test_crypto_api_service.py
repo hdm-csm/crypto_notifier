@@ -78,7 +78,7 @@ async def test_list_top_crypto_currencies_success():
     args, kwargs = mock_client.get.call_args
     assert "https://api.coingecko.com/api/v3/coins/markets" in args[0]
     assert kwargs["params"]["per_page"] == 2
-    assert kwargs["params"]["vs_currency"] == "eur"
+    assert kwargs["params"]["vs_currency"] == "EUR"
 
     # 2. Wurden die Daten korrekt in Coin-Objekte umgewandelt?
     assert len(result) == 2
@@ -98,7 +98,7 @@ async def test_get_index_success(mocker):
     mock_ticker.fast_info = {"last_price": 42500.50}
     mock_yf = mocker.patch("app.services.crypto_api_service.yf.Ticker", return_value=mock_ticker)
     service = CryptoApiService(mock_client)
-    result = await service.get_index("btc", "eur")
+    result = await service.get_index("btc", "EUR")
     mock_yf.assert_called_once_with("BTC-EUR")
     assert "BTC: 42500.50 €" in result
     assert isinstance(result, str)

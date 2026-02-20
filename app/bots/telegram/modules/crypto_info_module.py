@@ -50,7 +50,7 @@ class CryptoInfoModule(AccountModule):
                 f"❌ Cryptocurrency '{crypto_currency_input}' not found. Please check the name or symbol and try again."
             )
             return
-        vs_currency_symbol = "eur"
+        vs_currency_symbol = "EUR"
         if account and account.selected_vs_currency:
             vs_currency_symbol = account.selected_vs_currency.symbol.lower()
         answer: str = await self._crypto_api_service.get_index(
@@ -69,7 +69,7 @@ class CryptoInfoModule(AccountModule):
     ) -> None:
         if update.message is None:
             return
-        vs_currency = "eur"
+        vs_currency = "EUR"
         if account and account.selected_vs_currency:
             vs_currency = account.selected_vs_currency.symbol.lower()
         amount: int = int(context.args[0]) if context.args else 10

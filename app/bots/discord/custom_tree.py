@@ -36,8 +36,12 @@ class CustomTree(app_commands.CommandTree):
             db_session.close()
 
     async def on_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+        logging.error("Interaction type: %s", interaction.type)
         logging.error(f"App command error: {type(error).__name__} - {error}")
-
+        # if interaction.type != discord.InteractionType.application_command:
+        #     await super().on_error(interaction, error)
+        #     return
+        # if error occurs inside command handling logic
         if isinstance(error, app_commands.CommandInvokeError):
             inner = error.original
             if isinstance(inner, InvalidNotificationArguments):
@@ -45,7 +49,9 @@ class CustomTree(app_commands.CommandTree):
                 if inner.usage_hint:
                     message += f"\n{inner.usage_hint}"
             else:
-                message = f"❌ An error occurred: {str(inner)}"
+                # 2026-02-20 15:30:54,098 - MainThread - ERROR - $U39120-EUR: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
+                # currentTradingPeriod --> BFUSD
+                message = f"❌ An error occurred: {str(inner)}" 
         elif isinstance(error, app_commands.MissingPermissions):
             message = "❌ You don't have permission to use this command."
         elif isinstance(error, app_commands.BotMissingPermissions):
