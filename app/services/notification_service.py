@@ -127,18 +127,13 @@ class NotificationService:
         Check if notification criteria is met and update state if needed.
         Returns a result with message ready to send to user.
         """
-        # Check if criteria is met
         criteria_met = False
         if notif.direction == NotificationDirection.ABOVE and current_price >= notif.target_price:
             criteria_met = True
         elif notif.direction == NotificationDirection.BELOW and current_price <= notif.target_price:
             criteria_met = True
-
         message = ""
-
-        # Handle state transitions
         if not notif.already_hit and criteria_met:
-            # Criteria just met - update and create message
             self.update_notification_already_hit(
                 session=session, notification_id=notif.id, already_hit=True
             )
@@ -150,9 +145,7 @@ class NotificationService:
                 f"🔔 Alert — {notif.crypto_symbol}/{notif.vs_symbol}\n"
                 f"{notif.direction.value.capitalize()} {notif.target_price} · Now: {current_price}  (ID: {notif.id})"
             )
-
         elif notif.already_hit and not criteria_met:
-            # Criteria no longer met - reset the hit flag
             self.update_notification_already_hit(
                 session=session, notification_id=notif.id, already_hit=False
             )
@@ -160,7 +153,6 @@ class NotificationService:
                 f"Notification reset for {notif.crypto_symbol}/{notif.vs_symbol} "
                 f"(current: {current_price})"
             )
-
         return NotificationCheckResult(
             current_price=current_price,
             user_platform_id=notif.account.platform_user_id,
@@ -180,30 +172,29 @@ class NotificationService:
             if self._crypto_api_service is None:
                 logging.error("Crypto API service not set for notification checking")
                 return []
-
             notifications = self.list_notifications_by_platform(
                 session=db_session, platform=platform
             )
             if not notifications:
                 return []
-
-            # Fetch all prices in a single batch call
             ticker_price_results = await self._crypto_api_service.fetch_ticker_prices(
-                tickers={(notif.crypto_symbol, notif.vs_symbol) for notif in notifications}
+                ticker_pairs={(notif.crypto_symbol, notif.vs_symbol) for notif in notifications}
             )
-
-            # Build a lookup dict: (crypto_symbol, vs_symbol) -> CryptoPrice
             price_lookup: dict[tuple[CryptoSymbolStr, VsCurrencySymbolStr], CryptoPrice] = {
                 (crypto, vs): crypto_price for crypto, vs, crypto_price in ticker_price_results
             }
-
-            # Process each notification with its corresponding price
             for notif in notifications:
                 try:
-                    crypto_price = price_lookup.get((notif.crypto_symbol, notif.vs_symbol))
+                    c, v = notif.crypto_symbol.upper(), notif.vs_symbol.upper()
+                    crypto_price = price_lookup.get((c, v))
                     if crypto_price is None or crypto_price.error:
                         logging.warning(
                             f"Could not fetch price for {notif.crypto_symbol}/{notif.vs_symbol}"
+                        )
+                        continue
+                    if crypto_price.only_usd and v != "USD":
+                        logging.warning(
+                            f"Skipping {c}/{v} notification check: Forex failed, only USD price available."
                         )
                         continue
                     result = self.check_and_process_notification(
@@ -213,5 +204,4 @@ class NotificationService:
                         results.append(result)
                 except Exception as e:
                     logging.error(f"Error checking notification {notif.id}: {e}")
-
         return results

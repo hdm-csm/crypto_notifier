@@ -1,18 +1,18 @@
 from app.utils.command_constants import COMMAND_EXAMPLES
 
 
-def get_currency_display(vs_currency: str) -> str:
+def get_currency_display(vs_currency_symbol: str) -> str:
     """
     Get the currency symbol or short name for display.
     Returns € for EUR, $ for USD, or the currency short name in uppercase for others.
     """
-    vs_currency_lower = vs_currency.lower()
-    if vs_currency_lower == "eur":
+    vs_currency_upper = vs_currency_symbol.upper()
+    if vs_currency_upper == "EUR":
         return "€"
-    elif vs_currency_lower == "usd":
+    elif vs_currency_upper == "USD":
         return "$"
     else:
-        return vs_currency.upper()
+        return vs_currency_upper
 
 
 def get_command_example(command_name: str) -> str:

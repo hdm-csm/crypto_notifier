@@ -90,86 +90,104 @@ class CryptoApiService:
     #     currency_display = get_currency_display(vs_currency_symbol)
     #     return f"{crypto_symbol.upper()}: {current_price:.2f} {currency_display}"
 
-    async def fetch_formatted_ticker_price(
-        self, crypto_symbol: str, vs_currency_symbol: str
-    ) -> str:
-        crypto_symbol = crypto_symbol.upper().strip()
-        vs_currency_symbol = vs_currency_symbol.upper().strip()
-        ticker = f"{crypto_symbol}-{vs_currency_symbol}"
-        price_value: str = "?"
-        try:
-            price_value = yf.Ticker(ticker).fast_info["last_price"]
-        except Exception:
-            price_value = self._get_converted_price(crypto_symbol, vs_currency_symbol)
-        return f"{crypto_symbol.upper()}: {price_value} {get_currency_display(vs_currency_symbol)}"
+    async def fetch_ticker_price(
+        self, crypto: CryptoSymbolStr, vs: VsCurrencySymbolStr
+    ) -> CryptoPrice:
+        """
+        Fetches the latest price for a single crypto pair using yfinance fast_info.
+        Returns a populated CryptoPrice dataclass.
+        """
+        c = crypto.upper().strip()
+        v = vs.upper().strip()
+
+        def _get_fast_price(ticker_str: str) -> float | None:
+            try:
+                price = yf.Ticker(ticker_str).fast_info.last_price
+                if price is not None:
+                    return float(price)
+                return None
+            except Exception:
+                return None
+
+        direct_ticker = f"{c}-{v}"
+        direct_price = await asyncio.to_thread(_get_fast_price, direct_ticker)
+        if direct_price is not None:
+            return CryptoPrice(price=direct_price)
+        # If the target was USD and direct failed, there is no fallback left
+        if v == "USD":
+            return CryptoPrice(price=0.0, error=True)
+        # Attempt B: Direct failed, fallback to USD base
+        usd_ticker = f"{c}-USD"
+        usd_price = await asyncio.to_thread(_get_fast_price, usd_ticker)
+        if usd_price is not None:
+            fx_ticker = f"USD{v}=X"
+            fx_price = await asyncio.to_thread(_get_fast_price, fx_ticker)
+            if fx_price is not None:
+                return CryptoPrice(price=(usd_price * fx_price), self_converted=True)
+            else:
+                # Attempt C: Forex failed, return USD only
+                return CryptoPrice(price=usd_price, only_usd=True)
+        # Attempt D: Completely failed (no direct and no USD fallback exist)
+        return CryptoPrice(price=0.0, error=True)
 
     async def fetch_ticker_prices(
-        self, tickers: set[tuple[CryptoSymbolStr, VsCurrencySymbolStr]]
+        self, ticker_pairs: set[tuple[CryptoSymbolStr, VsCurrencySymbolStr]]
     ) -> list[tuple[CryptoSymbolStr, VsCurrencySymbolStr, CryptoPrice]]:
         """
         Batch fetches prices for multiple crypto pairs.
         Returns a list of tuples: (crypto_symbol, vs_currency, CryptoPrice)
         """
-        if not tickers:
+        if not ticker_pairs:
             return []
-        # 1. Gather all possible tickers needed for direct, USD fallback, and FX fallback
-        all_tickers = set()
-        clean_pairs = []
-        for crypto, vs in tickers:
-            c = crypto.upper().strip()
-            v = vs.upper().strip()
-            clean_pairs.append((c, v))
+        cleaned_pairs: set[tuple[CryptoSymbolStr, VsCurrencySymbolStr]] = set()
+        all_tickers: set[str] = set()
+        for crypto, vs in ticker_pairs:
+            c, v = crypto.upper().strip(), vs.upper().strip()
+            cleaned_pairs.add((c, v))
             all_tickers.add(f"{c}-{v}")
-            # Add fallbacks if the target currency isn't already USD
             if v != "USD":
-                all_tickers.add(f"{c}-USD")  # USD base fallback
-                all_tickers.add(f"USD{v}=X")  # Forex multiplier
-        ticker_list = list(all_tickers)
+                all_tickers.update((f"{c}-USD", f"USD{v}=X"))
+        yf_ticker_list = list(all_tickers)
 
-        # 2. Batch fetch all required data in one single network call
         def _fetch_batch() -> pd.DataFrame:
-            return yf.download(tickers=ticker_list, period="1d", progress=False)
+            return yf.download(tickers=yf_ticker_list, period="1d", progress=False)
 
         df = await asyncio.to_thread(_fetch_batch)
         if df.empty:
-            return [(c, v, CryptoPrice(0.0, error=True)) for c, v in clean_pairs]
-        # 3. Safely extract closing prices
-        latest_prices = df["Close"].iloc[-1]
+            # return [(c, v, CryptoPrice(price=0.0, error=True)) for c, v in cleaned_pairs]
+            return []
+        latest_prices: dict[str, float] = {}
+        if isinstance(df.columns, pd.MultiIndex):
+            latest_prices = df["Close"].iloc[-1].to_dict()
+        else:
+            latest_prices = {yf_ticker_list[0]: float(df["Close"].iloc[-1])}
 
-        # Helper function to handle yfinance's single vs multi-ticker return shapes
         def get_price(ticker_str: str) -> float:
-            if len(ticker_list) == 1:
-                val = latest_prices if ticker_str == ticker_list[0] else pd.NA
-            else:
-                val = latest_prices.get(ticker_str, pd.NA)
-
-            return float(val) if not pd.isna(val) else 0.0
+            val = latest_prices.get(ticker_str, 0.0)
+            return float(val) if pd.notna(val) else 0.0
 
         results = []
-        for crypto, vs in clean_pairs:
-            direct_ticker = f"{crypto}-{vs}"
-            usd_ticker = f"{crypto}-USD"
-            fx_ticker = f"USD{vs}=X"
+        for crypto, vs in cleaned_pairs:
+            preferred_ticker = f"{crypto}-{vs}"
             # Attempt A: Direct match available
-            direct_price = get_price(direct_ticker)
+            direct_price = get_price(preferred_ticker)
             if direct_price > 0:
                 results.append((crypto, vs, CryptoPrice(price=direct_price)))
                 continue
-            usd_price = get_price(usd_ticker)
+            usd_price = get_price(f"{crypto}-USD")
             if usd_price > 0:
-                if vs == "USD":
-                    results.append((crypto, vs, CryptoPrice(price=usd_price)))
+                fx_price = get_price(f"USD{vs}=X")
+                if fx_price > 0:
+                    calculated_value = usd_price * fx_price
+                    # Attempt B: Fallback logic (Only executes if direct fails and vs != USD)
+                    results.append(
+                        (crypto, vs, CryptoPrice(price=calculated_value, self_converted=True))
+                    )
                 else:
-                    fx_price = get_price(fx_ticker)
-                    if fx_price > 0:
-                        # Attempt B: Calculated via Forex
-                        calculated_value = usd_price * fx_price
-                        results.append((crypto, vs, CryptoPrice(price=calculated_value)))
-                    else:
-                        # Attempt C: Forex failed, fallback to returning the USD value only
-                        results.append((crypto, vs, CryptoPrice(price=usd_price, only_usd=True)))
+                    # Attempt C: Forex failed, return USD only
+                    results.append((crypto, vs, CryptoPrice(price=usd_price, only_usd=True)))
             else:
-                # Attempt D: Completely failed (no direct and no USD fallback exist)
+                # Attempt D: Completely failed
                 results.append((crypto, vs, CryptoPrice(price=0.0, error=True)))
         return results
 

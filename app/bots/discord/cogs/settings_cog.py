@@ -1,5 +1,4 @@
 import discord
-from typing import List
 from discord import app_commands
 from app.bots.discord.cogs.base import AccountCog
 from app.bots.discord.custom_interaction import get_db_session, get_account
