@@ -51,7 +51,7 @@ class CustomTree(app_commands.CommandTree):
             else:
                 # 2026-02-20 15:30:54,098 - MainThread - ERROR - $U39120-EUR: possibly delisted; no price data found  (period=5d) (Yahoo error = "No data found, symbol may be delisted")
                 # currentTradingPeriod --> BFUSD
-                message = f"❌ An error occurred: {str(inner)}" 
+                message = f"❌ An error occurred: {str(inner)}"
         elif isinstance(error, app_commands.MissingPermissions):
             message = "❌ You don't have permission to use this command."
         elif isinstance(error, app_commands.BotMissingPermissions):

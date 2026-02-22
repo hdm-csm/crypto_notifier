@@ -1,5 +1,4 @@
 import asyncio
-from typing import Dict, List
 import discord
 from discord import app_commands
 from app.bots.discord.cogs.base import AccountCog
@@ -74,7 +73,7 @@ class CrpytoInfoCog(AccountCog):
     @_index.autocomplete("crypto_currency_input")
     async def _index_autocomplete(
         self, interaction: discord.Interaction, current: str
-    ) -> List[app_commands.Choice[str]]:
+    ) -> list[app_commands.Choice[str]]:
         with session_scope() as db_session:
             all_cryptos: list[Cryptocurrency] = self._crypto_currency_service.get_all(db_session)
             filtered = [

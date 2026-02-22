@@ -47,11 +47,15 @@ class FavoritesService:
         if account and account.selected_vs_currency:
             vs_currency = account.selected_vs_currency.symbol.lower()
         crypto_symbols = [crypto.symbol for crypto in favorites]
-        prices_str = await self._crypto_api_service.get_prices(
-            tickers=[f"{symbol}-{vs_currency}" for symbol in crypto_symbols]
+        # FETCH FORMATTED PRICE !!!
+        # prices_str = await self._crypto_api_service.get_prices(
+        #     tickers=[f"{symbol}-{vs_currency}" for symbol in crypto_symbols]
+        # )
+        favorite_prices = await self._crypto_api_service.fetch_formatted_ticker_prices(
+            tickers={(symbol, vs_currency) for symbol in crypto_symbols}
         )
         message = "⭐ Favorites\n\n"
-        message += prices_str
+        message += favorite_prices
         return message
 
     def drop_favorites(self, account: Account) -> str:

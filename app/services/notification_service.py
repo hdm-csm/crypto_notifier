@@ -1,6 +1,7 @@
 import logging
 from sqlalchemy.orm import Session
 from app.db import session_scope
+from app.models.typealiases import CryptoSymbolStr, VsCurrencySymbolStr
 from app.repository.notification_repository import NotificationRepository
 from app.models.schemas import Notification
 from app.models.enums import NotificationDirection, PlatformType
@@ -8,6 +9,7 @@ from typing import NamedTuple
 from app.utils.exceptions import InvalidNotificationArguments
 
 from app.services.crypto_api_service import CryptoApiService
+from app.models.dtos import CryptoPrice
 
 logger = logging.getLogger(__name__)
 
@@ -185,25 +187,27 @@ class NotificationService:
             if not notifications:
                 return []
 
-            # Build tickers dict from all notifications (format: {"BTC-EUR": "EUR", ...})
-            tickers: dict[str, str] = {
-                notif.crypto_symbol: notif.vs_symbol for notif in notifications
-            }
+            # Fetch all prices in a single batch call
+            ticker_price_results = await self._crypto_api_service.fetch_ticker_prices(
+                tickers={(notif.crypto_symbol, notif.vs_symbol) for notif in notifications}
+            )
 
-            # Fetch all prices in a single call
-            ticker_results = await self._crypto_api_service.fetch_ticker_prices(tickers)
+            # Build a lookup dict: (crypto_symbol, vs_symbol) -> CryptoPrice
+            price_lookup: dict[tuple[CryptoSymbolStr, VsCurrencySymbolStr], CryptoPrice] = {
+                (crypto, vs): crypto_price for crypto, vs, crypto_price in ticker_price_results
+            }
 
             # Process each notification with its corresponding price
             for notif in notifications:
                 try:
-                    ticker_key = f"{notif.crypto_symbol}-{notif.vs_symbol}"
-                    value = ticker_results.get(ticker_key)
-                    if not value:
-                        logging.warning(f"Could not fetch price for {ticker_key}")
+                    crypto_price = price_lookup.get((notif.crypto_symbol, notif.vs_symbol))
+                    if crypto_price is None or crypto_price.error:
+                        logging.warning(
+                            f"Could not fetch price for {notif.crypto_symbol}/{notif.vs_symbol}"
+                        )
                         continue
-                    current_price = float(value)
                     result = self.check_and_process_notification(
-                        session=db_session, notif=notif, current_price=current_price
+                        session=db_session, notif=notif, current_price=crypto_price.price
                     )
                     if result.message:
                         results.append(result)

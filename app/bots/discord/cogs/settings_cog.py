@@ -153,7 +153,7 @@ class SettingsCog(AccountCog):
     @_set_vs_currency.autocomplete("vs_currency_input")
     async def _set_vs_currency_autocomplete(
         self, interaction: discord.Interaction, current: str
-    ) -> List[app_commands.Choice[str]]:
+    ) -> list[app_commands.Choice[str]]:
         with session_scope() as db_session:
             all_vs_currencies: list[VsCurrency] = self._vs_currency_service.get_all(db_session)
             filtered = [
