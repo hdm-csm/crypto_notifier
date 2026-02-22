@@ -52,11 +52,11 @@ class DiscordBot:
 
         @self.bot.event
         async def on_ready():
-            logging.info(f"Bot logged in as {self.bot.user}")
+            logging.info(f"Discord Bot logged in as {self.bot.user}")
 
             try:
                 guild_obj = discord.Object(id=self.guild_id)
-                self.bot.tree.copy_global_to(guild=guild_obj)  # Takes 1 hour to register
+                self.bot.tree.copy_global_to(guild=guild_obj)  
                 synced = await self.bot.tree.sync(guild=guild_obj)
                 logging.info(f"Synced {len(synced)} commands to Server ID: {self.guild_id}")
             except Exception as e:
@@ -96,15 +96,6 @@ class DiscordBot:
         await self.bot.add_cog(favorites_cog)
         await self.bot.add_cog(notifications_cog)
         await self.bot.add_cog(charts_cog)
-
-        # TODO: Make it work
-        # Build choices from cryptocurrency repository
-        # crypto_names = self.cryptocurrency_repository.get_all_cryptocurrency_names()
-        # choices = [
-        #     app_commands.Choice(name=name, value=name.lower())
-        #     for name in crypto_names[:25]  # Discord limit is 25 choices
-        # ]
-        # cog._index.choices = choices
 
         try:
             await self.bot.start(self.token)

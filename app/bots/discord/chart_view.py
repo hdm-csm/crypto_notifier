@@ -16,13 +16,11 @@ class TimeButton(Button["ChartView"]):
         await interaction.response.defer()
         for child in self.view.children:
             if isinstance(child, Button):
-                # Set blue if it matches this button's label, else gray
                 child.style = (
                     discord.ButtonStyle.primary
                     if child.label == self.custom_label
                     else discord.ButtonStyle.secondary
                 )
-        # Generate new chart
         buffer = await self.view.bot.loop.run_in_executor(
             None,
             self.view.get_chart_func,
@@ -37,7 +35,6 @@ class TimeButton(Button["ChartView"]):
             await interaction.followup.send("❌ Failed to fetch data.", ephemeral=True)
 
 
-# 2. The View Class
 class ChartView(View):
     def __init__(
         self, bot: Any, symbol: str, get_chart_func: Callable[..., Any], initial_label: str = "1D"

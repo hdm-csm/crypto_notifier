@@ -8,6 +8,12 @@ from app.utils.exceptions import InvalidNotificationArguments
 
 
 class CustomTree(app_commands.CommandTree):
+    """
+    This class acts as a middleware, that adds "account" and "db_session" to each @app_commands.command() invocation.
+    Goal: Avoid duplicate data fetching/session starting code
+    For the equivalent middeware for @commands.command, check out app/bots/discord/cogs/base.py
+    """
+
     def __init__(self, bot, account_lookup_service: AccountLookupService):
         super().__init__(bot)
         self._account_lookup_service = account_lookup_service

@@ -90,15 +90,13 @@ class CryptoApiService:
     #     currency_display = get_currency_display(vs_currency_symbol)
     #     return f"{crypto_symbol.upper()}: {current_price:.2f} {currency_display}"
 
-    async def fetch_ticker_price(
-        self, crypto: CryptoSymbolStr, vs: VsCurrencySymbolStr
-    ) -> CryptoPrice:
+    async def fetch_ticker_price(self, crypto_symbol: str, vs_currency_symbol: str) -> CryptoPrice:
         """
         Fetches the latest price for a single crypto pair using yfinance fast_info.
         Returns a populated CryptoPrice dataclass.
         """
-        c = crypto.upper().strip()
-        v = vs.upper().strip()
+        c = crypto_symbol.upper().strip()
+        v = vs_currency_symbol.upper().strip()
 
         def _get_fast_price(ticker_str: str) -> float | None:
             try:
@@ -216,9 +214,11 @@ class CryptoApiService:
             return []
         return [str(currency) for currency in json_obj]
 
-    async def get_yfinance_supported_crypto_currencies(self) -> list[Cryptocurrency]:
+    async def get_yfinance_supported_crypto_currencies(
+        self, amount: int = 250
+    ) -> list[Cryptocurrency]:
         s = Screener()
-        data = s.get_screeners("all_cryptocurrencies_us", count=250)
+        data = s.get_screeners("all_cryptocurrencies_us", count=amount)
         crypto_dicts = data["all_cryptocurrencies_us"]["quotes"]
         supported_crypto_currencies = []
         for d in crypto_dicts:

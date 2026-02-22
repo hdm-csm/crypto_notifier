@@ -3,6 +3,7 @@ import discord
 from discord import app_commands
 from app.bots.discord.cogs.base import AccountCog
 from app.db import session_scope
+from app.models.dtos import CryptoPrice
 from app.models.schemas import Cryptocurrency
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
@@ -28,33 +29,23 @@ class CrpytoInfoCog(AccountCog):
     @app_commands.describe(crypto_currency_input="The type of cryptocurrency")
     async def _index(self, interaction: discord.Interaction, crypto_currency_input: str):
         await interaction.response.defer()
-
-        # account = getattr(interaction, "account", None)
-        # db_session = getattr(interaction, "db_session", None)
         db_session = get_db_session(interaction)
         account = get_account(interaction)
-
         cryptocurrency = self._crypto_currency_service.find_by_name_or_symbol(
             db_session, crypto_currency_input
         )
         if not cryptocurrency or not cryptocurrency.symbol:
             await interaction.followup.send(
                 f"❌ Cryptocurrency '{crypto_currency_input}' not found. Please check the name or symbol and try again."
-            )
+            )f
             return
         vs_currency_symbol = "EUR"
         if account and account.selected_vs_currency:
             vs_currency_symbol = account.selected_vs_currency.symbol.lower()
         try:
-            # Wait maximum 3 seconds for the API call
-            # ticker = f"{cryptocurrency.symbol.upper()}-{vs_currency_symbol.upper()}"
-            price: str = await asyncio.wait_for(
-                # self._crypto_api_service.get_index(
-                #     crypto_symbol=cryptocurrency.symbol,
-                #     vs_currency_symbol=vs_currency_symbol,
-                # ),
-                self._crypto_api_service.fetch_formatted_ticker_price(
-                    cryptocurrency.symbol, vs_currency_symbol
+            price: CryptoPrice = await asyncio.wait_for(
+                self._crypto_api_service.fetch_ticker_price(
+                    crypto_symbol=cryptocurrency.symbol, vs_currency_symbol=vs_currency_symbol
                 ),
                 timeout=3.0,
             )

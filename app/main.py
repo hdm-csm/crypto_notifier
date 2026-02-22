@@ -67,8 +67,8 @@ async def async_main():
         notification_repository=_notification_repository, crypto_api_service=_crypto_api_service
     )
 
-    await _vs_currency_service.init_vs_currencies()
-    await _crypto_currency_service.init_crypto_currencies()
+    _vs_currency_service.init_vs_currencies_from_static()
+    await _crypto_currency_service.init_crypto_currencies(amount=500)
 
     _discord_bot = DiscordBot(
         token=DISCORD_BOT_TOKEN,

@@ -12,6 +12,11 @@ from app.utils.functions import get_command_example
 
 
 class AccountCog(commands.Cog):
+    """
+    This class acts as a middleware, that adds "account" and "db_session" to each @commands.command() invocation.
+    Goal: Avoid duplicate data fetching/session starting code
+    For the equivalent middeware for @app_commands.command, check out app/bots/discord/custom_tree.py
+    """
 
     PLATFORM_TYPE = PlatformType.DISCORD
 

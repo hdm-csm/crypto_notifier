@@ -7,6 +7,7 @@ import pandas as pd
 import io
 import logging
 from app.bots.discord.chart_view import ChartView
+from discord.app_commands import Choice
 
 
 class ChartsCog(commands.Cog):
@@ -16,12 +17,12 @@ class ChartsCog(commands.Cog):
         self.bot = bot
 
     @staticmethod
-    def get_chart_buffer(symbol: str, period: str, interval: str) -> io.BytesIO | None:
+    def get_chart_data(crypto_symbol: str, period: str, interval: str) -> io.BytesIO | None:
         """
         Fetches data and generates a chart image in memory.
         """
         try:
-            ticker = f"{symbol.upper()}-USD"
+            ticker = f"{crypto_symbol.upper()}-USD"
             # ticker = AAPL, BTC-USD, ^GSPC (indices), CURRENCYPAIR=X, GC=F
             data = yf.download(ticker, period=period, interval=interval, progress=False)
             logging.info(f"Downloaded data shape: {data.shape}, empty: {data.empty}")
@@ -62,35 +63,45 @@ class ChartsCog(commands.Cog):
             logging.info(f"Successfully generated chart for {ticker}")
             return buffer
         except Exception as e:
-            logging.error(f"Error generating chart for {symbol}: {e}", exc_info=True)
+            logging.error(f"Error generating chart for {crypto_symbol}: {e}", exc_info=True)
             return None
 
     @app_commands.command(name="chart", description="Display a cryptocurrency price chart")
     @app_commands.describe(
-        symbol="Cryptocurrency symbol (e.g., BTC, ETH)",
-        time_option="optional Time period (1D, 5D, 1MO, 3MO, 1Y)",
+        crypto_symbol="Cryptocurrency symbol (e.g., BTC, ETH)",
+        time_option="Time period",
     )
-    async def chart(self, interaction: discord.Interaction, symbol: str, time_option: str = "1D"):
+    @app_commands.choices(
+        time_option=[
+            Choice(name="1 Day", value="1D"),
+            Choice(name="5 Days", value="5D"),
+            Choice(name="1 Month", value="1MO"),
+            Choice(name="3 Months", value="3MO"),
+            Choice(name="1 Year", value="1Y"),
+        ]
+    )
+    async def chart(
+        self, interaction: discord.Interaction, crypto_symbol: str, time_option: str = "1D"
+    ):
         """
         Display a cryptocurrency price chart with interactive buttons.
         """
         await interaction.response.defer()
-
-        if not symbol:
+        if not crypto_symbol:
             await interaction.followup.send(
                 "⚠️ Please provide at least one cryptocurrency symbol or name."
             )
             return
-        symbol = symbol.upper()
+        crypto_symbol = crypto_symbol.upper()
         time_option = time_option.upper()
-        view = ChartView(self.bot, symbol, self.get_chart_buffer, initial_label=time_option)
+        view = ChartView(self.bot, crypto_symbol, self.get_chart_data, initial_label=time_option)
         config = view.time_map.get(time_option, view.time_map["1D"])
-        await interaction.followup.send(f"Fetching **{symbol}** data...")
+        await interaction.followup.send(f"Fetching **{crypto_symbol}** data...")
         buffer = await self.bot.loop.run_in_executor(
-            None, self.get_chart_buffer, symbol, config["period"], config["interval"]
+            None, self.get_chart_data, crypto_symbol, config["period"], config["interval"]
         )
         if buffer:
-            file = discord.File(fp=buffer, filename=f"{symbol}_chart.png")
+            file = discord.File(fp=buffer, filename=f"{crypto_symbol}_chart.png")
             await interaction.followup.send(file=file, view=view)
         else:
-            await interaction.followup.send(f"❌ Could not find data for symbol: {symbol}")
+            await interaction.followup.send(f"❌ Could not find data for symbol: {crypto_symbol}")
