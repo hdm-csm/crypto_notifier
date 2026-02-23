@@ -4,7 +4,7 @@ import pytest
 import json
 from unittest.mock import MagicMock, AsyncMock
 from app.services.crypto_api_service import CryptoApiService
-from app.models.dtos import CoinMarketData
+from app.models.dtos import CoinMarketData, CryptoPrice
 
 # Helper Dictionary für Pflichtfelder im Coin-Model
 COIN_DEFAULTS = {
@@ -70,7 +70,7 @@ async def test_list_top_crypto_currencies_success():
     service = CryptoApiService(mock_client)
 
     # --- EXECUTION ---
-    result = await service.get_top_crypto_currencies(amount=2)
+    result = await service.get_top_crypto_currencies(amount=2, vs_currency="EUR")
 
     # --- ASSERTION ---
     # 1. Wurde die URL mit den richtigen Parametern aufgerufen?
@@ -89,16 +89,26 @@ async def test_list_top_crypto_currencies_success():
     assert result[1].id == "ethereum"
 
 
-# Simuliert die get_index Methode mit yfinance
+# Simuliert fetch_ticker_price mit yfinance
 @pytest.mark.asyncio
-async def test_get_index_success(mocker):
+async def test_fetch_ticker_price_success(mocker):
     # --- SETUP ---
     mock_client = AsyncMock()
-    mock_ticker = MagicMock()
-    mock_ticker.fast_info = {"last_price": 42500.50}
-    mock_yf = mocker.patch("app.services.crypto_api_service.yf.Ticker", return_value=mock_ticker)
+    mock_price = 42500.50
+
+    # Patch asyncio.to_thread so the sync yf call returns our mock price directly
+    mocker.patch(
+        "app.services.crypto_api_service.asyncio.to_thread",
+        new_callable=AsyncMock,
+        return_value=mock_price,
+    )
+
     service = CryptoApiService(mock_client)
-    result = await service.get_index("btc", "EUR")
-    mock_yf.assert_called_once_with("BTC-EUR")
-    assert "BTC: 42500.50 €" in result
-    assert isinstance(result, str)
+
+    # --- EXECUTION ---
+    result = await service.fetch_ticker_price("btc", "EUR")
+
+    # --- ASSERTION ---
+    assert isinstance(result, CryptoPrice)
+    assert result.price == mock_price
+    assert result.error is False
