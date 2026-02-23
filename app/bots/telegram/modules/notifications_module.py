@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from app.bots.telegram.decorators import with_session_and_account
-from app.bots.telegram.modules.base import AccountModule
+from app.bots.telegram.modules.base_module import BaseModule
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_currency_service import CryptoCurrencyService
 from app.services.notification_service import NotificationCheckResult, NotificationService
@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 import logging
 
 
-class NotificationsModule(AccountModule):
+class NotificationsModule(BaseModule):
 
     def __init__(
         self,
