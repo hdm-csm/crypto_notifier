@@ -14,10 +14,12 @@ class CryptoCurrencyService:
         self._crypto_currency_repository = crypto_currency_repository
         self._crypto_api_service = crypto_api_service
 
-    async def init_crypto_currencies(self):
+    async def init_crypto_currencies(self, amount: int = 250):
         with session_scope() as session:
             if self._crypto_currency_repository.is_empty(session):
-                coins = await self._crypto_api_service.get_yfinance_supported_crypto_currencies()
+                coins = await self._crypto_api_service.get_yfinance_supported_crypto_currencies(
+                    amount
+                )
                 seen_symbols = set()
                 unique_coins = []
                 for coin in coins:

@@ -1,9 +1,9 @@
 import logging
 from discord.ext import commands
+from app.bots.discord.custom.custom_bot import CustomDiscordBot
 from app.db import get_session
-from app.bots.discord.custom_context import CustomContext
+from app.bots.discord.custom.custom_context import CustomContext
 from app.models.enums import PlatformType
-from app.services.account_lookup_service import AccountLookupService
 from app.utils.exceptions import (
     InvokeSetupError,
     InvalidNotificationArguments,
@@ -11,12 +11,14 @@ from app.utils.exceptions import (
 from app.utils.functions import get_command_example
 
 
-class AccountCog(commands.Cog):
+class BaseCog(commands.Cog):
+    """
+    This class acts as a middleware, that adds "account" and "db_session" to each @commands.command() invocation.
+    Goal: Avoid duplicate data fetching/session starting code
+    For the equivalent middeware for @app_commands.command, check out app/bots/discord/custom_tree.py
+    """
 
     PLATFORM_TYPE = PlatformType.DISCORD
-
-    def __init__(self, account_lookup_service: AccountLookupService):
-        self._account_lookup_service = account_lookup_service
 
     async def cog_before_invoke(self, ctx: commands.Context) -> None:
         """
@@ -26,7 +28,8 @@ class AccountCog(commands.Cog):
         assert isinstance(ctx, CustomContext)
         try:
             ctx.db_session = get_session()
-            ctx.account = self._account_lookup_service.find_or_create_account(
+            bot: CustomDiscordBot = ctx.bot
+            ctx.account = bot.account_lookup_service.find_or_create_account(
                 db_session=ctx.db_session,
                 platform_type=self.PLATFORM_TYPE,
                 platform_user_id=str(ctx.author.id),

@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import AsyncMock
+from app.models.dtos import CryptoPrice
 from app.services.crypto_currency_service import CryptoCurrencyService
 from app.services.crypto_api_service import CryptoApiService
 from app.repository.favorites_repository import FavoritesRepository
@@ -14,7 +15,6 @@ async def test_full_favorite_lifecycle(db_session, mocker):
     mock_symbol = "BTC"
     mock_currency = "EUR"
     mock_price = 42000.00
-    mock_price_message = f"{mock_symbol}-{mock_currency}: {mock_price:.2f} €"
 
     fav_repo = FavoritesRepository()
     crypto_repo = CryptocurrencyRepository()
@@ -25,9 +25,11 @@ async def test_full_favorite_lifecycle(db_session, mocker):
     crypto_currency_service = CryptoCurrencyService(crypto_repo, api_service)
 
     # Mock API methods
-    mocker.patch.object(api_service, "get_index", new_callable=AsyncMock, return_value=999.99)
     mocker.patch.object(
-        api_service, "get_prices", new_callable=AsyncMock, return_value=mock_price_message
+        api_service,
+        "fetch_ticker_prices",
+        new_callable=AsyncMock,
+        return_value=[(mock_symbol, mock_currency, CryptoPrice(price=mock_price))],
     )
 
     favorites_service = FavoritesService(fav_repo, crypto_currency_service, api_service)
@@ -66,7 +68,7 @@ async def test_full_favorite_lifecycle(db_session, mocker):
     # Auflisten
     response_list = await favorites_service.list_favorites(account)
     assert mock_symbol in response_list
-    assert mock_price_message in response_list
+    assert f"{mock_price:,.2f}" in response_list
 
     # Entfernen
     response_remove = favorites_service.remove_favorite(db_session, account, "bitcoin")

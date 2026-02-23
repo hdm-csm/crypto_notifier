@@ -3,6 +3,7 @@ from app.repository.favorites_repository import FavoritesRepository
 from app.services.crypto_api_service import CryptoApiService
 from app.models.schemas import Account
 from app.services.crypto_currency_service import CryptoCurrencyService
+from app.utils.functions import format_price_infos
 
 
 class FavoritesService:
@@ -43,15 +44,16 @@ class FavoritesService:
         favorites = account.favorite_cryptos
         if not favorites or len(favorites) == 0:
             return "ℹ️ No favorites set yet."
-        vs_currency = "eur"
+        vs_currency = "EUR"
         if account and account.selected_vs_currency:
             vs_currency = account.selected_vs_currency.symbol.lower()
         crypto_symbols = [crypto.symbol for crypto in favorites]
-        prices_str = await self._crypto_api_service.get_prices(
-            tickers=[f"{symbol}-{vs_currency}" for symbol in crypto_symbols]
+        ticker_pairs = {(crypto, vs_currency) for crypto in crypto_symbols}
+        favorite_prices = await self._crypto_api_service.fetch_ticker_prices(
+            ticker_pairs=ticker_pairs
         )
         message = "⭐ Favorites\n\n"
-        message += prices_str
+        message += format_price_infos(favorite_prices)
         return message
 
     def drop_favorites(self, account: Account) -> str:

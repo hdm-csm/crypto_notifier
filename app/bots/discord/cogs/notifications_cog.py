@@ -1,14 +1,12 @@
 from discord import app_commands
-from app.bots.discord.cogs.base import AccountCog
-from app.bots.discord.custom_bot import CustomDiscordBot
+from app.bots.discord.cogs.base_cog import BaseCog
+from app.bots.discord.custom.custom_bot import CustomDiscordBot
+from app.bots.discord.utils.autocompletes import crypto_autocomplete, vs_currency_autocomplete
 from app.models.enums import PlatformType
-from app.services.account_lookup_service import AccountLookupService
-from app.services.crypto_currency_service import CryptoCurrencyService
 from app.services.notification_service import NotificationCheckResult, NotificationService
 from app.services.crypto_api_service import CryptoApiService
-from app.bots.discord.custom_interaction import get_db_session, get_account
-from app.services.vs_currency_service import VsCurrencyService
-from app.utils.command_constants import (
+from app.bots.discord.custom.custom_interaction import get_db_session, get_account
+from app.bots.constants.commands import (
     COMMAND_ADD_NOTIF,
     COMMAND_LIST_NOTIFS,
     COMMAND_REMOVE_NOTIF,
@@ -19,33 +17,26 @@ import discord
 import logging
 
 
-class NotificationsCog(AccountCog):
+class NotificationsCog(BaseCog):
 
     PLATFORM_TYPE = PlatformType.DISCORD
 
     def __init__(
         self,
-        account_lookup_service: AccountLookupService,
+        bot: CustomDiscordBot,
         notification_service: NotificationService,
         crypto_api_service: CryptoApiService,
-        crypto_currency_service: CryptoCurrencyService,
-        vs_currency_service: VsCurrencyService,
-        bot: CustomDiscordBot,
     ):
-        super().__init__(account_lookup_service)
+        super().__init__()
+        self._bot = bot
         self._notification_service = notification_service
         self._crypto_api_service = crypto_api_service
-        self._crypto_currency_service = crypto_currency_service
-        self._vs_currency_service = vs_currency_service
-        self._bot = bot
         self.check_notifications_task.start()
 
     def cog_unload(self):
         self.check_notifications_task.cancel()
 
-    # @tasks.loop(seconds=10.0)
-    # @tasks.loop(minutes=1.0)
-    @tasks.loop(seconds=10.0)
+    @tasks.loop(minutes=1.0)
     async def check_notifications_task(self):
         await self.check_notifications()
 
@@ -86,19 +77,26 @@ class NotificationsCog(AccountCog):
         direction="Direction: 'above' or 'below'",
         target_price="Target price",
     )
+    @app_commands.choices(
+        direction=[
+            app_commands.Choice(name="Above 📈", value="above"),
+            app_commands.Choice(name="Below 📉", value="below"),
+        ]
+    )
+    @app_commands.autocomplete(
+        crypto_symbol=crypto_autocomplete, vs_symbol=vs_currency_autocomplete
+    )
     async def _add_notif(
         self,
         interaction: discord.Interaction,
         crypto_symbol: str,
         vs_symbol: str,
         direction: str,
-        target_price: str,
+        target_price: float,  # Automatically forces the user to input a number
     ) -> None:
         """Add a notification for price changes."""
-        await interaction.response.defer()
         db_session = get_db_session(interaction)
         account = get_account(interaction)
-
         crypto_symbol, vs_symbol, direction_enum, price_float = (
             self._notification_service.validate_and_parse_notification_args(
                 crypto_symbol=crypto_symbol,
@@ -107,8 +105,7 @@ class NotificationsCog(AccountCog):
                 price=target_price,
             )
         )
-
-        crypto_currency = self._crypto_currency_service.find_by_name_or_symbol(
+        crypto_currency = self._bot.crypto_currency_service.find_by_name_or_symbol(
             db_session, crypto_symbol
         )
         if not crypto_currency or not crypto_currency.symbol:
@@ -116,7 +113,7 @@ class NotificationsCog(AccountCog):
                 f"❌ Cryptocurrency '{crypto_symbol}' not found. Please check the name or symbol and try again."
             )
             return
-        vs_currency = self._vs_currency_service.find_by_symbol_or_name(db_session, vs_symbol)
+        vs_currency = self._bot.vs_currency_service.find_by_symbol_or_name(db_session, vs_symbol)
         if not vs_currency or not vs_currency.symbol:
             await interaction.followup.send(
                 f"❌ Quote currency '{vs_symbol}' not found. Please check the name or symbol and try again."
@@ -147,7 +144,7 @@ class NotificationsCog(AccountCog):
         )
 
         if not notifications:
-            await interaction.response.send_message("ℹ️ No notifications set.")
+            await interaction.followup.send("ℹ️ No notifications set.")
             return
 
         message = f"Notifications ({len(notifications)})\n\n"
@@ -155,7 +152,7 @@ class NotificationsCog(AccountCog):
             status = "🔔" if notif.already_hit else "⏳"
             message += f"{status} {notif.crypto_symbol}/{notif.vs_symbol} {notif.direction.value} {notif.target_price}  (ID: {notif.id})\n"
 
-        await interaction.response.send_message(message)
+        await interaction.followup.send(message)
 
     @app_commands.command(name=COMMAND_REMOVE_NOTIF, description="Remove a notification by ID")
     @app_commands.describe(notification_id="The notification ID to remove")
@@ -165,7 +162,7 @@ class NotificationsCog(AccountCog):
         try:
             notif_id = int(notification_id)
         except ValueError:
-            await interaction.response.send_message("❌ Notification ID must be a number.")
+            await interaction.followup.send("❌ Notification ID must be a number.")
             return
 
         removed = self._notification_service.remove_notification(
@@ -173,9 +170,9 @@ class NotificationsCog(AccountCog):
         )
 
         if removed:
-            await interaction.response.send_message(f"✅ Notification {notif_id} removed.")
+            await interaction.followup.send(f"✅ Notification {notif_id} removed.")
         else:
-            await interaction.response.send_message(f"❌ No notification with ID {notif_id}.")
+            await interaction.followup.send(f"❌ No notification with ID {notif_id}.")
 
     @app_commands.command(name=COMMAND_DROP_NOTIFS, description="Remove all your notifications")
     async def _drop_notifs(self, interaction: discord.Interaction) -> None:
@@ -192,4 +189,4 @@ class NotificationsCog(AccountCog):
             )
 
         count = len(notifications)
-        await interaction.response.send_message(f"✅ Removed {count} notification(s).")
+        await interaction.followup.send(f"✅ Removed {count} notification(s).")

@@ -1,14 +1,11 @@
 import discord
-from typing import List
 from discord import app_commands
-from app.bots.discord.cogs.base import AccountCog
-from app.bots.discord.custom_interaction import get_db_session, get_account
-from app.db import session_scope
+from app.bots.discord.cogs.base_cog import BaseCog
+from app.bots.discord.custom.custom_bot import CustomDiscordBot
+from app.bots.discord.custom.custom_interaction import get_db_session, get_account
+from app.bots.discord.utils.autocompletes import vs_currency_autocomplete
 from app.models.enums import PlatformType
-from app.models.schemas import VsCurrency
-from app.services.account_lookup_service import AccountLookupService
-from app.services.vs_currency_service import VsCurrencyService
-from app.utils.command_constants import (
+from app.bots.constants.commands import (
     COMMAND_ADD_FAV,
     COMMAND_ADD_FAVS,
     COMMAND_LIST_FAVS,
@@ -25,19 +22,20 @@ from app.utils.command_constants import (
     COMMAND_TOP,
     COMMAND_LIST,
 )
+from app.services.vs_currency_service import VsCurrencyService
 
 
-class SettingsCog(AccountCog):
+class SettingsCog(BaseCog):
 
     PLATFORM_TYPE = PlatformType.DISCORD
 
     def __init__(
         self,
-        account_lookup_service: AccountLookupService,
-        vs_currency_service: VsCurrencyService,
+        bot: CustomDiscordBot,
     ):
-        super().__init__(account_lookup_service)
-        self._vs_currency_service = vs_currency_service
+        super().__init__()
+        self._bot = bot
+        self._vs_currency_service: VsCurrencyService = bot.vs_currency_service
 
     @app_commands.command(
         name=COMMAND_GET_VS, description="Get your current quote currency setting"
@@ -45,16 +43,18 @@ class SettingsCog(AccountCog):
     async def _get_vs_currency(self, interaction: discord.Interaction):
         account = get_account(interaction)
         answer: str = self._vs_currency_service.get_vs_currency(account)
-        await interaction.response.send_message(answer)
+        await interaction.followup.send(answer)
 
     @app_commands.command(name=COMMAND_LIST_VS, description="List all supported quote currencies")
     async def _list_vs_currencies(self, interaction: discord.Interaction):
         db_session = get_db_session(interaction)
+
         message = self._vs_currency_service.list_supported_vs_currencies(db_session)
-        await interaction.response.send_message(message)
+        await interaction.followup.send(message)
 
     @app_commands.command(name=COMMAND_SET_VS, description="Set your preferred quote currency")
     @app_commands.describe(vs_currency_input="The currency symbol or name")
+    @app_commands.autocomplete(vs_currency_input=vs_currency_autocomplete)
     async def _set_vs_currency(self, interaction: discord.Interaction, vs_currency_input: str):
         """Set preferred vs currency."""
         db_session = get_db_session(interaction)
@@ -62,7 +62,7 @@ class SettingsCog(AccountCog):
         answer: str = self._vs_currency_service.set_vs_currency(
             db_session, account, vs_currency_input
         )
-        await interaction.response.send_message(answer)
+        await interaction.followup.send(answer)
 
     @app_commands.command(name="help", description="Show all available bot commands")
     async def _help(self, interaction: discord.Interaction):
@@ -148,20 +148,4 @@ class SettingsCog(AccountCog):
         embed.set_footer(
             text="💡 Tip: all coin inputs accept both the symbol (e.g. BTC) and the full name (e.g. Bitcoin)."
         )
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-
-    @_set_vs_currency.autocomplete("vs_currency_input")
-    async def _set_vs_currency_autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ) -> List[app_commands.Choice[str]]:
-        with session_scope() as db_session:
-            all_vs_currencies: list[VsCurrency] = self._vs_currency_service.get_all(db_session)
-            filtered = [
-                c
-                for c in all_vs_currencies
-                if current.lower() in c.symbol.lower() or current.lower() in c.name.lower()
-            ]
-            return [
-                app_commands.Choice(name=f"{c.name} ({c.symbol})", value=f"{c.symbol}")
-                for c in filtered
-            ][:25]
+        await interaction.followup.send(embed=embed, ephemeral=True)

@@ -1,14 +1,16 @@
-from typing import List, Dict, Optional
+import asyncio
+import logging
 import httpx
 import json
-
 from yahooquery import Screener
-from app.models.dtos import CoinMarketData, TickerResult
+from app.models.dtos import CoinMarketData, CryptoPrice
 from app.models.schemas import Cryptocurrency
+from app.models.typealiases import CryptoSymbolStr, VsCurrencySymbolStr
 from app.utils.functions import get_currency_display
 from config.config import Config
 import yfinance as yf
 import pandas as pd
+
 
 COINGECKO_API_KEY = Config.COINGECKO_API_KEY
 
@@ -21,7 +23,7 @@ class CryptoApiService:
         self.client = client
 
     async def get_top_crypto_currencies(
-        self, amount: int, vs_currency: str = "eur"
+        self, amount: int, vs_currency: str
     ) -> list[CoinMarketData]:
         amount = max(1, min(amount, 100))  # Ensure amount is between 1 and 100
         params: dict[str, str | int] = {
@@ -36,7 +38,7 @@ class CryptoApiService:
         coins = [CoinMarketData(**coin_data) for coin_data in json_obj]
         return coins
 
-    async def get_top_crypto_currencies_str(self, amount: int, vs_currency: str = "eur") -> str:
+    async def get_top_crypto_currencies_str(self, amount: int, vs_currency: str) -> str:
         coins = await self.get_top_crypto_currencies(amount, vs_currency)
         currency_display = get_currency_display(vs_currency)
         message = f"Top {amount} by market cap ({currency_display})\n\n"
@@ -58,155 +60,124 @@ class CryptoApiService:
             else:
                 market_cap_str = f"{market_cap:,.0f}"
             message += f"{medal}  {coin.name} ({coin.symbol.upper()})\n"
-            message += f"     Price: {coin.current_price:,.2f} · Cap: {market_cap_str}\n\n"
+            message += f"     Price: {coin.current_price:,.2f} {currency_display} · Cap: {market_cap_str}\n\n"
         return message
 
-    async def get_index(self, crypto_symbol: str, vs_currency_symbol: str = "eur") -> str:
-        crypto_symbol = crypto_symbol.upper().strip()
-        vs_currency_symbol = vs_currency_symbol.upper().strip()
-        ticker = yf.Ticker(f"{crypto_symbol}-{vs_currency_symbol}")
-        current_price = ticker.fast_info["last_price"]
-        if current_price is None:
-            return f"❌ No price data found for {crypto_symbol}."
-        currency_display = get_currency_display(vs_currency_symbol)
-        return f"{crypto_symbol.upper()}: {current_price:.2f} {currency_display}"
-
-    async def fetch_ticker_prices(self, tickers: List[str]) -> Dict[str, TickerResult]:
+    async def fetch_ticker_price(self, crypto_symbol: str, vs_currency_symbol: str) -> CryptoPrice:
         """
-        Fetches prices and returns a dictionary mapping Ticker Strings -> TickerResult objects.
+        Fetches the latest price for a single crypto pair using yfinance fast_info.
+        Returns a populated CryptoPrice dataclass.
         """
-        if not tickers:
-            return {}
+        c = crypto_symbol.upper().strip()
+        v = vs_currency_symbol.upper().strip()
 
-        # Normalize inputs
-        clean_tickers = [t.upper().strip() for t in tickers]
-        results: Dict[str, TickerResult] = {}
-        failed_tickers = []
+        def _get_fast_price(ticker_str: str) -> float | None:
+            try:
+                price = yf.Ticker(ticker_str).fast_info.last_price
+                if price is not None:
+                    return float(price)
+                return None
+            except Exception:
+                return None
 
-        # --- PHASE 1: Direct Download ---
-        data_direct = yf.download(
-            " ".join(clean_tickers),
-            period="5d",
-            interval="1m",
-            group_by="ticker",
-            progress=False,
-            threads=True,
-        )
-
-        is_multi_direct = isinstance(data_direct.columns, pd.MultiIndex)
-
-        # Helper: Extract single float price from dataframe
-        def extract_price(df, tick, is_multi) -> Optional[float]:
-            series = None
-            if is_multi:
-                if tick in df.columns:
-                    series = df[tick]["Close"]
-            elif "Close" in df.columns:
-                series = df["Close"]
-
-            if series is not None:
-                valid = series.dropna()
-                if not valid.empty:
-                    return float(valid.iloc[-1])
-            return None
-
-        # Process Initial Results
-        for tick in clean_tickers:
-            price = extract_price(data_direct, tick, is_multi_direct)
-
-            # Simple parse: "BTC-EUR" -> currency="EUR", "AAPL" -> currency="USD"
-            parts = tick.split("-")
-            currency = parts[1] if len(parts) > 1 else "USD"
-
-            if price is not None:
-                results[tick] = TickerResult(
-                    symbol=tick, price=price, currency=currency, found=True, is_calculated=False
-                )
+        direct_ticker = f"{c}-{v}"
+        direct_price = await asyncio.to_thread(_get_fast_price, direct_ticker)
+        if direct_price is not None:
+            return CryptoPrice(price=direct_price)
+        # If the target was USD and direct failed, there is no fallback left
+        if v == "USD":
+            return CryptoPrice(price=0.0, error=True)
+        # Attempt B: Direct failed, fallback to USD base
+        usd_ticker = f"{c}-USD"
+        usd_price = await asyncio.to_thread(_get_fast_price, usd_ticker)
+        if usd_price is not None:
+            fx_ticker = f"USD{v}=X"
+            fx_price = await asyncio.to_thread(_get_fast_price, fx_ticker)
+            if fx_price is not None:
+                return CryptoPrice(price=(usd_price * fx_price), self_converted=True)
             else:
-                failed_tickers.append(tick)
-                # Create a 'failed' result initially
-                results[tick] = TickerResult(
-                    symbol=tick, price=None, currency=currency, found=False
-                )
+                # Attempt C: Forex failed, return USD only
+                return CryptoPrice(price=usd_price, only_usd=True)
+        # Attempt D: Completely failed (no direct and no USD fallback exist)
+        return CryptoPrice(price=0.0, error=True)
 
-        # --- PHASE 2: Fallback Logic (USD Conversion) ---
-        fallback_map = {}
-        needed_fallback_tickers = set()
+    async def fetch_ticker_prices(
+        self, ticker_pairs: set[tuple[CryptoSymbolStr, VsCurrencySymbolStr]]
+    ) -> list[tuple[CryptoSymbolStr, VsCurrencySymbolStr, CryptoPrice]]:
+        """
+        Batch fetches prices for multiple crypto pairs.
+        Returns a list of tuples: (crypto_symbol, vs_currency, CryptoPrice)
+        """
+        if not ticker_pairs:
+            return []
+        cleaned_pairs: set[tuple[CryptoSymbolStr, VsCurrencySymbolStr]] = set()
+        all_tickers: set[str] = set()
+        for crypto, vs in ticker_pairs:
+            c, v = crypto.upper().strip(), vs.upper().strip()
+            cleaned_pairs.add((c, v))
+            all_tickers.add(f"{c}-{v}")
+            if v != "USD":
+                all_tickers.update((f"{c}-USD", f"USD{v}=X"))
+        yf_ticker_list = list(all_tickers)
 
-        for fail_tick in failed_tickers:
-            parts = fail_tick.split("-")
-            # Only fallback if it's a crypto pair (X-Y) and target isn't USD
-            if len(parts) > 1 and parts[1] != "USD":
-                base, quote = parts
-                base_usd = f"{base}-USD"
-                forex = f"{quote}=X"
+        def _fetch_batch() -> pd.DataFrame:
+            return yf.download(tickers=yf_ticker_list, period="1d", progress=False)
 
-                fallback_map[fail_tick] = {"base_usd": base_usd, "forex": forex}
-                needed_fallback_tickers.add(base_usd)
-                needed_fallback_tickers.add(forex)
+        df = await asyncio.to_thread(_fetch_batch)
+        if df.empty:
+            # return [(c, v, CryptoPrice(price=0.0, error=True)) for c, v in cleaned_pairs]
+            return []
+        latest_prices: dict[str, float] = {}
+        if isinstance(df.columns, pd.MultiIndex):
+            latest_prices = df["Close"].iloc[-1].to_dict()
+        else:
+            latest_prices = {yf_ticker_list[0]: float(df["Close"].iloc[-1])}
 
-        if needed_fallback_tickers:
-            data_fallback = yf.download(
-                " ".join(needed_fallback_tickers),
-                period="5d",
-                interval="1m",
-                group_by="ticker",
-                progress=False,
-                threads=True,
-            )
-            is_multi_fallback = isinstance(data_fallback.columns, pd.MultiIndex)
+        def get_price(ticker_str: str) -> float:
+            val = latest_prices.get(ticker_str, 0.0)
+            return float(val) if pd.notna(val) else 0.0
 
-            for original_tick, reqs in fallback_map.items():
-                price_base_usd = extract_price(data_fallback, reqs["base_usd"], is_multi_fallback)
-                rate_forex = extract_price(data_fallback, reqs["forex"], is_multi_fallback)
-
-                if price_base_usd and rate_forex:
-                    # Math: BTC(USD) * EUR=X(rate)
-                    final_price = price_base_usd * rate_forex
-
-                    # Update the existing result object in place
-                    results[original_tick].price = final_price
-                    results[original_tick].found = True
-                    results[original_tick].is_calculated = True
-
+        results = []
+        for crypto, vs in cleaned_pairs:
+            preferred_ticker = f"{crypto}-{vs}"
+            # Attempt A: Direct match available
+            direct_price = get_price(preferred_ticker)
+            if direct_price > 0:
+                results.append((crypto, vs, CryptoPrice(price=direct_price)))
+                continue
+            usd_price = get_price(f"{crypto}-USD")
+            if usd_price > 0:
+                fx_price = get_price(f"USD{vs}=X")
+                if fx_price > 0:
+                    calculated_value = usd_price * fx_price
+                    # Attempt B: Fallback logic (Only executes if direct fails and vs != USD)
+                    results.append(
+                        (crypto, vs, CryptoPrice(price=calculated_value, self_converted=True))
+                    )
+                else:
+                    # Attempt C: Forex failed, return USD only
+                    results.append((crypto, vs, CryptoPrice(price=usd_price, only_usd=True)))
+            else:
+                # Attempt D: Completely failed
+                results.append((crypto, vs, CryptoPrice(price=0.0, error=True)))
         return results
 
-    def format_ticker_message(
-        self, data: Dict[str, TickerResult], ordered_tickers: List[str]
-    ) -> str:
-        if not data:
-            return "No tickers provided."
-
-        final_output = []
-
-        for tick in ordered_tickers:
-            key = tick.upper().strip()
-            res = data.get(key)
-
-            # 1. Check if result exists and was found
-            if not res or not res.found or res.price is None:
-                final_output.append(f"{key}: —")
-                continue
-
-            # 2. Handle Currency Display (Symbol vs Code)
-            try:
-                # Assuming get_currency_display is available in your scope
-                curr_symbol = get_currency_display(res.currency)
-            except NameError:
-                curr_symbol = res.currency
-
-            # 3. Format Price
-            final_output.append(f"{key}: {res.price:.2f} {curr_symbol}")
-
-        return "\n".join(final_output)
-
-    async def get_prices(self, tickers: list[str]) -> str:
-        """
-        Input: ["BTC-EUR", "ETH-USD", "SOL-GBP"]
-        """
-        price_data = await self.fetch_ticker_prices(tickers)
-        message = self.format_ticker_message(price_data, tickers)
-        return message
+    def _get_converted_price(self, crypto_symbol: str, vs_currency_symbol: str) -> str:
+        only_usd_message = "⚠️ Could only find USD price: {}-USD = ${:,.2f} USD."
+        try:
+            usd_pair = f"{crypto_symbol}-USD"
+            usd_price = yf.Ticker(usd_pair).fast_info["last_price"]
+        except Exception:
+            logging.info(f"Unable to fetch {usd_pair}")
+            return f"{crypto_symbol} is not a valid cryptocurrency symbol."
+        try:
+            fx_pair = f"USD{vs_currency_symbol}=X"
+            fx_rate = yf.Ticker(fx_pair).fast_info["last_price"]
+        except Exception:
+            logging.info(f"Unable to fetch {fx_pair} (for currency conversion)")
+            return only_usd_message.format(crypto_symbol, usd_price)
+        calculated_price = usd_price * fx_rate
+        return str(calculated_price)
 
     async def get_coingecko_supported_vs_currencies(self) -> list[str]:
         url = f"{self.COINGECKO_BASE_URL}/simple/supported_vs_currencies"
@@ -216,15 +187,41 @@ class CryptoApiService:
             return []
         return [str(currency) for currency in json_obj]
 
-    async def get_yfinance_supported_crypto_currencies(self) -> list[Cryptocurrency]:
-        s = Screener()
-        data = s.get_screeners("all_cryptocurrencies_us", count=250)
-        crypto_dicts = data["all_cryptocurrencies_us"]["quotes"]
+    async def get_yfinance_supported_crypto_currencies(
+        self, amount: int = 250
+    ) -> list[Cryptocurrency]:
+        """
+        Fetches a list of 250 supported cryptocurrencies from Yahoo Finance screener.
+        """
+        amount = max(1, min(amount, 250))  # Ensure amount is between 1 and 250
+        try:
+            s = Screener()
+            # max = 250 !!!
+            data = s.get_screeners("all_cryptocurrencies_us", count=amount)
+        except Exception as e:
+            logging.error(f"Failed to fetch screener data: {e}")
+            return []
+        try:
+            raw = data["all_cryptocurrencies_us"]
+            crypto_dicts: list = raw if isinstance(raw, list) else raw["quotes"]
+        except (KeyError, TypeError) as e:
+            logging.error(f"Unexpected screener response structure: {e}\ndata={data}")
+            return []
+
         supported_crypto_currencies = []
         for d in crypto_dicts:
-            raw_symbol = d["symbol"]
-            clean_symbol = raw_symbol.replace("-USD", "")
-            raw_name = d.get("shortName", "")
-            clean_name = raw_name.split(" USD")[0]
-            supported_crypto_currencies.append(Cryptocurrency(symbol=clean_symbol, name=clean_name))
+            try:
+                raw_symbol: str = d["symbol"]
+                clean_symbol = raw_symbol.replace("-USD", "").strip()
+                if not clean_symbol:
+                    continue
+                raw_name: str = d.get("shortName") or d.get("longName") or ""
+                clean_name = raw_name.split(" USD")[0].strip()
+                supported_crypto_currencies.append(
+                    Cryptocurrency(symbol=clean_symbol, name=clean_name)
+                )
+            except (KeyError, TypeError) as e:
+                logging.warning(f"Skipping malformed crypto entry {d!r}: {e}")
+                continue
+
         return supported_crypto_currencies

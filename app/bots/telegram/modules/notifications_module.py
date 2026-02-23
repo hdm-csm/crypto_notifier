@@ -1,14 +1,14 @@
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from app.bots.telegram.decorators import with_session_and_account
-from app.bots.telegram.modules.base import AccountModule
+from app.bots.telegram.modules.base_module import BaseModule
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_currency_service import CryptoCurrencyService
 from app.services.notification_service import NotificationCheckResult, NotificationService
 from app.models.schemas import Account, Notification
 from app.models.enums import NotificationDirection, PlatformType
 from app.services.vs_currency_service import VsCurrencyService
-from app.utils.command_constants import (
+from app.bots.constants.commands import (
     COMMAND_ADD_NOTIF,
     COMMAND_LIST_NOTIFS,
     COMMAND_REMOVE_NOTIF,
@@ -19,7 +19,7 @@ from sqlalchemy.orm import Session
 import logging
 
 
-class NotificationsModule(AccountModule):
+class NotificationsModule(BaseModule):
 
     def __init__(
         self,
@@ -43,9 +43,9 @@ class NotificationsModule(AccountModule):
 
     def register_jobs(self):
         """Register background jobs. Called after app initialization."""
-        # Schedule notification checking every 10 seconds
+        # Schedule notification checking every 60 seconds
         if self._app.job_queue:
-            self._app.job_queue.run_repeating(self.check_notifications, interval=10, first=1)
+            self._app.job_queue.run_repeating(self.check_notifications, interval=60, first=1)
 
     async def check_notifications(self, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Check all notifications and send messages to users."""

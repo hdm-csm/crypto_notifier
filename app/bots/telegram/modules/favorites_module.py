@@ -1,11 +1,11 @@
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 from app.bots.telegram.decorators import with_session_and_account
-from app.bots.telegram.modules.base import AccountModule
+from app.bots.telegram.modules.base_module import BaseModule
 from app.services.account_lookup_service import AccountLookupService
 from app.services.favorites_service import FavoritesService
 from app.models.schemas import Account
-from app.utils.command_constants import (
+from app.bots.constants.commands import (
     COMMAND_ADD_FAV,
     COMMAND_LIST_FAVS,
     COMMAND_REMOVE_FAV,
@@ -15,7 +15,7 @@ from app.utils.exceptions import MissingCommandArguments
 from sqlalchemy.orm import Session
 
 
-class FavoritesModule(AccountModule):
+class FavoritesModule(BaseModule):
 
     def __init__(
         self,

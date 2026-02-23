@@ -55,3 +55,11 @@ class TickerResult:
         # Makes debugging easier: print(result) will show this
         status = f"{self.price:.2f}" if self.price else "No Data"
         return f"<TickerResult {self.symbol}: {status} {self.currency}>"
+
+
+@dataclass
+class CryptoPrice:
+    price: float
+    self_converted: bool = False
+    only_usd: bool = False
+    error: bool = False

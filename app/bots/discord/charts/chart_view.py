@@ -1,6 +1,9 @@
 import discord
 from discord.ui import View, Button
-from typing import Dict, Any, Callable
+from typing import Dict, Any, Callable, Awaitable
+import io
+
+from app.bots.discord.charts.choices import ChartConfig
 
 
 class TimeButton(Button["ChartView"]):
@@ -11,25 +14,25 @@ class TimeButton(Button["ChartView"]):
         self.custom_label = label
 
     async def callback(self, interaction: discord.Interaction) -> None:
-        """This replaces the monkey-patched create_callback logic."""
         assert self.view is not None
         await interaction.response.defer()
+
+        # Update button styles
         for child in self.view.children:
             if isinstance(child, Button):
-                # Set blue if it matches this button's label, else gray
                 child.style = (
                     discord.ButtonStyle.primary
                     if child.label == self.custom_label
                     else discord.ButtonStyle.secondary
                 )
-        # Generate new chart
-        buffer = await self.view.bot.loop.run_in_executor(
-            None,
-            self.view.get_chart_func,
+
+        # Use the injected async service method directly
+        buffer = await self.view.generate_chart_async(
             self.view.symbol,
             self.config["period"],
             self.config["interval"],
         )
+
         if buffer:
             file = discord.File(fp=buffer, filename=f"{self.view.symbol}_{self.custom_label}.png")
             await interaction.edit_original_response(attachments=[file], view=self.view)
@@ -37,26 +40,17 @@ class TimeButton(Button["ChartView"]):
             await interaction.followup.send("❌ Failed to fetch data.", ephemeral=True)
 
 
-# 2. The View Class
 class ChartView(View):
     def __init__(
-        self, bot: Any, symbol: str, get_chart_func: Callable[..., Any], initial_label: str = "1D"
+        self,
+        symbol: str,
+        generate_chart_async: Callable[[str, str, str], Awaitable[io.BytesIO | None]],
+        initial_label: str = "1D",
     ):
         super().__init__(timeout=180)
-        self.bot = bot
         self.symbol = symbol
-        self.get_chart_func = get_chart_func
-
-        self.time_map: Dict[str, Dict[str, str]] = {
-            "1D": {"period": "1d", "interval": "15m"},
-            "5D": {"period": "5d", "interval": "30m"},
-            "1M": {"period": "1mo", "interval": "1d"},
-            "6M": {"period": "6mo", "interval": "1d"},
-            "YTD": {"period": "ytd", "interval": "1d"},
-            "1Y": {"period": "1y", "interval": "1wk"},
-            "5Y": {"period": "5y", "interval": "1mo"},
-            "All": {"period": "max", "interval": "3mo"},
-        }
+        self.generate_chart_async = generate_chart_async
+        self.time_map: Dict[str, Dict[str, str]] = ChartConfig.get_map()
 
         for i, (label, config) in enumerate(self.time_map.items()):
             is_selected = label == initial_label

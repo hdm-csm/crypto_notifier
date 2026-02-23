@@ -8,12 +8,13 @@ from app.bots.discord.cogs.favorites_cog import FavoritesCog
 from app.bots.discord.cogs.notifications_cog import NotificationsCog
 from app.models.schemas import PlatformType
 from app.services.account_lookup_service import AccountLookupService
+from app.services.chart_service import ChartService
 from app.services.crypto_api_service import CryptoApiService
 from app.services.crypto_currency_service import CryptoCurrencyService
 from app.services.favorites_service import FavoritesService
 from app.services.notification_service import NotificationService
 from app.services.vs_currency_service import VsCurrencyService
-from app.bots.discord.custom_bot import CustomDiscordBot
+from app.bots.discord.custom.custom_bot import CustomDiscordBot
 
 
 class DiscordBot:
@@ -30,6 +31,7 @@ class DiscordBot:
         account_lookup_service: AccountLookupService,
         vs_currency_service: VsCurrencyService,
         crypto_currency_service: CryptoCurrencyService,
+        chart_service: ChartService,
     ):
 
         self.token = token
@@ -40,23 +42,26 @@ class DiscordBot:
         self._account_lookup_service = account_lookup_service
         self._vs_currency_service = vs_currency_service
         self._crypto_currency_service = crypto_currency_service
+        self._chart_service = chart_service
 
         intents = discord.Intents.default()
         intents.message_content = True
 
         self.bot = CustomDiscordBot(
             account_lookup_service=account_lookup_service,
+            crypto_currency_service=crypto_currency_service,
+            vs_currency_service=vs_currency_service,
             command_prefix="/",
             intents=intents,
         )
 
         @self.bot.event
         async def on_ready():
-            logging.info(f"Bot logged in as {self.bot.user}")
+            logging.info(f"Discord Bot logged in as {self.bot.user}")
 
             try:
                 guild_obj = discord.Object(id=self.guild_id)
-                self.bot.tree.copy_global_to(guild=guild_obj)  # Takes 1 hour to register
+                self.bot.tree.copy_global_to(guild=guild_obj)
                 synced = await self.bot.tree.sync(guild=guild_obj)
                 logging.info(f"Synced {len(synced)} commands to Server ID: {self.guild_id}")
             except Exception as e:
@@ -68,43 +73,24 @@ class DiscordBot:
                 await ctx.send("Command not found.")
 
     async def start(self):
-        settings_cog = SettingsCog(
-            account_lookup_service=self._account_lookup_service,
-            vs_currency_service=self._vs_currency_service,
-        )
-        crypto_info_cog = CrpytoInfoCog(
-            account_lookup_service=self._account_lookup_service,
-            crypto_api_service=self._crypto_api_service,
-            crypto_currency_service=self._crypto_currency_service,
-        )
-        favorites_cog = FavoritesCog(
-            account_lookup_service=self._account_lookup_service,
-            favorites_service=self._favorites_service,
-        )
+        settings_cog = SettingsCog(bot=self.bot)
+        crypto_info_cog = CrpytoInfoCog(bot=self.bot, crypto_api_service=self._crypto_api_service)
+        favorites_cog = FavoritesCog(favorites_service=self._favorites_service)
         notifications_cog = NotificationsCog(
-            account_lookup_service=self._account_lookup_service,
+            bot=self.bot,
             notification_service=self._notification_service,
             crypto_api_service=self._crypto_api_service,
-            crypto_currency_service=self._crypto_currency_service,
-            vs_currency_service=self._vs_currency_service,
-            bot=self.bot,
         )
-        charts_cog = ChartsCog(bot=self.bot)
+        charts_cog = ChartsCog(
+            bot=self.bot,
+            chart_service=self._chart_service,
+        )
 
         await self.bot.add_cog(settings_cog)
         await self.bot.add_cog(crypto_info_cog)
         await self.bot.add_cog(favorites_cog)
         await self.bot.add_cog(notifications_cog)
         await self.bot.add_cog(charts_cog)
-
-        # TODO: Make it work
-        # Build choices from cryptocurrency repository
-        # crypto_names = self.cryptocurrency_repository.get_all_cryptocurrency_names()
-        # choices = [
-        #     app_commands.Choice(name=name, value=name.lower())
-        #     for name in crypto_names[:25]  # Discord limit is 25 choices
-        # ]
-        # cog._index.choices = choices
 
         try:
             await self.bot.start(self.token)

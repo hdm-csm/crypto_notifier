@@ -1,7 +1,6 @@
 """
-VS Currency Mappings
-Maps currency short codes to their full names.
-Source: ISO 4217 and common currency names
+The symbols have been received by endpoint https://api.coingecko.com/api/v3/simple/supported_vs_currencies
+The full names have been added manually by looking up the symbols on CoinGecko and other sources
 """
 
 VS_CURRENCY_MAPPING = {
@@ -72,13 +71,4 @@ VS_CURRENCY_MAPPING = {
 
 
 def get_currency_full_name(short_name: str) -> str | None:
-    """
-    Get the full name for a currency short code.
-
-    Args:
-        short_name: Currency short code (e.g., 'usd', 'eur')
-
-    Returns:
-        Full currency name or None if not found
-    """
     return VS_CURRENCY_MAPPING.get(short_name.lower())

@@ -8,7 +8,7 @@ import logging
 from app.utils.exceptions import AccountNotFoundOrCreatedException
 
 if TYPE_CHECKING:
-    from app.bots.telegram.modules.base import AccountModule
+    from app.bots.telegram.modules.base_module import BaseModule
 
 
 def with_session_and_account(func: Callable) -> Callable:
@@ -16,7 +16,7 @@ def with_session_and_account(func: Callable) -> Callable:
 
     @wraps(func)
     async def wrapper(
-        self: "AccountModule", update: Update, context: ContextTypes.DEFAULT_TYPE
+        self: "BaseModule", update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> None:
         if update.effective_user is None or update.message is None:
             return

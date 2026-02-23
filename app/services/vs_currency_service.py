@@ -3,8 +3,11 @@ from app.db import session_scope
 from app.models.schemas import Account, VsCurrency
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
-from app.utils.currency_mappings import get_currency_full_name
 from sqlalchemy.orm import Session
+from app.utils.static_data.coingecko_supported_vs_currencies import (
+    get_currency_full_name,
+    VS_CURRENCY_MAPPING,
+)
 
 
 class VsCurrencyService:
@@ -28,6 +31,15 @@ class VsCurrencyService:
                 vs_currencies = [
                     VsCurrency(symbol=symbol, name=get_currency_full_name(symbol))
                     for symbol in supported_vs_currencies_symbols
+                ]
+                self._vs_currency_repository.store_all(session, vs_currencies)
+
+    def init_vs_currencies_from_static(self):
+        with session_scope() as session:
+            if self._vs_currency_repository.is_empty(session):
+                vs_currencies = [
+                    VsCurrency(symbol=symbol, name=name)
+                    for symbol, name in VS_CURRENCY_MAPPING.items()
                 ]
                 self._vs_currency_repository.store_all(session, vs_currencies)
 

@@ -1,6 +1,7 @@
 import logging
 from sqlalchemy.orm import Session
 from app.db import session_scope
+from app.models.typealiases import CryptoSymbolStr, VsCurrencySymbolStr
 from app.repository.notification_repository import NotificationRepository
 from app.models.schemas import Notification
 from app.models.enums import NotificationDirection, PlatformType
@@ -8,6 +9,7 @@ from typing import NamedTuple
 from app.utils.exceptions import InvalidNotificationArguments
 
 from app.services.crypto_api_service import CryptoApiService
+from app.models.dtos import CryptoPrice
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +31,7 @@ class NotificationService:
         self._crypto_api_service = crypto_api_service
 
     def validate_and_parse_notification_args(
-        self, crypto_symbol: str, vs_symbol: str, direction: str, price: str
+        self, crypto_symbol: str, vs_symbol: str, direction: str, price: float
     ) -> tuple[str, str, NotificationDirection, float]:
         """
         Validate and parse notification arguments.
@@ -40,11 +42,6 @@ class NotificationService:
             "Usage: `/add_notif <crypto_symbol> <vs_symbol> <above|below> <price>`\n"
             "Example: `/add_notif BTC USD above 50000`"
         )
-
-        try:
-            price_float = float(price)
-        except ValueError:
-            raise InvalidNotificationArguments("❌ Price must be a number.", usage_hint)
 
         direction_lower = direction.lower()
         if direction_lower not in ["above", "below"]:
@@ -58,7 +55,7 @@ class NotificationService:
             else NotificationDirection.BELOW
         )
 
-        return crypto_symbol.upper(), vs_symbol.upper(), direction_enum, price_float
+        return crypto_symbol.upper(), vs_symbol.upper(), direction_enum, price
 
     def add_notification(
         self,
@@ -125,18 +122,13 @@ class NotificationService:
         Check if notification criteria is met and update state if needed.
         Returns a result with message ready to send to user.
         """
-        # Check if criteria is met
         criteria_met = False
         if notif.direction == NotificationDirection.ABOVE and current_price >= notif.target_price:
             criteria_met = True
         elif notif.direction == NotificationDirection.BELOW and current_price <= notif.target_price:
             criteria_met = True
-
         message = ""
-
-        # Handle state transitions
         if not notif.already_hit and criteria_met:
-            # Criteria just met - update and create message
             self.update_notification_already_hit(
                 session=session, notification_id=notif.id, already_hit=True
             )
@@ -148,9 +140,7 @@ class NotificationService:
                 f"🔔 Alert — {notif.crypto_symbol}/{notif.vs_symbol}\n"
                 f"{notif.direction.value.capitalize()} {notif.target_price} · Now: {current_price}  (ID: {notif.id})"
             )
-
         elif notif.already_hit and not criteria_met:
-            # Criteria no longer met - reset the hit flag
             self.update_notification_already_hit(
                 session=session, notification_id=notif.id, already_hit=False
             )
@@ -158,7 +148,6 @@ class NotificationService:
                 f"Notification reset for {notif.crypto_symbol}/{notif.vs_symbol} "
                 f"(current: {current_price})"
             )
-
         return NotificationCheckResult(
             current_price=current_price,
             user_platform_id=notif.account.platform_user_id,
@@ -178,37 +167,36 @@ class NotificationService:
             if self._crypto_api_service is None:
                 logging.error("Crypto API service not set for notification checking")
                 return []
-
             notifications = self.list_notifications_by_platform(
                 session=db_session, platform=platform
             )
             if not notifications:
                 return []
-
-            # Build tickers list from all notifications (format: "BASE-QUOTE")
-            tickers = [f"{notif.crypto_symbol}-{notif.vs_symbol}" for notif in notifications]
-
-            # Fetch all prices in a single call
-            ticker_results = await self._crypto_api_service.fetch_ticker_prices(tickers)
-
-            # Process each notification with its corresponding price
+            ticker_price_results = await self._crypto_api_service.fetch_ticker_prices(
+                ticker_pairs={(notif.crypto_symbol, notif.vs_symbol) for notif in notifications}
+            )
+            price_lookup: dict[tuple[CryptoSymbolStr, VsCurrencySymbolStr], CryptoPrice] = {
+                (crypto, vs): crypto_price for crypto, vs, crypto_price in ticker_price_results
+            }
             for notif in notifications:
                 try:
-                    ticker_key = f"{notif.crypto_symbol}-{notif.vs_symbol}"
-                    ticker_result = ticker_results.get(ticker_key)
-
-                    # Skip if price data not found
-                    if not ticker_result or not ticker_result.found or ticker_result.price is None:
-                        logging.warning(f"Could not fetch price for {ticker_key}")
+                    c, v = notif.crypto_symbol.upper(), notif.vs_symbol.upper()
+                    crypto_price = price_lookup.get((c, v))
+                    if crypto_price is None or crypto_price.error:
+                        logging.warning(
+                            f"Could not fetch price for {notif.crypto_symbol}/{notif.vs_symbol}"
+                        )
                         continue
-
-                    current_price = ticker_result.price
+                    if crypto_price.only_usd and v != "USD":
+                        logging.warning(
+                            f"Skipping {c}/{v} notification check: Forex failed, only USD price available."
+                        )
+                        continue
                     result = self.check_and_process_notification(
-                        session=db_session, notif=notif, current_price=current_price
+                        session=db_session, notif=notif, current_price=crypto_price.price
                     )
                     if result.message:
                         results.append(result)
                 except Exception as e:
                     logging.error(f"Error checking notification {notif.id}: {e}")
-
         return results

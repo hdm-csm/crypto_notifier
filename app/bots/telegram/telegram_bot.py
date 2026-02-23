@@ -4,7 +4,7 @@ from telegram.ext import ApplicationBuilder, ContextTypes
 from app.bots.telegram.modules.crypto_info_module import CryptoInfoModule
 from app.bots.telegram.modules.favorites_module import FavoritesModule
 from app.bots.telegram.modules.notifications_module import NotificationsModule
-from app.bots.telegram.modules.base import AccountModule
+from app.bots.telegram.modules.base_module import BaseModule
 from app.bots.telegram.modules.settings_module import SettingsModule
 from app.models.enums import PlatformType
 from app.services.crypto_currency_service import CryptoCurrencyService
@@ -36,7 +36,7 @@ class TelegramBot:
         self._app = ApplicationBuilder().token(token).build()
         self._app.add_error_handler(self._error_handler)
 
-        self._modules: list[AccountModule] = [
+        self._modules: list[BaseModule] = [
             FavoritesModule(self._app, account_lookup_service, favorites_service),
             NotificationsModule(
                 self._app,
