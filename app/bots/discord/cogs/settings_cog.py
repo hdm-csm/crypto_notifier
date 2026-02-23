@@ -7,7 +7,7 @@ from app.models.enums import PlatformType
 from app.models.schemas import VsCurrency
 from app.services.account_lookup_service import AccountLookupService
 from app.services.vs_currency_service import VsCurrencyService
-from app.utils.command_constants import (
+from app.bots.constants.commands import (
     COMMAND_ADD_FAV,
     COMMAND_ADD_FAVS,
     COMMAND_LIST_FAVS,

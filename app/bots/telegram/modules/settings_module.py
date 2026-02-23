@@ -4,7 +4,7 @@ from app.bots.telegram.decorators import with_session_and_account
 from app.bots.telegram.modules.base import AccountModule
 from app.services.account_lookup_service import AccountLookupService
 from app.models.schemas import Account
-from app.utils.command_constants import (
+from app.bots.constants.commands import (
     COMMAND_GET_VS,
     COMMAND_LIST_VS,
     COMMAND_SET_VS,

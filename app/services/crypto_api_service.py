@@ -217,14 +217,38 @@ class CryptoApiService:
     async def get_yfinance_supported_crypto_currencies(
         self, amount: int = 250
     ) -> list[Cryptocurrency]:
-        s = Screener()
-        data = s.get_screeners("all_cryptocurrencies_us", count=amount)
-        crypto_dicts = data["all_cryptocurrencies_us"]["quotes"]
+        """
+        Fetches a list of 250 supported cryptocurrencies from Yahoo Finance screener.
+        """
+        amount = max(1, min(amount, 250))  # Ensure amount is between 1 and 250
+        try:
+            s = Screener()
+            # max = 250 !!!
+            data = s.get_screeners("all_cryptocurrencies_us", count=amount)
+        except Exception as e:
+            logging.error(f"Failed to fetch screener data: {e}")
+            return []
+        try:
+            raw = data["all_cryptocurrencies_us"]
+            crypto_dicts: list = raw if isinstance(raw, list) else raw["quotes"]
+        except (KeyError, TypeError) as e:
+            logging.error(f"Unexpected screener response structure: {e}\ndata={data}")
+            return []
+
         supported_crypto_currencies = []
         for d in crypto_dicts:
-            raw_symbol = d["symbol"]
-            clean_symbol = raw_symbol.replace("-USD", "")
-            raw_name = d.get("shortName", "")
-            clean_name = raw_name.split(" USD")[0]
-            supported_crypto_currencies.append(Cryptocurrency(symbol=clean_symbol, name=clean_name))
+            try:
+                raw_symbol: str = d["symbol"]
+                clean_symbol = raw_symbol.replace("-USD", "").strip()
+                if not clean_symbol:
+                    continue
+                raw_name: str = d.get("shortName") or d.get("longName") or ""
+                clean_name = raw_name.split(" USD")[0].strip()
+                supported_crypto_currencies.append(
+                    Cryptocurrency(symbol=clean_symbol, name=clean_name)
+                )
+            except (KeyError, TypeError) as e:
+                logging.warning(f"Skipping malformed crypto entry {d!r}: {e}")
+                continue
+
         return supported_crypto_currencies

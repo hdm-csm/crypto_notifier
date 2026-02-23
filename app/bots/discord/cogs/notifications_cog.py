@@ -8,7 +8,7 @@ from app.services.notification_service import NotificationCheckResult, Notificat
 from app.services.crypto_api_service import CryptoApiService
 from app.bots.discord.custom_interaction import get_db_session, get_account
 from app.services.vs_currency_service import VsCurrencyService
-from app.utils.command_constants import (
+from app.bots.constants.commands import (
     COMMAND_ADD_NOTIF,
     COMMAND_LIST_NOTIFS,
     COMMAND_REMOVE_NOTIF,

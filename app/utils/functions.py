@@ -1,4 +1,4 @@
-from app.utils.command_constants import COMMAND_EXAMPLES
+from app.bots.constants.commands import COMMAND_EXAMPLES
 
 
 def get_currency_display(vs_currency_symbol: str) -> str:

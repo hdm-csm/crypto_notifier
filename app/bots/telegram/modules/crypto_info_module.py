@@ -4,7 +4,7 @@ from app.models.schemas import Account
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
 from app.services.crypto_currency_service import CryptoCurrencyService
-from app.utils.command_constants import COMMAND_INDEX, COMMAND_TOP, COMMAND_LIST
+from app.bots.constants.commands import COMMAND_INDEX, COMMAND_TOP, COMMAND_LIST
 from app.utils.exceptions import MissingCommandArguments
 from telegram.ext import Application, CommandHandler, ContextTypes
 from telegram import Update

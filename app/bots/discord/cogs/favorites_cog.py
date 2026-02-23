@@ -5,7 +5,7 @@ from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
 from app.services.favorites_service import FavoritesService
 from app.bots.discord.custom_interaction import get_db_session, get_account
-from app.utils.command_constants import (
+from app.bots.constants.commands import (
     COMMAND_ADD_FAV,
     COMMAND_ADD_FAVS,
     COMMAND_LIST_FAVS,

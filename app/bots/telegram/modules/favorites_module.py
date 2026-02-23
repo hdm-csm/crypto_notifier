@@ -5,7 +5,7 @@ from app.bots.telegram.modules.base import AccountModule
 from app.services.account_lookup_service import AccountLookupService
 from app.services.favorites_service import FavoritesService
 from app.models.schemas import Account
-from app.utils.command_constants import (
+from app.bots.constants.commands import (
     COMMAND_ADD_FAV,
     COMMAND_LIST_FAVS,
     COMMAND_REMOVE_FAV,

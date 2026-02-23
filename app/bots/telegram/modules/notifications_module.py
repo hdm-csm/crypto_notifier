@@ -8,7 +8,7 @@ from app.services.notification_service import NotificationCheckResult, Notificat
 from app.models.schemas import Account, Notification
 from app.models.enums import NotificationDirection, PlatformType
 from app.services.vs_currency_service import VsCurrencyService
-from app.utils.command_constants import (
+from app.bots.constants.commands import (
     COMMAND_ADD_NOTIF,
     COMMAND_LIST_NOTIFS,
     COMMAND_REMOVE_NOTIF,

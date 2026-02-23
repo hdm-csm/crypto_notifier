@@ -8,7 +8,7 @@ from app.models.schemas import Cryptocurrency
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
 from app.services.crypto_currency_service import CryptoCurrencyService
-from app.utils.command_constants import COMMAND_INDEX, COMMAND_TOP, COMMAND_LIST
+from app.bots.constants.commands import COMMAND_INDEX, COMMAND_TOP, COMMAND_LIST
 from app.bots.discord.custom_interaction import get_db_session, get_account
 
 
@@ -37,7 +37,7 @@ class CrpytoInfoCog(AccountCog):
         if not cryptocurrency or not cryptocurrency.symbol:
             await interaction.followup.send(
                 f"❌ Cryptocurrency '{crypto_currency_input}' not found. Please check the name or symbol and try again."
-            )f
+            )
             return
         vs_currency_symbol = "EUR"
         if account and account.selected_vs_currency:
