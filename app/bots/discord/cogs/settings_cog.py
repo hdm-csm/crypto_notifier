@@ -1,6 +1,6 @@
 import discord
 from discord import app_commands
-from app.bots.discord.cogs.base import AccountCog
+from app.bots.discord.cogs.base_cog import BaseCog
 from app.bots.discord.custom.custom_interaction import get_db_session, get_account
 from app.db import session_scope
 from app.models.enums import PlatformType
@@ -27,7 +27,7 @@ from app.bots.constants.commands import (
 )
 
 
-class SettingsCog(AccountCog):
+class SettingsCog(BaseCog):
 
     PLATFORM_TYPE = PlatformType.DISCORD
 

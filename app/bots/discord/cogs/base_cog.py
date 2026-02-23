@@ -15,7 +15,7 @@ from app.utils.functions import get_command_example
 from discord import app_commands
 
 
-class AccountCog(commands.Cog):
+class BaseCog(commands.Cog):
     """
     This class acts as a middleware, that adds "account" and "db_session" to each @commands.command() invocation.
     Goal: Avoid duplicate data fetching/session starting code

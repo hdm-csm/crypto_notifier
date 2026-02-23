@@ -1,5 +1,5 @@
 from discord import app_commands
-from app.bots.discord.cogs.base import AccountCog
+from app.bots.discord.cogs.base_cog import BaseCog
 from app.bots.discord.custom.custom_bot import CustomDiscordBot
 from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
@@ -19,7 +19,7 @@ import discord
 import logging
 
 
-class NotificationsCog(AccountCog):
+class NotificationsCog(BaseCog):
 
     PLATFORM_TYPE = PlatformType.DISCORD
 

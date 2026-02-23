@@ -1,7 +1,7 @@
 import asyncio
 import discord
 from discord import app_commands
-from app.bots.discord.cogs.base import AccountCog
+from app.bots.discord.cogs.base_cog import BaseCog
 from app.models.dtos import CryptoPrice
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
@@ -11,7 +11,7 @@ from app.bots.discord.custom.custom_interaction import get_db_session, get_accou
 from app.utils.functions import format_price_info
 
 
-class CrpytoInfoCog(AccountCog):
+class CrpytoInfoCog(BaseCog):
 
     def __init__(
         self,
@@ -24,7 +24,7 @@ class CrpytoInfoCog(AccountCog):
 
     @app_commands.command(name=COMMAND_INDEX, description="Get price/index of a cryptocurrency")
     @app_commands.describe(crypto_currency_input="The type of cryptocurrency")
-    @app_commands.autocomplete(crypto_currency_input=AccountCog.crypto_autocomplete)
+    @app_commands.autocomplete(crypto_currency_input=BaseCog.crypto_autocomplete)
     async def _index(self, interaction: discord.Interaction, crypto_currency_input: str):
         await interaction.response.defer()
         db_session = get_db_session(interaction)

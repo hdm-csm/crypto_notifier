@@ -1,6 +1,6 @@
 import discord
 from discord import app_commands
-from app.bots.discord.cogs.base import AccountCog
+from app.bots.discord.cogs.base_cog import BaseCog
 from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_currency_service import CryptoCurrencyService
@@ -15,7 +15,7 @@ from app.bots.constants.commands import (
 )
 
 
-class FavoritesCog(AccountCog):
+class FavoritesCog(BaseCog):
 
     PLATFORM_TYPE = PlatformType.DISCORD
 
@@ -32,7 +32,7 @@ class FavoritesCog(AccountCog):
         name=COMMAND_ADD_FAV, description="Add a cryptocurrency to your favorites"
     )
     @app_commands.describe(crypto_currency_input="The cryptocurrency symbol or name")
-    @app_commands.autocomplete(crypto_currency_input=AccountCog.crypto_autocomplete)
+    @app_commands.autocomplete(crypto_currency_input=BaseCog.crypto_autocomplete)
     async def _add_fav(self, interaction: discord.Interaction, crypto_currency_input: str) -> None:
         """Save cryptocurrency as favorite."""
         db_session = get_db_session(interaction)

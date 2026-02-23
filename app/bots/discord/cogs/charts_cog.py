@@ -4,13 +4,13 @@ from discord import app_commands
 
 from app.bots.discord.charts.chart_view import ChartView
 from app.bots.discord.charts.choices import ChartConfig
-from app.bots.discord.cogs.base import AccountCog
+from app.bots.discord.cogs.base_cog import BaseCog
 from app.services.account_lookup_service import AccountLookupService
 from app.services.chart_service import ChartService
 from app.services.crypto_currency_service import CryptoCurrencyService
 
 
-class ChartsCog(AccountCog):
+class ChartsCog(BaseCog):
     """Cryptocurrency charts cog for displaying price charts."""
 
     def __init__(
