@@ -8,12 +8,13 @@ from app.bots.discord.cogs.favorites_cog import FavoritesCog
 from app.bots.discord.cogs.notifications_cog import NotificationsCog
 from app.models.schemas import PlatformType
 from app.services.account_lookup_service import AccountLookupService
+from app.services.chart_service import ChartService
 from app.services.crypto_api_service import CryptoApiService
 from app.services.crypto_currency_service import CryptoCurrencyService
 from app.services.favorites_service import FavoritesService
 from app.services.notification_service import NotificationService
 from app.services.vs_currency_service import VsCurrencyService
-from app.bots.discord.custom_bot import CustomDiscordBot
+from app.bots.discord.custom.custom_bot import CustomDiscordBot
 
 
 class DiscordBot:
@@ -30,6 +31,7 @@ class DiscordBot:
         account_lookup_service: AccountLookupService,
         vs_currency_service: VsCurrencyService,
         crypto_currency_service: CryptoCurrencyService,
+        chart_service: ChartService,
     ):
 
         self.token = token
@@ -40,6 +42,7 @@ class DiscordBot:
         self._account_lookup_service = account_lookup_service
         self._vs_currency_service = vs_currency_service
         self._crypto_currency_service = crypto_currency_service
+        self._chart_service = chart_service
 
         intents = discord.Intents.default()
         intents.message_content = True
@@ -56,7 +59,7 @@ class DiscordBot:
 
             try:
                 guild_obj = discord.Object(id=self.guild_id)
-                self.bot.tree.copy_global_to(guild=guild_obj)  
+                self.bot.tree.copy_global_to(guild=guild_obj)
                 synced = await self.bot.tree.sync(guild=guild_obj)
                 logging.info(f"Synced {len(synced)} commands to Server ID: {self.guild_id}")
             except Exception as e:
@@ -71,6 +74,7 @@ class DiscordBot:
         settings_cog = SettingsCog(
             account_lookup_service=self._account_lookup_service,
             vs_currency_service=self._vs_currency_service,
+            crypto_currency_service=self._crypto_currency_service,
         )
         crypto_info_cog = CrpytoInfoCog(
             account_lookup_service=self._account_lookup_service,
@@ -80,6 +84,7 @@ class DiscordBot:
         favorites_cog = FavoritesCog(
             account_lookup_service=self._account_lookup_service,
             favorites_service=self._favorites_service,
+            crypto_currency_service=self._crypto_currency_service,
         )
         notifications_cog = NotificationsCog(
             account_lookup_service=self._account_lookup_service,
@@ -89,7 +94,12 @@ class DiscordBot:
             vs_currency_service=self._vs_currency_service,
             bot=self.bot,
         )
-        charts_cog = ChartsCog(bot=self.bot)
+        charts_cog = ChartsCog(
+            bot=self.bot,
+            chart_service=self._chart_service,
+            account_lookup_service=self._account_lookup_service,
+            crypto_currency_service=self._crypto_currency_service,
+        )
 
         await self.bot.add_cog(settings_cog)
         await self.bot.add_cog(crypto_info_cog)

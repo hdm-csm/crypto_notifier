@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import httpx
+from app.services.chart_service import ChartService
 from config import Config
 from app.bots.discord.discord_bot import DiscordBot
 from app.bots.telegram.telegram_bot import TelegramBot
@@ -66,7 +67,7 @@ async def async_main():
     _notification_service = NotificationService(
         notification_repository=_notification_repository, crypto_api_service=_crypto_api_service
     )
-
+    _chart_service = ChartService()
     _vs_currency_service.init_vs_currencies_from_static()
     await _crypto_currency_service.init_crypto_currencies(amount=500)
 
@@ -79,6 +80,7 @@ async def async_main():
         account_lookup_service=_account_lookup_service,
         vs_currency_service=_vs_currency_service,
         crypto_currency_service=_crypto_currency_service,
+        chart_service=_chart_service,
     )
     print("Telegram Bot Token:", TELEGRAM_BOT_TOKEN)
     _telegram_bot = TelegramBot(

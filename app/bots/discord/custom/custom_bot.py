@@ -1,7 +1,7 @@
-from app.bots.discord.custom_context import CustomContext
+from app.bots.discord.custom.custom_context import CustomContext
 from app.services.account_lookup_service import AccountLookupService
 from discord.ext import commands
-from app.bots.discord.custom_tree import CustomTree
+from app.bots.discord.custom.custom_tree import CustomTree
 
 
 class CustomDiscordBot(commands.Bot):

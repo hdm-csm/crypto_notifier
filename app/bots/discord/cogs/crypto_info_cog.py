@@ -2,14 +2,13 @@ import asyncio
 import discord
 from discord import app_commands
 from app.bots.discord.cogs.base import AccountCog
-from app.db import session_scope
 from app.models.dtos import CryptoPrice
-from app.models.schemas import Cryptocurrency
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
 from app.services.crypto_currency_service import CryptoCurrencyService
 from app.bots.constants.commands import COMMAND_INDEX, COMMAND_TOP, COMMAND_LIST
-from app.bots.discord.custom_interaction import get_db_session, get_account
+from app.bots.discord.custom.custom_interaction import get_db_session, get_account
+from app.utils.functions import format_price_info
 
 
 class CrpytoInfoCog(AccountCog):
@@ -20,13 +19,12 @@ class CrpytoInfoCog(AccountCog):
         crypto_api_service: CryptoApiService,
         crypto_currency_service: CryptoCurrencyService,
     ):
-        super().__init__(account_lookup_service)
-        self._account_lookup_service = account_lookup_service
+        super().__init__(account_lookup_service, crypto_currency_service)
         self._crypto_api_service = crypto_api_service
-        self._crypto_currency_service = crypto_currency_service
 
     @app_commands.command(name=COMMAND_INDEX, description="Get price/index of a cryptocurrency")
     @app_commands.describe(crypto_currency_input="The type of cryptocurrency")
+    @app_commands.autocomplete(crypto_currency_input=AccountCog.crypto_autocomplete)
     async def _index(self, interaction: discord.Interaction, crypto_currency_input: str):
         await interaction.response.defer()
         db_session = get_db_session(interaction)
@@ -39,44 +37,31 @@ class CrpytoInfoCog(AccountCog):
                 f"❌ Cryptocurrency '{crypto_currency_input}' not found. Please check the name or symbol and try again."
             )
             return
+        crypto_symbol = cryptocurrency.symbol
         vs_currency_symbol = "EUR"
         if account and account.selected_vs_currency:
             vs_currency_symbol = account.selected_vs_currency.symbol.lower()
         try:
             price: CryptoPrice = await asyncio.wait_for(
                 self._crypto_api_service.fetch_ticker_price(
-                    crypto_symbol=cryptocurrency.symbol, vs_currency_symbol=vs_currency_symbol
+                    crypto_symbol=crypto_symbol, vs_currency_symbol=vs_currency_symbol
                 ),
                 timeout=3.0,
             )
-            if not price:
-                await interaction.followup.send(
-                    f"❌ No price data found for {cryptocurrency.symbol.upper()} in {vs_currency_symbol.upper()}."
-                )
-                return
-            else:
-                await interaction.followup.send(price)
+            answer: str = format_price_info(
+                crypto_symbol=crypto_symbol,
+                vs_currency_symbol=vs_currency_symbol,
+                price_info=price,
+            )
+            await interaction.followup.send(answer)
         except asyncio.TimeoutError:
             await interaction.followup.send(
                 "⏱️ Request timed out. The API took too long to respond. Please try again later."
             )
 
-    @_index.autocomplete("crypto_currency_input")
-    async def _index_autocomplete(
-        self, interaction: discord.Interaction, current: str
-    ) -> list[app_commands.Choice[str]]:
-        with session_scope() as db_session:
-            all_cryptos: list[Cryptocurrency] = self._crypto_currency_service.get_all(db_session)
-            filtered = [
-                c
-                for c in all_cryptos
-                if current.lower() in c.symbol.lower() or current.lower() in c.name.lower()
-            ]
-            return [app_commands.Choice(name=c.name, value=c.symbol) for c in filtered][:25]
-
     @app_commands.command(name=COMMAND_TOP, description="Get top cryptocurrencies by market cap")
     @app_commands.describe(amount="The number of top cryptocurrencies to display (default: 10)")
-    async def _top(self, interaction: discord.Interaction, amount: int):
+    async def _top(self, interaction: discord.Interaction, amount: int = 10):
         await interaction.response.defer()
         vs_currency = "EUR"
         account = get_account(interaction)

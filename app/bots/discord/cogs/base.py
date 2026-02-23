@@ -1,14 +1,18 @@
 import logging
+import discord
 from discord.ext import commands
-from app.db import get_session
-from app.bots.discord.custom_context import CustomContext
+from app.db import get_session, session_scope
+from app.bots.discord.custom.custom_context import CustomContext
 from app.models.enums import PlatformType
+from app.models.schemas import Cryptocurrency
 from app.services.account_lookup_service import AccountLookupService
+from app.services.crypto_currency_service import CryptoCurrencyService
 from app.utils.exceptions import (
     InvokeSetupError,
     InvalidNotificationArguments,
 )
 from app.utils.functions import get_command_example
+from discord import app_commands
 
 
 class AccountCog(commands.Cog):
@@ -20,8 +24,13 @@ class AccountCog(commands.Cog):
 
     PLATFORM_TYPE = PlatformType.DISCORD
 
-    def __init__(self, account_lookup_service: AccountLookupService):
+    def __init__(
+        self,
+        account_lookup_service: AccountLookupService,
+        crypto_currency_service: CryptoCurrencyService,
+    ):
         self._account_lookup_service = account_lookup_service
+        self._crypto_currency_service = crypto_currency_service
 
     async def cog_before_invoke(self, ctx: commands.Context) -> None:
         """
@@ -86,3 +95,17 @@ class AccountCog(commands.Cog):
 
         await ctx.send(error_message)
         return await super().cog_command_error(ctx, error)
+
+    async def crypto_autocomplete(
+        self, interaction: discord.Interaction, current: str
+    ) -> list[app_commands.Choice[str]]:
+        with session_scope() as db_session:
+            all_cryptos: list[Cryptocurrency] = self._crypto_currency_service.get_all(db_session)
+            filtered = [
+                c
+                for c in all_cryptos
+                if current.lower() in c.symbol.lower() or current.lower() in c.name.lower()
+            ]
+            return [
+                app_commands.Choice(name=f"{c.name} ({c.symbol})", value=c.symbol) for c in filtered
+            ][:25]

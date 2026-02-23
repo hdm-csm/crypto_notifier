@@ -1,12 +1,12 @@
 from discord import app_commands
 from app.bots.discord.cogs.base import AccountCog
-from app.bots.discord.custom_bot import CustomDiscordBot
+from app.bots.discord.custom.custom_bot import CustomDiscordBot
 from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_currency_service import CryptoCurrencyService
 from app.services.notification_service import NotificationCheckResult, NotificationService
 from app.services.crypto_api_service import CryptoApiService
-from app.bots.discord.custom_interaction import get_db_session, get_account
+from app.bots.discord.custom.custom_interaction import get_db_session, get_account
 from app.services.vs_currency_service import VsCurrencyService
 from app.bots.constants.commands import (
     COMMAND_ADD_NOTIF,
@@ -32,10 +32,9 @@ class NotificationsCog(AccountCog):
         vs_currency_service: VsCurrencyService,
         bot: CustomDiscordBot,
     ):
-        super().__init__(account_lookup_service)
+        super().__init__(account_lookup_service, crypto_currency_service)
         self._notification_service = notification_service
         self._crypto_api_service = crypto_api_service
-        self._crypto_currency_service = crypto_currency_service
         self._vs_currency_service = vs_currency_service
         self._bot = bot
         self.check_notifications_task.start()

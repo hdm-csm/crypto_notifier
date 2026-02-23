@@ -1,11 +1,12 @@
 import discord
 from discord import app_commands
 from app.bots.discord.cogs.base import AccountCog
-from app.bots.discord.custom_interaction import get_db_session, get_account
+from app.bots.discord.custom.custom_interaction import get_db_session, get_account
 from app.db import session_scope
 from app.models.enums import PlatformType
 from app.models.schemas import VsCurrency
 from app.services.account_lookup_service import AccountLookupService
+from app.services.crypto_currency_service import CryptoCurrencyService
 from app.services.vs_currency_service import VsCurrencyService
 from app.bots.constants.commands import (
     COMMAND_ADD_FAV,
@@ -34,8 +35,9 @@ class SettingsCog(AccountCog):
         self,
         account_lookup_service: AccountLookupService,
         vs_currency_service: VsCurrencyService,
+        crypto_currency_service: CryptoCurrencyService,
     ):
-        super().__init__(account_lookup_service)
+        super().__init__(account_lookup_service, crypto_currency_service)
         self._vs_currency_service = vs_currency_service
 
     @app_commands.command(

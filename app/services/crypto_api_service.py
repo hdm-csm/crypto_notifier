@@ -60,35 +60,8 @@ class CryptoApiService:
             else:
                 market_cap_str = f"{market_cap:,.0f}"
             message += f"{medal}  {coin.name} ({coin.symbol.upper()})\n"
-            message += f"     Price: {coin.current_price:,.2f} · Cap: {market_cap_str}\n\n"
+            message += f"     Price: {coin.current_price:,.2f} {currency_display} · Cap: {market_cap_str}\n\n"
         return message
-
-    # async def get_index(self, crypto_symbol: str, vs_currency_symbol: str ) -> str:
-    #     crypto_symbol = crypto_symbol.upper().strip()
-    #     vs_currency_symbol = vs_currency_symbol.upper().strip()
-    #     ticker_str = f"{crypto_symbol}-{vs_currency_symbol}"
-    #     ticker = yf.Ticker(ticker_str)
-    #     try:
-    #         logging.info(f"Fetching price for {ticker_str}...")
-    #         ticker_str = "BTC-"
-    #         lookup = yf.Lookup(ticker_str)
-    #         # Get all search results as a pandas DataFrame
-    #         results_df = lookup.all  # or lookup.get_all()
-    #         logging.info(results_df.shape)
-    #         # Select only the most readable/useful columns
-    #         clean_df = results_df[["shortName", "quoteType", "exchange", "regularMarketPrice"]]
-
-    #         # Log only the top 5 results, keeping the index (the ticker symbol) visible
-    #         logging.info(f"Top 5 Lookup Results:\n{clean_df.head(25).to_markdown()}")
-
-    #         current_price = ticker.fast_info["last_price"]
-    #     except Exception as e:
-    #         logging.error(e)
-    #         return f"❌ An error occurred while fetching price data for {crypto_symbol}:\n {e}"
-    #     if current_price is None:
-    #         return f"❌ No price data found for {crypto_symbol}."
-    #     currency_display = get_currency_display(vs_currency_symbol)
-    #     return f"{crypto_symbol.upper()}: {current_price:.2f} {currency_display}"
 
     async def fetch_ticker_price(self, crypto_symbol: str, vs_currency_symbol: str) -> CryptoPrice:
         """

@@ -3,8 +3,9 @@ from discord import app_commands
 from app.bots.discord.cogs.base import AccountCog
 from app.models.enums import PlatformType
 from app.services.account_lookup_service import AccountLookupService
+from app.services.crypto_currency_service import CryptoCurrencyService
 from app.services.favorites_service import FavoritesService
-from app.bots.discord.custom_interaction import get_db_session, get_account
+from app.bots.discord.custom.custom_interaction import get_db_session, get_account
 from app.bots.constants.commands import (
     COMMAND_ADD_FAV,
     COMMAND_ADD_FAVS,
@@ -22,20 +23,22 @@ class FavoritesCog(AccountCog):
         self,
         account_lookup_service: AccountLookupService,
         favorites_service: FavoritesService,
+        crypto_currency_service: CryptoCurrencyService,
     ):
-        super().__init__(account_lookup_service)
+        super().__init__(account_lookup_service, crypto_currency_service)
         self._favorites_service = favorites_service
 
     @app_commands.command(
         name=COMMAND_ADD_FAV, description="Add a cryptocurrency to your favorites"
     )
-    @app_commands.describe(input_crypto="The cryptocurrency symbol or name")
-    async def _add_fav(self, interaction: discord.Interaction, input_crypto: str) -> None:
+    @app_commands.describe(crypto_currency_input="The cryptocurrency symbol or name")
+    @app_commands.autocomplete(crypto_currency_input=AccountCog.crypto_autocomplete)
+    async def _add_fav(self, interaction: discord.Interaction, crypto_currency_input: str) -> None:
         """Save cryptocurrency as favorite."""
         db_session = get_db_session(interaction)
         account = get_account(interaction)
         answer = self._favorites_service.add_favorite(
-            db_session=db_session, account=account, input_crypto=input_crypto
+            db_session=db_session, account=account, input_crypto=crypto_currency_input
         )
         await interaction.response.send_message(answer)
 

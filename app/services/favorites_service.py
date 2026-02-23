@@ -1,11 +1,9 @@
 from sqlalchemy.orm import Session
-from app.models.dtos import CryptoPrice
-from app.models.typealiases import CryptoSymbolStr, VsCurrencySymbolStr
 from app.repository.favorites_repository import FavoritesRepository
 from app.services.crypto_api_service import CryptoApiService
 from app.models.schemas import Account
 from app.services.crypto_currency_service import CryptoCurrencyService
-from app.utils.functions import get_currency_display
+from app.utils.functions import format_price_infos
 
 
 class FavoritesService:
@@ -55,7 +53,7 @@ class FavoritesService:
             ticker_pairs=ticker_pairs
         )
         message = "⭐ Favorites\n\n"
-        message += self.format_ticker_prices(favorite_prices)
+        message += format_price_infos(favorite_prices)
         return message
 
     def drop_favorites(self, account: Account) -> str:
@@ -63,35 +61,3 @@ class FavoritesService:
             return "ℹ️ No favorites to remove."
         self._favorite_repository.drop_favorites(account=account)
         return "✅ All favorites removed."
-
-    @staticmethod
-    def format_ticker_prices(
-        ticker_results: list[tuple[CryptoSymbolStr, VsCurrencySymbolStr, CryptoPrice]],
-    ) -> str:
-        """Formats a list of ticker results into a readable multi-line string."""
-        if not ticker_results:
-            return "ℹ️ No price data available for favorites."
-        lines = []
-        for crypto, vs, price_info in ticker_results:
-            c, v = crypto.upper(), vs.upper()
-            if price_info.error:
-                lines.append(f"• {c}/{v}: ❌ Unavailable")
-                continue
-            p = price_info.price
-            if p == 0.0:
-                price_str = "0.00"
-            elif p >= 1.0:
-                price_str = f"{p:,.2f}"
-            else:
-                price_str = f"{p:,.6f}".rstrip("0").rstrip(".")
-            vs_display = get_currency_display(v)
-            vs_prefix = f"{vs_display} " if len(vs_display) > 1 else vs_display
-            if price_info.only_usd:
-                usd_prefix = get_currency_display("USD")
-                lines.append(f"• {c}/{v}: {usd_prefix}{price_str} (Fallback)")
-            elif price_info.self_converted:
-                lines.append(f"• {c}/{v}: ≈ {vs_prefix}{price_str} (Self-Converted)")
-            else:
-                lines.append(f"• {c}/{v}: {vs_prefix}{price_str}")
-
-        return "\n".join(lines)

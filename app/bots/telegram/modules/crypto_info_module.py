@@ -1,5 +1,6 @@
 from app.bots.telegram.decorators import with_session_and_account
 from app.bots.telegram.modules.base import AccountModule
+from app.models.dtos import CryptoPrice
 from app.models.schemas import Account
 from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
@@ -9,6 +10,8 @@ from app.utils.exceptions import MissingCommandArguments
 from telegram.ext import Application, CommandHandler, ContextTypes
 from telegram import Update
 from sqlalchemy.orm import Session
+
+from app.utils.functions import format_price_info
 
 
 class CryptoInfoModule(AccountModule):
@@ -50,11 +53,17 @@ class CryptoInfoModule(AccountModule):
                 f"❌ Cryptocurrency '{crypto_currency_input}' not found. Please check the name or symbol and try again."
             )
             return
+        crypto_symbol = cryptocurrency.symbol
         vs_currency_symbol = "EUR"
         if account and account.selected_vs_currency:
             vs_currency_symbol = account.selected_vs_currency.symbol.lower()
-        answer: str = await self._crypto_api_service.get_index(
-            crypto_symbol=cryptocurrency.symbol, vs_currency_symbol=vs_currency_symbol
+        crypto_price: CryptoPrice = await self._crypto_api_service.fetch_ticker_price(
+            crypto_symbol=crypto_symbol, vs_currency_symbol=vs_currency_symbol
+        )
+        answer: str = format_price_info(
+            crypto_symbol=crypto_symbol,
+            vs_currency_symbol=vs_currency_symbol,
+            price_info=crypto_price,
         )
         if update.message:
             await update.message.reply_text(answer)
