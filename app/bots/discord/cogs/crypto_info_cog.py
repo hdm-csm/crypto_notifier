@@ -2,10 +2,10 @@ import asyncio
 import discord
 from discord import app_commands
 from app.bots.discord.cogs.base_cog import BaseCog
+from app.bots.discord.custom.custom_bot import CustomDiscordBot
+from app.bots.discord.utils.autocompletes import crypto_autocomplete
 from app.models.dtos import CryptoPrice
-from app.services.account_lookup_service import AccountLookupService
 from app.services.crypto_api_service import CryptoApiService
-from app.services.crypto_currency_service import CryptoCurrencyService
 from app.bots.constants.commands import COMMAND_INDEX, COMMAND_TOP, COMMAND_LIST
 from app.bots.discord.custom.custom_interaction import get_db_session, get_account
 from app.utils.functions import format_price_info
@@ -15,21 +15,20 @@ class CrpytoInfoCog(BaseCog):
 
     def __init__(
         self,
-        account_lookup_service: AccountLookupService,
+        bot: CustomDiscordBot,
         crypto_api_service: CryptoApiService,
-        crypto_currency_service: CryptoCurrencyService,
     ):
-        super().__init__(account_lookup_service, crypto_currency_service)
+        super().__init__()
+        self._bot = bot
         self._crypto_api_service = crypto_api_service
 
     @app_commands.command(name=COMMAND_INDEX, description="Get price/index of a cryptocurrency")
     @app_commands.describe(crypto_currency_input="The type of cryptocurrency")
-    @app_commands.autocomplete(crypto_currency_input=BaseCog.crypto_autocomplete)
+    @app_commands.autocomplete(crypto_currency_input=crypto_autocomplete)
     async def _index(self, interaction: discord.Interaction, crypto_currency_input: str):
-        await interaction.response.defer()
         db_session = get_db_session(interaction)
         account = get_account(interaction)
-        cryptocurrency = self._crypto_currency_service.find_by_name_or_symbol(
+        cryptocurrency = self._bot.crypto_currency_service.find_by_name_or_symbol(
             db_session, crypto_currency_input
         )
         if not cryptocurrency or not cryptocurrency.symbol:
@@ -62,7 +61,6 @@ class CrpytoInfoCog(BaseCog):
     @app_commands.command(name=COMMAND_TOP, description="Get top cryptocurrencies by market cap")
     @app_commands.describe(amount="The number of top cryptocurrencies to display (default: 10)")
     async def _top(self, interaction: discord.Interaction, amount: int = 10):
-        await interaction.response.defer()
         vs_currency = "EUR"
         account = get_account(interaction)
         if account and account.selected_vs_currency:
@@ -76,9 +74,8 @@ class CrpytoInfoCog(BaseCog):
         name=COMMAND_LIST, description="Get list of all supported cryptocurrencies"
     )
     async def _list(self, interaction: discord.Interaction):
-        await interaction.response.defer()
         db_session = get_db_session(interaction)
-        answer: str = self._crypto_currency_service.get_list(db_session)
+        answer: str = self._bot.crypto_currency_service.get_list(db_session)
         if not answer:
             answer = "❌ No cryptocurrencies found in the system.\n Please try again later."
             await interaction.followup.send(answer)

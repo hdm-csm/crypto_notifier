@@ -31,7 +31,7 @@ class NotificationService:
         self._crypto_api_service = crypto_api_service
 
     def validate_and_parse_notification_args(
-        self, crypto_symbol: str, vs_symbol: str, direction: str, price: str
+        self, crypto_symbol: str, vs_symbol: str, direction: str, price: float
     ) -> tuple[str, str, NotificationDirection, float]:
         """
         Validate and parse notification arguments.
@@ -42,11 +42,6 @@ class NotificationService:
             "Usage: `/add_notif <crypto_symbol> <vs_symbol> <above|below> <price>`\n"
             "Example: `/add_notif BTC USD above 50000`"
         )
-
-        try:
-            price_float = float(price)
-        except ValueError:
-            raise InvalidNotificationArguments("❌ Price must be a number.", usage_hint)
 
         direction_lower = direction.lower()
         if direction_lower not in ["above", "below"]:
@@ -60,7 +55,7 @@ class NotificationService:
             else NotificationDirection.BELOW
         )
 
-        return crypto_symbol.upper(), vs_symbol.upper(), direction_enum, price_float
+        return crypto_symbol.upper(), vs_symbol.upper(), direction_enum, price
 
     def add_notification(
         self,

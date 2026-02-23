@@ -1,13 +1,10 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
-
 from app.bots.discord.charts.chart_view import ChartView
 from app.bots.discord.charts.choices import ChartConfig
 from app.bots.discord.cogs.base_cog import BaseCog
-from app.services.account_lookup_service import AccountLookupService
 from app.services.chart_service import ChartService
-from app.services.crypto_currency_service import CryptoCurrencyService
 
 
 class ChartsCog(BaseCog):
@@ -17,10 +14,8 @@ class ChartsCog(BaseCog):
         self,
         bot: commands.Bot,
         chart_service: ChartService,
-        account_lookup_service: AccountLookupService,
-        crypto_currency_service: CryptoCurrencyService,
     ):
-        super().__init__(account_lookup_service, crypto_currency_service)
+        super().__init__()
         self.bot = bot
         self._chart_service = chart_service
 
@@ -34,8 +29,6 @@ class ChartsCog(BaseCog):
         self, interaction: discord.Interaction, crypto_symbol: str, time_choice: str = "1D"
     ):
         """Display a cryptocurrency price chart with interactive buttons."""
-        await interaction.response.defer()
-
         crypto_symbol = crypto_symbol.upper()
         time_choice = time_choice.upper()
 

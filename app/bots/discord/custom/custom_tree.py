@@ -31,6 +31,7 @@ class CustomTree(app_commands.CommandTree):
                 platform_user_id=str(interaction.user.id),
             )
             interaction.extras["account"] = account
+            await interaction.response.defer()  # get more time to process command
             await super()._call(interaction)
             db_session.commit()
             logging.info("Committed current db session.")

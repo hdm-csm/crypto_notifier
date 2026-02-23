@@ -49,6 +49,8 @@ class DiscordBot:
 
         self.bot = CustomDiscordBot(
             account_lookup_service=account_lookup_service,
+            crypto_currency_service=crypto_currency_service,
+            vs_currency_service=vs_currency_service,
             command_prefix="/",
             intents=intents,
         )
@@ -71,34 +73,17 @@ class DiscordBot:
                 await ctx.send("Command not found.")
 
     async def start(self):
-        settings_cog = SettingsCog(
-            account_lookup_service=self._account_lookup_service,
-            vs_currency_service=self._vs_currency_service,
-            crypto_currency_service=self._crypto_currency_service,
-        )
-        crypto_info_cog = CrpytoInfoCog(
-            account_lookup_service=self._account_lookup_service,
-            crypto_api_service=self._crypto_api_service,
-            crypto_currency_service=self._crypto_currency_service,
-        )
-        favorites_cog = FavoritesCog(
-            account_lookup_service=self._account_lookup_service,
-            favorites_service=self._favorites_service,
-            crypto_currency_service=self._crypto_currency_service,
-        )
+        settings_cog = SettingsCog(bot=self.bot)
+        crypto_info_cog = CrpytoInfoCog(bot=self.bot, crypto_api_service=self._crypto_api_service)
+        favorites_cog = FavoritesCog(favorites_service=self._favorites_service)
         notifications_cog = NotificationsCog(
-            account_lookup_service=self._account_lookup_service,
+            bot=self.bot,
             notification_service=self._notification_service,
             crypto_api_service=self._crypto_api_service,
-            crypto_currency_service=self._crypto_currency_service,
-            vs_currency_service=self._vs_currency_service,
-            bot=self.bot,
         )
         charts_cog = ChartsCog(
             bot=self.bot,
             chart_service=self._chart_service,
-            account_lookup_service=self._account_lookup_service,
-            crypto_currency_service=self._crypto_currency_service,
         )
 
         await self.bot.add_cog(settings_cog)

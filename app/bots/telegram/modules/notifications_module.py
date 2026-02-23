@@ -43,9 +43,9 @@ class NotificationsModule(BaseModule):
 
     def register_jobs(self):
         """Register background jobs. Called after app initialization."""
-        # Schedule notification checking every 10 seconds
+        # Schedule notification checking every 60 seconds
         if self._app.job_queue:
-            self._app.job_queue.run_repeating(self.check_notifications, interval=10, first=1)
+            self._app.job_queue.run_repeating(self.check_notifications, interval=60, first=1)
 
     async def check_notifications(self, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Check all notifications and send messages to users."""
