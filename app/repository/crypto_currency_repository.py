@@ -1,9 +1,6 @@
-import logging
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models.schemas import Cryptocurrency
-
-logger = logging.getLogger(__name__)
 
 
 class CryptocurrencyRepository:

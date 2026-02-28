@@ -29,8 +29,8 @@ class ChartService:
                 return None
 
             if isinstance(data.columns, pd.MultiIndex):
-                data.columns = data.columns.get_level_values(0)  # Close
-                data = data.loc[:, ~data.columns.duplicated()]  # Remove duplicates
+                data.columns = data.columns.get_level_values(0)
+                data = data.loc[:, ~data.columns.duplicated()]
 
             buffer = io.BytesIO()
 

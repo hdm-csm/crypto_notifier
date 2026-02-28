@@ -5,10 +5,10 @@ from typing import Dict
 
 @dataclass
 class Timeframe:
-    value: str  # The ID used by Discord (e.g., "1D")
-    display_name: str  # What the user sees (e.g., "1 Day")
-    period: str  # The API period (e.g., "1d")
-    interval: str  # The API interval (e.g., "15m")
+    value: str
+    display_name: str
+    period: str
+    interval: str
 
     @property
     def choice(self) -> Choice:
@@ -26,7 +26,7 @@ class ChartConfig:
 
     DAY_1 = Timeframe("1D", "1 Day", "1d", "15m")
     DAYS_5 = Timeframe("5D", "5 Days", "5d", "30m")
-    MONTH_1 = Timeframe("1M", "1 Month", "1mo", "1d")  # Note: Standardized to "1M" here
+    MONTH_1 = Timeframe("1M", "1 Month", "1mo", "1d")
     MONTHS_3 = Timeframe("3M", "3 Months", "3mo", "1d")
     MONTHS_6 = Timeframe("6M", "6 Months", "6mo", "1d")
     YTD = Timeframe("YTD", "Year to Date", "ytd", "1d")

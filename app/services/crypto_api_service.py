@@ -17,7 +17,6 @@ COINGECKO_API_KEY = Config.COINGECKO_API_KEY
 
 class CryptoApiService:
     COINGECKO_BASE_URL = "https://api.coingecko.com/api/v3"  # Rate Limit = 10K requests/month
-    # BINANCE_BASE_URL = "https://api.binance.com/api/v3"  # Unlimited requests
 
     def __init__(self, client: httpx.AsyncClient):
         self.client = client
@@ -25,7 +24,7 @@ class CryptoApiService:
     async def get_top_crypto_currencies(
         self, amount: int, vs_currency: str
     ) -> list[CoinMarketData]:
-        amount = max(1, min(amount, 100))  # Ensure amount is between 1 and 100
+        amount = max(1, min(amount, 100))
         params: dict[str, str | int] = {
             "x_cg_demo_api_key": COINGECKO_API_KEY,
             "vs_currency": vs_currency,
@@ -87,7 +86,7 @@ class CryptoApiService:
         # If the target was USD and direct failed, there is no fallback left
         if v == "USD":
             return CryptoPrice(price=0.0, error=True)
-        # Attempt B: Direct failed, fallback to USD base
+        # Attempt B: Direct currency failed, fallback to USD base
         usd_ticker = f"{c}-USD"
         usd_price = await asyncio.to_thread(_get_fast_price, usd_ticker)
         if usd_price is not None:
@@ -125,7 +124,6 @@ class CryptoApiService:
 
         df = await asyncio.to_thread(_fetch_batch)
         if df.empty:
-            # return [(c, v, CryptoPrice(price=0.0, error=True)) for c, v in cleaned_pairs]
             return []
         latest_prices: dict[str, float] = {}
         if isinstance(df.columns, pd.MultiIndex):
@@ -191,12 +189,11 @@ class CryptoApiService:
         self, amount: int = 250
     ) -> list[Cryptocurrency]:
         """
-        Fetches a list of 250 supported cryptocurrencies from Yahoo Finance screener.
+        Fetches a list of MAX 250 supported cryptocurrencies from Yahoo Finance screener.
         """
         amount = max(1, min(amount, 250))  # Ensure amount is between 1 and 250
         try:
             s = Screener()
-            # max = 250 !!!
             data = s.get_screeners("all_cryptocurrencies_us", count=amount)
         except Exception as e:
             logging.error(f"Failed to fetch screener data: {e}")

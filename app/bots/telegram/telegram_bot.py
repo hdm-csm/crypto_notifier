@@ -84,19 +84,15 @@ class TelegramBot:
         """Global error handler for all Telegram commands."""
         logging.error(f"Telegram error: {type(context.error).__name__} - {context.error}")
 
-        # Only respond to user if we have an update with a message
         if isinstance(update, Update) and update.message:
             error_message = f"❌ An error occurred: {str(context.error)}"
-
-            # Handle MissingCommandArguments with usage examples
             if isinstance(context.error, MissingCommandArguments):
                 command_name = context.error.command_name
                 error_message += get_command_example(command_name)
             else:
-                # Try to extract command name from the message for other errors
                 if update.message.text and update.message.text.startswith("/"):
                     command_parts = update.message.text.split()
-                    command_name = command_parts[0][1:]  # Remove the leading /
+                    command_name = command_parts[0][1:]  # Remove leading "/"
                     error_message += get_command_example(command_name)
 
             await update.message.reply_text(error_message)
