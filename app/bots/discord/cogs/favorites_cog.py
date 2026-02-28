@@ -49,7 +49,6 @@ class FavoritesCog(BaseCog):
         crypto4="Fourth crypto (optional)",
         crypto5="Fifth crypto (optional)",
     )
-    # Apply your existing single-crypto autocomplete to all of them
     @app_commands.autocomplete(
         crypto1=crypto_autocomplete,
         crypto2=crypto_autocomplete,

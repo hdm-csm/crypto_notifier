@@ -43,7 +43,6 @@ class NotificationRepository:
         if notification:
             session.delete(notification)
             session.flush()
-            logging.info(f"Deleted notification {notification_id}")
             return True
         logging.warning(f"Notification {notification_id} not found")
         return False

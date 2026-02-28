@@ -17,7 +17,6 @@ class TimeButton(Button["ChartView"]):
         assert self.view is not None
         await interaction.response.defer()
 
-        # Update button styles
         for child in self.view.children:
             if isinstance(child, Button):
                 child.style = (
@@ -26,7 +25,6 @@ class TimeButton(Button["ChartView"]):
                     else discord.ButtonStyle.secondary
                 )
 
-        # Use the injected async service method directly
         buffer = await self.view.generate_chart_async(
             self.view.symbol,
             self.config["period"],

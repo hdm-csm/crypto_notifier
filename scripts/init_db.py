@@ -3,7 +3,7 @@ from app.db import Base, engine
 
 
 def init_db():
-    # MUST import models to register them with Base to create tables
+    # Do not delete this import-statement: MUST import models to register them with Base to create tables
     from app.models.schemas import Account, Notification, Cryptocurrency  # noqa: F401
 
     Base.metadata.drop_all(bind=engine)

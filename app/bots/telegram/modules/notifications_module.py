@@ -43,7 +43,6 @@ class NotificationsModule(BaseModule):
 
     def register_jobs(self):
         """Register background jobs. Called after app initialization."""
-        # Schedule notification checking every 60 seconds
         if self._app.job_queue:
             self._app.job_queue.run_repeating(self.check_notifications, interval=60, first=1)
 
@@ -82,8 +81,8 @@ class NotificationsModule(BaseModule):
                 COMMAND_ADD_NOTIF, "<crypto_symbol> <vs_symbol> <above|below> <price>"
             )
 
-        crypto_symbol = context.args[0].upper()  # check if cur -> get symbol
-        vs_symbol = context.args[1].upper()  # check if vs -> get symbol
+        crypto_symbol = context.args[0].upper()
+        vs_symbol = context.args[1].upper()
         direction_str = context.args[2].lower()
 
         crypto_currency = self._crypto_currency_service.find_by_name_or_symbol(

@@ -3,7 +3,6 @@ import time
 import sys
 import os
 
-# Pfad-Setup
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.db import Session_Factory, engine, Base  # noqa: E402
@@ -13,7 +12,6 @@ from app.repository.account_repository import AccountRepository  # noqa: E402
 from app.repository.vs_currency_repository import VsCurrencyRepository  # noqa: E402
 from app.services.account_lookup_service import AccountLookupService  # noqa: E402
 
-# Konfiguration
 NUM_CONCURRENT_USERS = 200
 PLATFORM = PlatformType.DISCORD
 
@@ -61,7 +59,6 @@ async def simulate_user_action(user_id: str, account_lookup: AccountLookupServic
 
 async def run_load_test():
     try:
-        # 1. Setup
         setup_database()
 
         print(f"Starte Load Test mit {NUM_CONCURRENT_USERS} Usern...")
@@ -94,7 +91,6 @@ async def run_load_test():
         print("=" * 35)
 
     finally:
-        # 3. Teardown
         teardown_database()
 
 

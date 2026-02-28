@@ -1,7 +1,4 @@
-import logging
 from app.models.schemas import Account, Cryptocurrency
-
-logger = logging.getLogger(__name__)
 
 
 class FavoritesRepository:

@@ -73,7 +73,6 @@ class SettingsCog(BaseCog):
             description="Here's everything you can do with this bot. Use `/` to get autocomplete suggestions for any command.",
             color=discord.Color.gold(),
         )
-        # ── Crypto Info ──────────────────────────────────────────────────────
         embed.add_field(
             name="📊  Crypto Info",
             value=(
@@ -86,7 +85,6 @@ class SettingsCog(BaseCog):
             ),
             inline=False,
         )
-        # ── Favorites ─────────────────────────────────────────────────────────
         embed.add_field(
             name="⭐  Favorites",
             value=(
@@ -104,7 +102,6 @@ class SettingsCog(BaseCog):
             ),
             inline=False,
         )
-        # ── Notifications ─────────────────────────────────────────────────────
         embed.add_field(
             name="🔔  Price Notifications",
             value=(
@@ -120,7 +117,6 @@ class SettingsCog(BaseCog):
             ),
             inline=False,
         )
-        # ── Charts ────────────────────────────────────────────────────────────
         embed.add_field(
             name="📈  Charts",
             value=(
@@ -130,7 +126,6 @@ class SettingsCog(BaseCog):
             ),
             inline=False,
         )
-        # ── Settings ──────────────────────────────────────────────────────────
         embed.add_field(
             name="⚙️  Settings",
             value=(
